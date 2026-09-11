@@ -104,6 +104,143 @@ async function importFile(page, namespace, content = fixture) {
   );
 }
 
+test("S08 searches original pairs without a model and clears search on Private", async (t) => {
+  const page = await pageFor(t);
+  await importFile(page, `search-${randomUUID()}`);
+  const requests = [];
+  page.on("request", (request) => {
+    if (request.url().endsWith("/search")) requests.push(request);
+  });
+  await page
+    .getByLabel("Search saved evidence", { exact: true })
+    .fill("spending limit");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await eventually(async () =>
+    assert.match(
+      await page.locator("#search-results").innerText(),
+      /fifteen thousand/,
+    ),
+  );
+  assert.match(await page.locator("#search-results").innerText(), /50,000/);
+  assert.equal(await page.locator("#search-results article").count(), 1);
+  assert.equal(requests[0].method(), "POST");
+  assert.equal(new URL(requests[0].url()).search, "");
+  if (process.env.JARVIS_UI_SCREENSHOTS === "1") {
+    const directory = new URL("../../.tmp/ui-review/", import.meta.url);
+    await mkdir(directory, { recursive: true });
+    await page.locator(".search-card").screenshot({
+      path: new URL("s08-search.png", directory).pathname.replace(
+        /^\/(\w:)/,
+        "$1",
+      ),
+    });
+  }
+  await page
+    .getByRole("button", { name: "Inspect original", exact: true })
+    .click();
+  await eventually(async () =>
+    assert.match(
+      await page.locator("#raw-text").innerText(),
+      /fifteen thousand/,
+    ),
+  );
+  await page.getByRole("radio", { name: "Private", exact: true }).check();
+  assert.equal(await page.locator("#search-results").innerText(), "");
+  assert.equal(await page.locator("#search-query").inputValue(), "");
+  assert.equal(requests.length, 1);
+  await page.getByRole("radio", { name: "Normal", exact: true }).check();
+  assert.equal(await page.locator("#search-results").innerText(), "");
+});
+
+test("S08 distinguishes search outage from no matches and ignores late results", async (t) => {
+  const page = await pageFor(t, { width: 390, height: 844 });
+  await importFile(page, `search-failure-${randomUUID()}`);
+  await page.getByText("Search options", { exact: true }).click();
+  await page.locator("#search-from").fill("2030-01-01");
+  await page.getByLabel("Search saved evidence", { exact: true }).fill("Orion");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await eventually(async () =>
+    assert.match(
+      await page.locator("#search-results").innerText(),
+      /Captured: Not provided/,
+    ),
+  );
+  assert.equal(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+    true,
+  );
+  if (process.env.JARVIS_UI_SCREENSHOTS === "1") {
+    const directory = new URL("../../.tmp/ui-review/", import.meta.url);
+    await mkdir(directory, { recursive: true });
+    await page
+      .locator(".search-card")
+      .screenshot({
+        path: new URL("s08-mobile.png", directory).pathname.replace(
+          /^\/(\w:)/,
+          "$1",
+        ),
+      });
+  }
+  await page.locator("#search-undated").uncheck();
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await eventually(async () =>
+    assert.match(
+      await page.locator("#search-state").innerText(),
+      /No matching evidence/,
+    ),
+  );
+  await page.locator("#search-from").fill("");
+  await page.locator("#search-undated").check();
+  await page
+    .getByLabel("Search saved evidence", { exact: true })
+    .fill("Quasar passport");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await eventually(async () =>
+    assert.match(
+      await page.locator("#search-state").innerText(),
+      /No matching evidence/,
+    ),
+  );
+  await page.route("**/search", (route) => route.abort());
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await eventually(async () =>
+    assert.match(
+      await page.locator("#search-state").innerText(),
+      /Search could not finish/,
+    ),
+  );
+  await page.unroute("**/search");
+  let release, intercepted;
+  const arrived = new Promise((resolve) => {
+    intercepted = resolve;
+  });
+  const held = new Promise((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/search", async (route) => {
+    const response = await route.fetch();
+    intercepted();
+    await held;
+    await route.fulfill({ response }).catch(() => {});
+  });
+  await page.getByLabel("Search saved evidence", { exact: true }).fill("Atlas");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await arrived;
+  await page.getByRole("radio", { name: "Private", exact: true }).check();
+  release();
+  await page.getByRole("radio", { name: "Normal", exact: true }).check();
+  assert.equal(await page.locator("#search-results").innerText(), "");
+  assert.equal(await page.locator("#search-query").inputValue(), "");
+  assert.equal(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+    true,
+  );
+});
+
 test("S07 processes synthetic fixtures and exposes memory history through the real backend", async (t) => {
   const page = await pageFor(t);
   const namespace = `memory-${randomUUID()}`;
@@ -152,6 +289,20 @@ test("S07 processes synthetic fixtures and exposes memory history through the re
   assert.match(
     await page.locator("#memory-history").innerText(),
     /Finance signs off/,
+  );
+  await page.getByText("Search options", { exact: true }).click();
+  await page.locator("#search-memories").check();
+  await page.getByLabel("Search saved evidence", { exact: true }).fill("Ravi");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await eventually(async () =>
+    assert.match(
+      await page.locator("#search-results").innerText(),
+      /Only if: Finance signs off/,
+    ),
+  );
+  assert.match(
+    await page.locator("#search-results").innerText(),
+    /tentative.*conditional.*Scope: Atlas/,
   );
   if (process.env.JARVIS_UI_SCREENSHOTS === "1") {
     const path = new URL("../../.tmp/ui-review/", import.meta.url);

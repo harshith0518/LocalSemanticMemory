@@ -1,6 +1,6 @@
 # Proposed memory architecture
 
-Status: S03 infrastructure, S04 evidence/policy boundaries and S05 diagnostic import/inspection are implemented and checked; extraction, retrieval and complete lifecycle behavior below remain designs to implement and evaluate. Agreed behavior lives in [DECISIONS.md](DECISIONS.md), and [RUN.md](RUN.md) records actual evidence.
+Status: S03–S05, the browser workspace and S07 processing contracts are implemented. S08 adds lexical retrieval and browser evidence search; live extraction/answer quality and complete lifecycle controls remain open gates. Agreed behavior lives in [DECISIONS.md](DECISIONS.md), and [RUN.md](RUN.md) records actual evidence.
 
 ## One application, several entry points
 
@@ -18,13 +18,13 @@ flowchart LR
   SEARCH --> S
 ```
 
-The API, CLI and worker are adapters around the same operations: import, process, ask, inspect, correct, forget and evaluate. No client writes directly around policy. One Python image serves API, worker, CLI and tests. S03 Compose runs `db`, one-shot `migrate`, `api` and a `cli` tools profile; `compose.test.yaml` supplies a standalone test project. The minimal frontend is served by the existing FastAPI container at `/`; no separate frontend service is needed. `worker` remains later work. Users work in the browser; the CLI is optional for developers.
+The API, CLI and worker are adapters around shared operations. Import, process, inspect, search and evaluation scaffolding exist; Ask and complete controls remain open. No client writes directly around policy. One Python image serves Compose `db` clients: one-shot `migrate`, `api`, `worker` and the optional `cli` profile. `compose.test.yaml` supplies a standalone test project. The minimal frontend is served by FastAPI at `/`; no separate frontend service is needed. Users work in the browser; the CLI is optional for developers.
 
 Run DB migrations once, wait for DB health and successful migrations, and use named volumes. Tests get a separate database and credentials with no access to the normal data volume. Compose startup order alone does not prove readiness; use health and completion conditions. [Docker guidance](https://docs.docker.com/compose/how-tos/startup-order/)
 
 The initial review service binds to loopback and uses a server-controlled local user identity. Never trust a submitted `user_id` as authorization. Keep ownership checks and cross-user test fixtures even for a single-user demo. Public deployment would require an additional approved authentication/security pass.
 
-S03 stores policy, source and job records; S04 adds owned exact passages, claim revisions and evidence links. API/CLI and future worker operations share `Service`, a backend-issued request context and the owner policy-row commit guard. S05 adds bounded JSONL import, paginated listing and exact source/job inspection. pgvector is installed, with no embeddings or search indexes. Full extraction, retrieval and lifecycle workflows below remain later work.
+S03 stores policy, source and job records; S04 adds owned exact passages, claim revisions and evidence links. All adapters share `Service`, a backend-issued context and the owner policy-row guard. S05 adds import/inspection; S07 adds processing/reconciliation and accounting. S08 adds GIN text-search indexes; pgvector is installed but no embeddings are stored. Later sections distinguish implemented boundaries from proposed answer/control behavior.
 
 ## Evidence representation
 
@@ -115,13 +115,25 @@ Candidate fusion can use `RRF(d) = Σ 1 / (60 + rank(d))` across lists containin
 
 Pass a compact packet of claims, original supporting passages, identifiers, time and uncertainty to the responder. Check source references mechanically; semantic support still requires model evaluation or human review. Ask a short clarification when decisive evidence conflicts. Abstain when the permitted history cannot support the answer; do not label an unavailable search as absent evidence.
 
+## Implemented S08 retrieval boundary
+
+`retrieval.py` is part of the shared service. `POST /search`, browser Search and optional `jarvis search` call it without a provider. Query text travels in a POST body or developer stdin, never the page URL, a learned source, job or durable query trace. Two GIN expression indexes cover paired source text and claim values, with English stemming and simple lexemes; canonical rows acquire no derived columns. Queries use plain-language OR terms and PostgreSQL cover-density ranking, not BM25. Each observation gets the maximum of its two variant scores, so pairing does not create independent evidence.
+
+Source-only retrieval is the default. The optional memory representation unions owned eligible original and memory candidates with RRF, while reserving the strongest original-source match before fusion. This protects unextracted context that a memory-heavy ranking displaced in the initial diagnostic. Every returned claim carries all of its exact supporting observations. Whole original variants, capture metadata, claim uncertainty, scope, attribution and event/effective times remain intact. Identity is not inferred from labels. Current memory view selects latest active claims; historical view also permits superseded claims, explicitly labeled, but not corrected/excluded interpretations. Original observations keep their historical wording in either view.
+
+Ownership, collection, provenance, latest source revision and exclusions are filtered before candidate limits. Existing excluded claim support conservatively removes its entire paired observation from original fallback as well as memory candidates. This is a read safeguard, not the complete S09 Forget/known-duplicate/reimport workflow. Capture filters use explicit zoned instants and optionally retain undated sources; event dates and import timestamps never substitute for capture time. Claims requiring a supporting source outside the eligible filtered set are not returned partially.
+
+Immediate search selects and serializes results under one owner policy lock. Staged consumers can use `prepare_search`, perform external work without a lock, then `release_search`; the latter recomputes the eligible selection and rejects changed packets before invoking its guarded render callback. The logical publication point is buffered serialization under that guard; subsequent changes cannot recall an already released response. The current API serializes JSON there. Future model responders must use the staged release boundary after generation; they are not implemented by Search.
+
+Limits: 512 query characters, 100 source and 100 claim candidates, 1–20 primary matches and 1,024–64,000 serialized UTF-8 evidence bytes (default five matches/24,000 bytes). A claim can bring additional supporting sources; the byte budget covers them all. No record/span is clipped to fit. Partial selections report `has_more`/`budget_limited`; an oversized first record returns `evidence_budget_exceeded`. `no_matches` is not a semantic unknown-fact verdict, and database failures remain errors. No dense model, ANN index, automatic query planner, persisted query cache or generated answer is claimed. [Commands and actual evidence](RUN.md#s08-evidence-search).
+
 ## Correct, Forget and Private
 
 **Correct:** preserve source history. An extraction error retracts the wrong interpretation; a genuine change creates a supported successor and retains earlier state. Invalidate dependent indexes and any future summaries/caches. A later retrieval must use the new state.
 
 **Forget:** exclude selected claims and their supporting passages, covering known duplicates/reimports/reprocessing; invalidate all usable derivatives and pending work. Source history can remain separately visible until deleted. Workers and controls share the commit guard. Retrieval and buffered reply publication also check revocation, with a defined atomic release boundary. Already released replies cannot be unsent. Start without streaming or response caches to reduce these races.
 
-**Private:** current input and explicitly supplied temporary context only. No personal memory/history/dictionary/style reads, durable content/activity writes, extraction jobs, logs, error payloads, caches, embeddings, retries, exports or browser persistence. Enter with fresh context; discard on exit/page close; never backfill Normal. Persist only the switch preference. Hosted inference retention and no-training settings must be separately checked and disclosed.
+**Private:** current input and explicitly supplied temporary context only. No personal memory/history/dictionary/style reads, durable content/activity writes, extraction jobs, logs, error payloads, caches, embeddings, retries, exports or browser persistence. Enter with fresh context; discard on exit/page close; never backfill Normal. The implemented browser keeps mode transient and saves no preference. Hosted inference retention and no-training settings must be separately checked and disclosed.
 
 ## Models and repair
 

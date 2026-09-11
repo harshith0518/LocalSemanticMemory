@@ -123,6 +123,21 @@ def evaluate_extraction(repeats: int = 3):
     run(lambda service: extraction_pilot(service, repeats=repeats))
 
 
+@app.command("search")
+def search(mode: str = typer.Option(...)):
+    """Read a search request from stdin; use the browser for ordinary searches."""
+
+    def operation(service):
+        context = service.identity.context(mode)
+        context.require_saved_access()
+        payload = sys.stdin.read(8193)
+        if len(payload.encode("utf-8")) > 8192:
+            raise ApplicationError(ErrorCode.INVALID_INPUT)
+        return service.search(context, payload)
+
+    run(operation)
+
+
 @probe.command("write")
 def write_probe(mode: str = "normal") -> None:
     run(lambda service: service.write_probe(service.identity.context(mode)))

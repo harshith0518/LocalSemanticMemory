@@ -1,0 +1,27 @@
+{
+  "description": "Authored diagnostic cases, not a blind benchmark or a model-quality evaluation. Never ingest this file.",
+  "ingest_into_memory": false,
+  "cases": [
+    {"case_id":"vehicle_paraphrase","request":"What vehicle do I use for workdays?","required_evidence":[{"record_id":"s08_vehicle","field":"raw_transcript","quote":"I take my electric car to the Cedar office"}]},
+    {"case_id":"source_detail_not_in_claims","request":"What is the paint code Z19 associated with?","required_evidence":[{"record_id":"s08_vehicle","field":"raw_transcript","quote":"Its paint code is Z19."}]},
+    {"case_id":"negation","request":"Is the Maple meeting cancelled?","required_evidence":[{"record_id":"s08_maple","field":"raw_transcript","quote":"The Maple meeting is not cancelled; we are waiting for room confirmation."}]},
+    {"case_id":"hindi","request":"नीलम ने कौन सा नमूना चुना?","required_evidence":[{"record_id":"s08_hindi","field":"raw_transcript","quote":"नीलम ने दीपक के लिए नीले रंग का नमूना चुना।"}]},
+    {"case_id":"scoped_preference","request":"What format does Mira request for Boreal updates?","required_evidence":[{"record_id":"s08_boreal","field":"raw_transcript","quote":"Mira on the Boreal team asks for a detailed weekly narrative."}]},
+    {"case_id":"unresolved_identity","request":"Is the visitor Ravi the confirmed Atlas budget owner?","required_evidence":[{"record_id":"s08_ravi","field":"raw_transcript","quote":"I do not know whether he is the Ravi discussed for the Atlas budget."},{"record_id":"dict_0004","field":"formatted_text","quote":"If Finance signs off, we could assign Ravi to own the Atlas budget, but nobody has confirmed that yet."}]},
+    {"case_id":"quoted_example","request":"Is Zephyr scheduled to launch today?","required_evidence":[{"record_id":"s08_zephyr","field":"raw_transcript","quote":"this was an example, not a schedule."}]},
+    {"case_id":"unfamiliar_source_fallback","request":"Where is the Lyra violet sample stored?","required_evidence":[{"record_id":"s08_lyra","field":"raw_transcript","quote":"Lyra keeps the violet sample in cabinet Q7."}]},
+    {"case_id":"absent_topic","request":"Quasar passport number","required_evidence":[]}
+  ],
+  "deterministic_proposals": [
+    {
+      "record_id":"s08_vehicle",
+      "content": {
+        "subject":{"label":"user"},"predicate":"commuting_vehicle",
+        "value":{"kind":"text","value":"electric vehicle for workdays"},
+        "scope":{"kind":"project","key":"Cedar"},"attribution":{"label":"user"},
+        "evidence_status":"reported","modality":"asserted","negated":false,
+        "condition":null,"time":{"event":null,"valid_from":null,"valid_to":null}
+      }
+    }
+  ]
+}

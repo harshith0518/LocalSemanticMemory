@@ -111,6 +111,9 @@ def test_all_saved_operations_reject_private_before_parsing_or_io(
         lambda: service.memory_history(private, SENTINEL),
         lambda: service.processing_status(private, SENTINEL),
         lambda: service.processing_report(private, SENTINEL),
+        lambda: service.search(private, SENTINEL),
+        lambda: service.prepare_search(private, SENTINEL),
+        lambda: service.release_search(private, SENTINEL),
         lambda: process_one(service, private),
     ]
     with no_store_access(engine, monkeypatch):

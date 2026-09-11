@@ -41,6 +41,7 @@ from jarvis.models import ClaimEvidence, ClaimRecord, Job, Passage, Policy, Sour
 from jarvis.policy import LocalIdentity, Mode, RequestContext
 from jarvis.processing import ProcessingOperations
 from jarvis.providers import NvidiaExtractor
+from jarvis.retrieval import RetrievalOperations
 
 PROBE_KEY = "bootstrap:synthetic:v1"
 PROBE_RAW = "Synthetic bootstrap observation: the blue box contains seven marbles."
@@ -53,7 +54,7 @@ def content_hash(raw: str, formatted: str | None) -> str:
     return hashlib.sha256(pair.encode("utf-8")).hexdigest()
 
 
-class Service(ProcessingOperations):
+class Service(ProcessingOperations, RetrievalOperations):
     def __init__(self, engine: Engine, identity: LocalIdentity | None = None, *, extractor=None):
         self.engine = engine
         self.identity = identity or LocalIdentity()

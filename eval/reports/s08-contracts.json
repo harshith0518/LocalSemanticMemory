@@ -1,0 +1,67 @@
+{
+  "milestone": "S08",
+  "date": "2026-09-12",
+  "status": "retrieval_verified_live_answer_comparison_open",
+  "base_commit": "8eec7b9e0edc16c3e6b35cb152818c3776cd0c27",
+  "branch": "dev",
+  "main_publication": {
+    "commit": "8eec7b9e0edc16c3e6b35cb152818c3776cd0c27",
+    "backend_passed": 156,
+    "browser_passed": 10,
+    "remote_verified": true
+  },
+  "checks": {
+    "backend": {"passed": 186, "failed": 0, "warnings": 0, "seconds": 47.14},
+    "browser": {"passed": 12, "failed": 0, "seconds": 12.9130485},
+    "lint": "Ruff passed; 35 Python files formatted, frontend formatted with Prettier 3.6.2.",
+    "documentation": "10 UTF-8 Markdown files and 158 local links/anchors passed; Phase One notes/drafts unchanged. Staged whitespace and credential exclusion checked before commit.",
+    "fresh_storage": "Only the isolated jarvis-tests volume was reset before the final full backend run.",
+    "migrations": "Empty/repeated migrations and drift checks passed. Two GIN expression indexes; no canonical columns or dependency changes.",
+    "application_preservation": "Every row in all ten application tables was unchanged after migration and database/API/worker replacement: nine sources, nine jobs, one policy, no model calls.",
+    "test_restart": "All rows in ten isolated tables and the complete source-plus-memory search response matched after database container replacement with its volume retained.",
+    "test_restart_counts": {"sources": 756, "jobs": 756, "claim_revisions": 37, "claim_evidence": 37, "passages": 28, "claim_relations": 3, "processing_receipts": 24, "model_calls": 24, "model_budgets": 1, "policies": 1},
+    "application_search": "Actual HTTP and CLI search returned the single spending-limit observation with both conflicting variants; provider disabled.",
+    "visual_review": "Desktop search and mobile expanded date filters/results inspected; no material overflow or clipping. Duplicate section number corrected."
+  },
+  "commands": [
+    "docker compose -f compose.test.yaml --profile browser down --volumes",
+    "docker compose -f compose.test.yaml run --build --rm tests",
+    "docker compose -f compose.test.yaml run --rm tests python eval/retrieval.py",
+    "docker compose -f compose.test.yaml --profile browser up -d --build --wait web",
+    "npm.cmd --prefix tests/browser test",
+    "docker compose down",
+    "docker compose up -d --wait --wait-timeout 120 api worker",
+    "docker compose run --rm migrate alembic check",
+    "docker compose -f compose.test.yaml up -d --force-recreate --wait test-db",
+    "docker run --rm jarvis:local ruff check --no-cache src migrations tests eval/retrieval.py",
+    "docker run --rm jarvis:local ruff format --check --no-cache src migrations tests eval/retrieval.py"
+  ],
+  "retrieval_comparison": {
+    "initial": "s08-retrieval-initial.json",
+    "final": "s08-retrieval-final.json",
+    "corpus": "500 synthetic observations: 15 varied originals and 485 templated distractors.",
+    "method": "17 authored questions, three frozen-state repeats per representation, five primary matches and 24000 evidence bytes; 15 answerable cases/20 required passages per repeat.",
+    "initial_finding": "Source-only found all evidence in 45/45 answerable attempts. Plain RRF found 42/45 and 95% of required passages, losing a same-name identity distinction.",
+    "refinement": "Reserve the strongest original-source match before RRF; add a regression. Immediate search selects and renders under one policy lock, avoiding redundant selection.",
+    "final_finding": "Both representations found 60/60 required passages across 45/45 answerable attempts. Source-only used less evidence and was faster in this run.",
+    "default": "sources",
+    "semantic_answer_quality": "not_measured"
+  },
+  "resolved_findings": [
+    "Initial lint found long lines; formatting and string splits fixed them.",
+    "PostgreSQL/SQLAlchemy expression normalization caused source-index drift in two migration checks; aligned the model expression, retaining all drift checks.",
+    "Plain memory fusion displaced unextracted original context; the failed comparison is retained separately and the refined method has a regression.",
+    "The local documentation helper needed the regular sandbox account, not the elevated Docker account, because Git ownership differs; no global Git configuration changed."
+  ],
+  "remaining_limits": [
+    "No live model call, NVIDIA authentication, semantic answer score or S06 all-history answer comparison.",
+    "The separately requested combined synthetic-only pilot remains unapproved: maximum 96 requests, 1500000 total tokens including retries, $0 paid. Existing flags/budgets unchanged.",
+    "Optional dense retrieval is unrun; no embedder or ANN index was added.",
+    "Authored diagnostics and templated distractors do not establish blind/generalization accuracy or complete S11.",
+    "Byte budgets are not model-token measurements; timings are small local samples with potentially warm indexes.",
+    "Whole-observation retrieval reports budget limits instead of clipping; general long-document chunking remains a future measured refinement.",
+    "No complete Correct/Forget, known-duplicate/reimport exclusions, entity resolution or clarification-resolution workflow."
+  ],
+  "provider_requests_sent": 0,
+  "paid_provider_spend": 0
+}

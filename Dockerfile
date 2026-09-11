@@ -14,6 +14,8 @@ COPY migrations/ migrations/
 COPY tests/ tests/
 COPY data/synthetic/sample-dictations.jsonl data/synthetic/sample-dictations.jsonl
 COPY eval/fixtures/sample-evaluation-cases.json eval/fixtures/sample-evaluation-cases.json
+COPY eval/fixtures/s08-retrieval.json eval/fixtures/s08-retrieval.json
+COPY eval/retrieval.py eval/retrieval.py
 RUN useradd --uid 10001 --create-home jarvis
 ENV PATH="/app/.venv/bin:$PATH"
 USER jarvis

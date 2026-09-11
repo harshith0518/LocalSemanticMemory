@@ -7,15 +7,30 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
+    Index,
     Integer,
     MetaData,
     String,
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+# Rebuildable expression indexes; canonical records acquire no derived content fields.
+SOURCE_SEARCH_SQL = (
+    "to_tsvector('english'::regconfig, (raw_text || ' '::text) || "
+    "COALESCE(formatted_text, ''::text)) || "
+    "to_tsvector('simple'::regconfig, (raw_text || ' '::text) || "
+    "COALESCE(formatted_text, ''::text))"
+)
+CLAIM_SEARCH_SQL = (
+    "jsonb_to_tsvector('english'::regconfig, content, "
+    '\'["string","numeric","boolean"]\'::jsonb) || '
+    'jsonb_to_tsvector(\'simple\'::regconfig, content, \'["string","numeric","boolean"]\'::jsonb)'
+)
 
 
 class Base(DeclarativeBase):
@@ -33,6 +48,7 @@ class Policy(Base):
 class Source(Base):
     __tablename__ = "sources"
     __table_args__ = (
+        Index("sources_search_idx", text(SOURCE_SEARCH_SQL), postgresql_using="gin"),
         UniqueConstraint("owner_id", "source_key", "revision", name="source_observation_revision"),
         UniqueConstraint("id", "owner_id", "revision", name="source_owner_revision"),
         CheckConstraint("revision > 0", name="source_revision_positive"),
@@ -116,6 +132,7 @@ class Passage(Base):
 class ClaimRecord(Base):
     __tablename__ = "claim_revisions"
     __table_args__ = (
+        Index("claims_search_idx", text(CLAIM_SEARCH_SQL), postgresql_using="gin"),
         UniqueConstraint("id", "owner_id", name="claim_revision_owner"),
         UniqueConstraint("claim_id", "owner_id", "revision", name="claim_identity_revision"),
         CheckConstraint("revision > 0", name="claim_revision_positive"),

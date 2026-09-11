@@ -211,9 +211,80 @@
             </details>
           </article>
         </section>
-        <section class="card memories-card" aria-labelledby="memories-title">
+        <section class="card search-card" aria-labelledby="search-title">
           <div class="section-heading">
             <span class="step">04</span>
+            <h2 id="search-title">Find in your collection</h2>
+          </div>
+          <form id="search-form" autocomplete="off">
+            <label for="search-query">Search saved evidence</label>
+            <div class="input-action">
+              <input
+                id="search-query"
+                type="text"
+                maxlength="512"
+                required
+                autocomplete="off"
+                spellcheck="false"
+                data-normal
+                placeholder="A project, person, phrase or question"
+              />
+              <button type="submit" class="primary" data-normal>Search</button>
+            </div>
+            <p class="help">
+              Find original records, even before memory processing. Results are
+              evidence to inspect; they are not generated answers.
+            </p>
+            <details class="search-options">
+              <summary>Search options</summary>
+              <label
+                ><input id="search-memories" type="checkbox" data-normal />Use
+                related memories</label
+              >
+              <label
+                ><input
+                  id="search-history"
+                  type="checkbox"
+                  data-normal
+                />Include older memory revisions</label
+              >
+              <div class="search-dates">
+                <label
+                  >Captured from (UTC)<input
+                    id="search-from"
+                    type="date"
+                    data-normal
+                /></label>
+                <label
+                  >Captured through (UTC)<input
+                    id="search-to"
+                    type="date"
+                    data-normal
+                /></label>
+              </div>
+              <label
+                ><input
+                  id="search-undated"
+                  type="checkbox"
+                  checked
+                  data-normal
+                />Include undated sources in date filters</label
+              >
+              <p class="help">
+                Capture time is when a note was recorded, not the date of an
+                event mentioned in it. Original records retain their historical
+                wording.
+              </p>
+            </details>
+          </form>
+          <p id="search-state" class="help" role="status">
+            Search runs only when you ask.
+          </p>
+          <div id="search-results" aria-live="polite"></div>
+        </section>
+        <section class="card memories-card" aria-labelledby="memories-title">
+          <div class="section-heading">
+            <span class="step">05</span>
             <h2 id="memories-title">Memories</h2>
           </div>
           <p class="help">

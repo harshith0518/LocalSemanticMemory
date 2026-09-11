@@ -1,6 +1,6 @@
 # Run and verify Hey Jarvis
 
-S03–S05 and the S07 memory-processing code are implemented in the existing Windows checkout using Docker Desktop Linux containers. The browser is the primary source/memory workflow. S07's deterministic acceptance is recorded below; live model evaluation remains disabled pending the explicit synthetic-only provider decision. Milestone-specific historical results retain their original counts and limits. S06 answers, S08 retrieval improvements and full S09 controls remain incomplete.
+S03–S05, S07 memory-processing contracts and S08 evidence search are implemented in the existing Windows checkout using Docker Desktop Linux containers. The browser is the primary workflow. Search needs no model key and works on unprocessed original records. Live extraction/answer evaluation remains disabled pending the explicit provider decision. Historical results below retain their original counts and limits; S06 answers, live S07/S08 quality gates and full S09 controls remain incomplete.
 
 ## Start from a checkout
 
@@ -24,7 +24,7 @@ Invoke-RestMethod http://127.0.0.1:8000/health
 Invoke-RestMethod http://127.0.0.1:8000/ready
 ```
 
-Check `$LASTEXITCODE` after Docker/CLI commands; nonzero means failure. PowerShell does not automatically stop on native command failures. `/health` and `jarvis health` report process liveness without querying personal data or the database. `/ready` and `jarvis ready` call the same service to verify the DB connection, Alembic revision and pgvector extension. Expected readiness is `{"status":"ready","schema":"0003_memory_processing","pgvector":"0.8.6"}`. Readiness failures return HTTP 503 / CLI exit 1 with a short category, without raw database errors or credentials.
+Check `$LASTEXITCODE` after Docker/CLI commands; nonzero means failure. PowerShell does not automatically stop on native command failures. `/health` and `jarvis health` report process liveness without querying personal data or the database. `/ready` and `jarvis ready` call the same service to verify the DB connection, Alembic revision and pgvector extension. Expected readiness is `{"status":"ready","schema":"0004_lexical_retrieval","pgvector":"0.8.6"}`. Readiness failures return HTTP 503 / CLI exit 1 with a short category, without raw database errors or credentials.
 
 The API is published only on `127.0.0.1`; PostgreSQL has no published host port. The server owns the fixed local identity; no endpoint accepts an owner selector. S04 validation endpoints return a receipt without echoing input. S05 import writes eligible dictations only in Normal mode, and inspection returns owned saved evidence. JSON responses explicitly declare UTF-8 so Windows PowerShell 5 decodes multilingual text correctly. Application containers run as UID 10001. Source is copied into the image, so rebuild after code changes. uv and the build backend use the checked-in lock; development checks are included in the same image.
 
@@ -96,6 +96,53 @@ Resolved findings: an initial fixture-helper bracket typo prevented test collect
 Migration `0003_memory_processing` adds `requested`, lease token/expiry, finish time and fixed error category to jobs; creates `processing_receipts`, `claim_relations`, `model_budgets` and `model_calls`; and grants only runtime DML. Existing source/claim content stays unchanged, and old jobs default to unrequested with null processing fields. No vector columns/indexes or dependency versions changed. Source/claim/policy snapshots and lease identity are rechecked before the atomic claim/evidence/relationship/receipt/job commit. Model calls hold no DB locks. Raw responses, prompts and reasoning are not saved in accounting.
 
 Actual checks and remaining limits are recorded in [the S07 evidence report](eval/reports/s07-contracts.json). Browser acceptance uses `tests/browser/server.py` with a synthetic fixture double under the isolated test-DB guard. Run the backend suite before browser checks because it resets only test state. The clean test-volume command, backend checks and browser commands are the same as the sections above/below. Private instrumentation now covers processing, worker, accounting, memory/history and report paths, including refusal before reading an HTTP body. Full Correct/Forget/exclusions and answer-quality comparisons are still later gates.
+
+## S08 evidence search
+
+Open the browser, import or open a collection, and use **Search saved evidence**. Try `spending limit`, `Ravi`, or `Orion`. Search works before processing and without provider keys. Results retain both original variants and link **Inspect original** to the source inspector. **Search options** enables related memories, historical memory revisions and capture-date filters in UTC; undated notes remain included by default. Original observations retain their historical wording. Private/page/collection changes clear the query, filters and results and discard late responses. No query or answer is learned, queued or persisted by search.
+
+Source-only is the default. Related memories are optional and show attribution, scope, uncertainty, conditions and time separately from lifecycle. A memory's supporting sources travel together. No matches means the search found no lexical match; it does not prove a fact is unknown. Failures are shown separately. Large records are kept whole, with an explicit evidence-limit result instead of silently clipped conditions. Default limits are five primary matches and 24,000 serialized evidence bytes; API requests permit at most 20/64,000. These are byte limits, not model-token counts.
+
+The optional developer command reads a JSON request from stdin; ordinary users need only the browser:
+
+```powershell
+'{"namespace":"diagnostic-v1","query":"spending limit"}' | docker compose run --rm -T --no-deps cli search --mode normal
+$s08Body = [System.Text.Encoding]::UTF8.GetBytes('{"namespace":"diagnostic-v1","query":"Ravi","representation":"sources_and_memories"}')
+Invoke-RestMethod http://127.0.0.1:8000/search -Method Post -ContentType 'application/json; charset=utf-8' -Headers @{'X-Jarvis-Mode'='normal'} -Body $s08Body
+```
+
+`representation` is `sources` or `sources_and_memories`; `history` defaults false. Optional `captured_from`/`captured_to` require explicit zoned timestamps; `include_undated` defaults true. Capture filters never substitute an event or import date. API queries use POST bodies, not URLs. The CLI's Normal output is explicit developer output; avoid saving private/personal terminal transcripts.
+
+Run regressions before the isolated evaluator/browser because the backend suite resets test state:
+
+```powershell
+docker compose -f compose.test.yaml --profile browser stop web
+docker compose -f compose.test.yaml run --build --rm tests
+docker compose -f compose.test.yaml run --rm tests python eval/retrieval.py
+docker compose -f compose.test.yaml --profile browser up -d --wait web
+npm.cmd --prefix tests/browser test
+```
+
+The evaluator refuses non-test database settings. It generates a unique collection of 500 synthetic observations (15 varied originals plus 485 templated distractors), uses explicit deterministic proposals, and evaluates 17 separate labeled questions three times per representation. It prints JSON; retain output only as labeled synthetic evaluation evidence. All failed/missing evidence selections remain visible. It does not authenticate NVIDIA, generate answers, measure model tokens or run dense search. The 500-record diagnostic is not the S11 blind corpus gate.
+
+Migration `0004_lexical_retrieval` adds only the `sources_search_idx` and `claims_search_idx` GIN expression indexes. It leaves source/job/claim/policy/accounting rows unchanged and introduces no dependency or container. These indexes rebuild automatically from canonical data on creation and track committed changes transactionally. Search filters owned eligible latest sources and valid claims before candidate limits. An excluded claim's support blocks the whole affected original observation from fallback; complete passage/known-duplicate/reimport controls remain S09.
+
+The requested S07 merge was independently verified on remote `main` at `8eec7b9e0edc16c3e6b35cb152818c3776cd0c27` after 156 backend tests (26.17 s) and 10 browser tests (11.97 s) passed. S08 changes are made on `dev`.
+
+**Actual S08 acceptance on 12 September:** 186 backend tests passed in 47.14 s, zero warnings, after a fresh isolated volume initialization; all 12 final browser checks passed in 12.91 s. Empty/repeated migrations and drift checks pass. Ruff passed for 35 Python files; frontend formatting passed. Desktop search and expanded mobile filters/results were visually reviewed. Actual application HTTP/CLI search returned both conflicting spending-limit variants as one observation without a model call.
+
+Documentation checks passed for 10 UTF-8 Markdown files and 158 local links/anchors; Phase One notes/drafts remain unchanged. Staged whitespace and local-credential exclusion are checked before the `dev` commit. No `.env`, local audit probes, database snapshots or UI screenshots are committed.
+
+Every row in all ten application tables matched after migration and database/API/worker container replacement: nine original sources, nine jobs, one policy and zero model calls. A separate isolated DB-container replacement retained all rows, including 756 sources and 37 claim revisions accumulated by the evaluator/browser runs, and the exact indexed source-plus-memory search response. These are synthetic records; the 24 isolated call rows are deterministic doubles, not provider requests. Snapshot comparisons used ignored local audit probes; canonical row preservation and indexed/unindexed result equality also have reproducible regression tests. Application volumes were never reset; only `jarvis-tests_test-database` was reset for the clean test start.
+
+| Final diagnostic | Source-only default | Sources plus memories |
+| --- | --- | --- |
+| Required passages found | 60/60 | 60/60 |
+| Answerable attempts with all required evidence | 45/45 | 45/45 |
+| Mean serialized evidence bytes | 2,368.94 | 5,492.88 |
+| Local retrieval p50 / p95 | 60.75 / 114.36 ms | 98.05 / 207.90 ms |
+
+The [initial comparison](eval/reports/s08-retrieval-initial.json) retains the memory-fusion miss (42/45 complete evidence attempts, 95% passage coverage). The [final comparison](eval/reports/s08-retrieval-final.json) reserves the strongest original match and reruns unchanged cases/budgets. Keep source-only as the simpler default; these authored diagnostics do not establish universal optimality or model accuracy. Latencies are small local samples, potentially with warm indexes. [Full checks and limitations](eval/reports/s08-contracts.json). No test failure remains. S08's live answer-comparison gate remains open because S06 and the separately requested provider decision are incomplete.
 
 ## Migrations and schema effects
 
@@ -349,6 +396,6 @@ The existing local audit helper passed: 10 UTF-8 Markdown files, 141 local links
 
 ## Later review contract
 
-S06 is next: produce a source-history answer through Kimi K3 using the S05 stored evidence and S04 policy boundary. Connect source-history Ask to the existing browser UI as part of S06. Subsequent milestones provide processing, selective memory, retrieval and full controls in that same surface; keep CLI commands optional for developers. Provider access, retention/no-training settings and a spend ceiling must be agreed before live inference. The final acceptance still needs a clean-checkout import/UI/evaluation/reset walkthrough and exact tested release commit; S05 is not that final product gate.
+Complete the missing S06 source-history answer baseline through Kimi K3 after the provider decision, connecting Ask to the browser. S07 processing and S08 evidence search already use the shared backend; full S09 controls remain next. Keep CLI commands optional. Provider access, retention/no-training settings and a spend ceiling must be explicit before live inference. Final submission still requires the complete clean-checkout import/UI/live-evaluation/reset walkthrough and exact tested release commit; local contract/retrieval checks do not close that product gate.
 
 Implementation references: [uv Docker integration](https://docs.astral.sh/uv/guides/integration/docker/), [pgvector installation](https://github.com/pgvector/pgvector#docker), [Compose startup ordering](https://docs.docker.com/compose/how-tos/startup-order/), [FastAPI containers](https://fastapi.tiangolo.com/deployment/docker/).

@@ -178,4 +178,12 @@ def create_app(service: Service | None = None) -> FastAPI:
         context = service.identity.context(request.headers.get("X-Jarvis-Mode", ""))
         return service.memory_history(context, claim_id)
 
+    @app.post("/search")
+    async def search(request: Request):
+        service = app.state.service
+        context = service.identity.context(request.headers.get("X-Jarvis-Mode", ""))
+        context.require_saved_access()  # Before receiving a query, even on failure paths.
+        payload = await current_input(request)
+        return await run_in_threadpool(service.search, context, payload, JSONResponse)
+
     return app

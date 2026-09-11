@@ -62,6 +62,9 @@ function clearEvidence() {
 }
 
 function clearSources() {
+  ui["search-form"].reset();
+  ui["search-results"].replaceChildren();
+  ui["search-state"].textContent = "Search runs only when you ask.";
   memoryAfter = null;
   ui["memory-list"].replaceChildren();
   ui["memory-history"].replaceChildren();
@@ -338,6 +341,111 @@ function memoryLabel(claim) {
   const value = c.value;
   return `${c.subject.label} · ${c.negated ? "Not: " : ""}${c.predicate.replaceAll("_", " ")}: ${value.value}${value.unit ? ` ${value.unit}` : ""}`;
 }
+
+ui["search-form"].addEventListener("submit", (event) => {
+  event.preventDefault();
+  const namespace = collection();
+  if (!namespace || mode !== "normal") return;
+  action(async (ticket, signal) => {
+    ui["search-results"].replaceChildren();
+    ui["search-state"].textContent = "Searching saved evidence…";
+    const payload = {
+      namespace,
+      query: ui["search-query"].value,
+      representation: ui["search-memories"].checked
+        ? "sources_and_memories"
+        : "sources",
+      history: ui["search-history"].checked,
+      captured_from: ui["search-from"].value
+        ? `${ui["search-from"].value}T00:00:00Z`
+        : null,
+      captured_to: ui["search-to"].value
+        ? `${ui["search-to"].value}T23:59:59.999999Z`
+        : null,
+      include_undated: ui["search-undated"].checked,
+    };
+    let result;
+    try {
+      result = await request(
+        "/search",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+        ticket,
+        signal,
+      );
+    } catch (error) {
+      assertCurrent(ticket);
+      ui["search-state"].textContent =
+        "Search could not finish. This does not mean evidence is absent.";
+      throw error;
+    }
+    const state =
+      result.status === "no_matches"
+        ? "No matching evidence found. Different wording may help; this does not establish that a fact is unknown."
+        : result.status === "evidence_budget_exceeded"
+          ? "The matching record is too large for this search view. Browse the original sources to inspect it."
+          : `${result.matches.length} matching source${result.matches.length === 1 ? "" : "s"}.${result.has_more ? " More evidence is available; narrow the search for a different selection." : ""}${result.budget_limited ? " The evidence limit was reached; records were kept whole." : ""}`;
+    ui["search-state"].textContent = state;
+    const primary = result.matches.map((match) => match.source_id);
+    const sources = [...result.sources].sort((a, b) => {
+      const rank = (id) =>
+        primary.includes(id) ? primary.indexOf(id) : primary.length;
+      return rank(a.id) - rank(b.id);
+    });
+    for (const source of sources) {
+      const section = document.createElement("article");
+      const title = document.createElement("h3");
+      title.textContent = source.source_key.split(":").at(-1);
+      section.append(
+        title,
+        paragraph(
+          `${primary.includes(source.id) ? "Matching source" : "Additional supporting source"} · Captured: ${source.captured_at ?? "Not provided"}`,
+          "help",
+        ),
+      );
+      section.append(
+        paragraph("Original transcript", "help"),
+        paragraph(source.raw_text, "passage"),
+      );
+      if (source.formatted_text !== null)
+        section.append(
+          paragraph("Formatted text · same observation", "help"),
+          paragraph(source.formatted_text, "passage"),
+        );
+      for (const claim of result.memories.filter((m) =>
+        m.passages.some((p) => p.source_id === source.id),
+      )) {
+        const c = claim.content;
+        section.append(
+          paragraph(memoryLabel(claim)),
+          paragraph(
+            `${claim.lifecycle} · ${c.evidence_status} · ${c.modality} · Scope: ${c.scope.key ?? c.scope.kind} · Attributed to: ${c.attribution.label}`,
+            "help",
+          ),
+        );
+        if (c.condition) section.append(paragraph(`Only if: ${c.condition}`));
+        section.append(
+          paragraph(
+            `Event: ${c.time.event?.value ?? "Unknown"} · Applies from: ${c.time.valid_from?.value ?? "Unknown"} · Until: ${c.time.valid_to?.value ?? "Unknown"}`,
+            "help",
+          ),
+        );
+      }
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "secondary";
+      button.setAttribute("data-normal", "");
+      button.textContent = "Inspect original";
+      button.addEventListener("click", () => inspect(source.id, null));
+      section.append(button);
+      ui["search-results"].append(section);
+    }
+    feedback("Search finished. No question or answer was saved as memory.");
+  });
+});
 
 function renderMemoryPage(page, append = false) {
   if (!append) ui["memory-list"].replaceChildren();
