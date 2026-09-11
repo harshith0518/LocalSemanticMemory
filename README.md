@@ -2,7 +2,7 @@
 
 Technical implementation plan for the Jarvis early notes project. Target review: **12 September 2026, afternoon IST**. Primary delivery method: a local application and PostgreSQL database through Docker Compose; hosted model inference may require provider credentials and network access.
 
-**Current state: planning only.** This restart contains documentation and repository hygiene files. The application, database schema, importer, model adapters, CLI, UI and evaluations described here are not implemented. There are no measured product results yet.
+**Current state: S03 backend foundation implemented.** Python 3.12, locked dependencies, Docker Compose, PostgreSQL/pgvector, migrations, shared FastAPI/Typer services and 23 isolated database tests work. Synthetic state survives container replacement. Follow [RUN.md](RUN.md) for tested startup/check commands. Import, extraction, model calls, retrieval, memory controls and UI remain later milestones; no live-model results exist.
 
 The proposed demonstration imports a person's dictations, answers questions or prepares a contextual draft from supported history, and exposes Sources, Correct, Forget and Private. Backend/database/CLI development comes first; a small ordinary-user interface is part of the required result.
 
@@ -12,11 +12,11 @@ The proposed demonstration imports a person's dictations, answers questions or p
 | --- | --- |
 | [todo.md](todo.md) | Completed, ongoing and pending work; current blocker and the next action. |
 | [Visual memory guide](output/pdf/jarvis-memory-visual-guide.pdf) | 18 diagram pages with colors, shapes, labeled arrows, page/node IDs and clickable navigation. |
-| [Phase One source notes](docs/part-one/README.md) | Preserved user-supplied notes, earlier-chat provenance and mechanical word counts; final acceptances remain open. |
+| [Phase One source notes](docs/part-one/README.md) | Preserved user-supplied notes, earlier-chat provenance and mechanical word counts; finals are held by the author and reported complete, with repository inclusion/mechanical checks pending. |
 | [PLAN.md](PLAN.md) | Build order, time allocation, milestone gates and scope cuts. |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Shared services, evidence representation, learning, retrieval and repair. |
 | [EVALUATION.md](EVALUATION.md) | Cases, deterministic tests, real-model experiments and decision rules. |
-| [RUN.md](RUN.md) | Proposed unfamiliar contract and environment prerequisites; no runnable application commands yet. |
+| [RUN.md](RUN.md) | Tested S03 setup, migrations, API/CLI commands, persistence checks and isolated tests. |
 | [DECISIONS.md](DECISIONS.md) | Agreed product constraints versus proposed implementation choices. |
 | [AGENTS.md](AGENTS.md) | Contribution rules, approval boundaries and truthful progress reporting. |
 
@@ -24,11 +24,11 @@ The proposed demonstration imports a person's dictations, answers questions or p
 
 Use this implementation repository as the project folder. The user's updated workflow is a fresh discussion chat for understanding the PDF, resolving doubts and reviewing tradeoffs, followed by Codex CLI for approved implementation work. Application processes still run in the verified Docker Linux environment. The CLI's Windows-versus-WSL location, configuration, authentication and repository access must be checked before coding there; Docker readiness does not verify CLI setup. Keep one active checkout. The repository files carry the working context; each chat/session should read them rather than assume it has the previous conversation.
 
-At handoff, environment readiness is verified and the application is unimplemented. S03 bootstrap is the next proposed scope and still needs the user's approval for important code/schema changes. The test → update todo.md → commit → push workflow is already authorized. Final independent Phase One documents and live-model credentials/settings/budget remain open. The two chat-generated [Phase One drafts](docs/part-one/README.md#ai-assisted-drafts-supplied-in-chat) are preserved as AI-assisted reference only.
+At this handoff, S03 is approved and implemented with the results in RUN.md. S04 source/claim contracts and policy boundaries are next and need their own bounded approval. The test → update todo.md → commit → push workflow on `dev` is authorized. The author reports final Phase One documents complete and held outside this checkout; repository inclusion/mechanical checks and live-model credentials/settings/budget remain open. The two chat-generated [Phase One drafts](docs/part-one/README.md#ai-assisted-drafts-supplied-in-chat) are preserved as AI-assisted reference only.
 
 Suggested discussion-chat starting message:
 
-> Read the visual PDF and the repository's AGENTS.md, todo.md, README.md, DECISIONS.md, PLAN.md, ARCHITECTURE.md, EVALUATION.md and RUN.md. Help me understand the diagrams and compare alternatives using page/node IDs. Record agreed decisions in the Markdown files. Review the bounded S03 bootstrap scope with me and prepare a clear instruction for Codex CLI once I approve it. Preserve documented open items and distinguish proposed behavior from verified results.
+> Read the visual PDF and the repository's AGENTS.md, todo.md, README.md, DECISIONS.md, PLAN.md, ARCHITECTURE.md, EVALUATION.md and RUN.md. Help me understand the diagrams and compare alternatives using page/node IDs. Record agreed decisions in the Markdown files. Review the next bounded milestone in todo.md with me and prepare a clear instruction for Codex CLI once I approve it. Preserve documented open items and distinguish proposed behavior from verified results.
 
 Suggested CLI handoff, after scope approval:
 
@@ -40,7 +40,7 @@ The PDF is a visual companion: short labels inside shapes, a consistent role-col
 
 The diagram snapshot is dated 11 September 2026, revised from visual-guide checkpoint `3eca8fb` to clarify the existing episodic scope and add verified references. Repository reference cards follow `dev`; page 18 records assistant commits to `dev` and user-controlled merges to `main`. It depicts requirements and proposed behavior, with explicit status tags. It does not change the application architecture, close S01, approve S03 or provide measured product results. Markdown and tested code remain the precise, evolving implementation record.
 
-To regenerate the PDF with Python and ReportLab installed, run `python tools/build_visual_guide.py` from the repository root. It writes the PDF under `output/pdf/`, regenerates `docs/visual-guide-references.md` from `tools/visual_guide_sources.py`, and writes temporary layout metadata under `tmp/pdfs/`. Generation was checked with ReportLab 4.4.9 and the output rendered with Poppler for visual review. This script is documentation tooling, separate from the still-unimplemented application.
+To regenerate the PDF with Python and ReportLab installed, run `python tools/build_visual_guide.py` from the repository root. It writes the PDF under `output/pdf/`, regenerates `docs/visual-guide-references.md` from `tools/visual_guide_sources.py`, and writes temporary layout metadata under `tmp/pdfs/`. Generation was checked with ReportLab 4.4.9 and the output rendered with Poppler for visual review. This script is documentation tooling, separate from the S03 backend.
 
 The following supporting resources remain in the **parent planning workspace**, outside this Git repository. These paths are relative to the current implementation checkout. They are not automatically present in a fresh clone or isolated worktree; use the original planning workspace to access them. The implementation decisions and acceptance gates are already consolidated in this repository.
 
@@ -66,7 +66,7 @@ Bring the synthetic fixtures into the repository during the approved test-data/i
 | Reproducible checks | pytest, HTTPX test client, Ruff, locked dependencies with uv | Cheap contract tests plus separately identified real-model evaluation. |
 | Ordinary-user surface | Small HTML/CSS/JavaScript client | Import/status, Ask, Sources and memory controls; richer UI is optional. |
 
-Versions above are candidate major versions, not a resolved dependency lock. Bootstrap must pin compatible packages and image digests. No Redis, separate vector service, graph cluster, autonomous memory framework or Kubernetes is required for the first implementation.
+The S03 backend versions are now resolved in `uv.lock` and image digests are pinned in Dockerfile/Compose; retrieval and UI entries describe later work. No Redis, separate vector service, graph cluster, autonomous memory framework or Kubernetes is required for the first implementation.
 
 ## What must be demonstrated
 
@@ -82,6 +82,6 @@ Approximately 500 development observations and a separate unfamiliar corpus of a
 
 Commit `596b034` replaced the earlier repository contents with a focused planning baseline. Prior commits remain reachable through normal Git history. After each meaningful milestone, run relevant checks, update [todo.md](todo.md), commit and push the completed work. Neither timestamps nor results should be manufactured to suggest progress.
 
-These technical documents were prepared with AI assistance, including explainer agents, source research and review. The project's **Phase One positioning and vision must be independently formed and written by the author and preserved before Part Two**. The author's supplied [source notes](docs/part-one/README.md) are preserved with provenance and counts; two final acceptances have not been identified. These technical documents do not fulfill Phase One. Do not generate replacement positioning or vision text.
+These technical documents were prepared with AI assistance, including explainer agents, source research and review. The project's **Phase One positioning and vision must be independently formed and written by the author and preserved before Part Two**. The author's supplied [source notes](docs/part-one/README.md) are preserved with provenance and counts; the author now reports the final documents complete and held separately. They have not been inspected or mechanically checked in this checkout. The author explicitly approved S03 proceeding on that basis. These technical documents do not fulfill Phase One. Do not generate replacement positioning or vision text.
 
 Azure is an optional final experiment after the local review path passes. It is not a dependency of submission. The architecture and evaluation are hypotheses to test, not claims of a best-performing memory system.

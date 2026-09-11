@@ -4,7 +4,7 @@ Updated: 11 September 2026. Target: **12 September afternoon IST**.
 
 This is the single current-status checklist. [PLAN.md](PLAN.md) defines scope and milestone gates; [DECISIONS.md](DECISIONS.md) records decisions; [EVALUATION.md](EVALUATION.md) defines evidence. Check an item only after its acceptance condition is demonstrated.
 
-**Current work:** Source-note preservation and S02 readiness checks are complete. Follow-up host checks verified Windows CLI authentication and Docker Linux access; the read-only CLI session completed with sandbox access limits recorded in RUN.md. Assistant work now uses `dev`; the user controls merges to `main`. S01's final independently authored documents and approval of the concrete S03 proposal remain open. The application is not implemented and no live Jarvis model evaluation has run.
+**Current work:** S03 is approved and implemented: reproducible Linux build/start, PostgreSQL/pgvector, minimal migrations, shared API/CLI services, synthetic persistence across container replacement and 23 isolated DB tests passed. See RUN.md for commands/results. Assistant commits/pushes use `dev`; the user controls merges to `main`. Next: review the bounded S04 source/claim contracts and policy boundaries. The author reports Phase One complete and held separately; repository inclusion/mechanical checks remain pending. No live Jarvis model evaluation has run.
 
 ## Completed
 
@@ -24,18 +24,18 @@ This is the single current-status checklist. [PLAN.md](PLAN.md) defines scope an
 
 - [x] Record the user's `dev`/`main` workflow and prepare the [bounded S03 proposal](PLAN.md#first-implementation-approval-scope) with files, schema effects and acceptance checks. Run the requested read-only CLI session and verify host CLI authentication plus Windows/Ubuntu Docker access; [actual results and sandbox limits](RUN.md#dev-branch-readiness-check). The CLI made no implementation or Git changes. Other-session visual-guide edits remain separate from this readiness/proposal checkpoint; S01 preservation and S03 approval remain open.
 
+- [x] **S03 — Backend bootstrap.** User explicitly approved Python 3.12/uv, Docker, PostgreSQL with pgvector, source/job/policy migrations, shared FastAPI/Typer services and isolated tests after confirming Phase One complete in their possession. Implemented the bounded scope; all five acceptance gates passed: clean initial startup, empty/repeated migrations without drift, shared API/CLI behavior, identical synthetic source/job state after replacing both containers, and 23 real PostgreSQL tests with no warnings. Ruff lint/format passed. Actual DB outage/recovery and scoped test reset also passed. [Commands, results and limits](RUN.md#actual-s03-results). No model calls, general imports, retrieval, UI or full memory controls were implemented.
+
 ## Ongoing
 
-- [ ] **S01 — Final Phase One submissions.** Owner: author writes/finalizes; assistant preserves and checks mechanics. Supplied notes and the subsequently requested AI-assisted positioning/vision drafts are saved with their distinct provenance. The earlier five-question recap was assistant-authored; it is attributed accordingly without inferring the origin of every sentence in the supplied notes. Final independent submissions remain open.
-  - Next action: author supplies the final independently written positioning statement (at most 100 words) and vision document (at most 600 words); preserve and mechanically check them. Readiness checks can continue while this remains open.
-  - Acceptance: both final documents are present with source/author attribution and checked counts. Do not generate the author's argument, silently rewrite it or backdate completion.
-  - Remaining gap: two final acceptances have not been identified. A 317-token subsection does not itself satisfy both deliverables or prove independent authorship.
+- [ ] **S01 — Repository preservation/mechanical checks of final Phase One.** Author reports the independently authored final documents complete and held separately. Earlier source notes and AI-assisted drafts retain their distinct provenance; the assistant has not inspected the finals.
+  - Next action: preserve the final files when supplied, with actual dates/attribution, and check the positioning/vision limits (100/600 words). Do not generate or silently rewrite their content.
+  - The user's latest explicit S03 approval supersedes the earlier implementation hold. No repeated confirmation is needed for routine S03 implementation/fixes.
 
 ## Pending
 
 | Step | Work | Evidence required before completion |
 | --- | --- | --- |
-| S03 | Bootstrap API, database, CLI and test environment. | Locked dependencies, reproducible migrations, API health, shared service path and isolated DB tests; restart preserves intended state. |
 | S04 | Implement source/claim contracts and policy boundaries. | Source references, ownership, scope, uncertainty, time and revision checks; Private gates exist before processing personal inputs. |
 | S05 | Import and inspect the eight diagnostic observations. | Paired raw/formatted text, exact source spans, missing metadata and reimports handled without invented or duplicate evidence. |
 | S06 | Produce a real source-history answer through DeepSeek. | A cited answer/draft from actual stored sources; honest unknown/failure behavior; actual provider and usage recorded where permitted. |
@@ -69,8 +69,8 @@ Implementation-chat handoff checks on 11 September: nine UTF-8 Markdown files an
 
 ## Open before dependent work
 
-- Two final independently authored Phase One submissions; source-note preservation is already complete.
+- Repository inclusion and mechanical checks of the final Phase One documents reported complete by the author; source-note preservation is already complete.
 - Important implementation scopes remain subject to the user's review rule; do not treat approval of a step as approval for every later architecture change.
-- Before S03 implementation: preserve final Phase One documents and obtain scope approval. Windows Codex CLI authentication and host Docker/Ubuntu access are verified; Docker commands inside a restricted CLI subprocess require the appropriate approved execution context. Keep the existing checkout on `dev` and preserve other sessions' changes.
+- Before S04 implementation: review its bounded source/claim and policy scope. S03 is explicitly approved and implemented; the earlier Phase One/S03 hold is superseded. Keep the existing checkout on `dev` and preserve other sessions' changes. Docker commands inside a restricted CLI subprocess require the appropriate approved execution context.
 - Before live calls: provider credentials stored locally, account access, retention/no-training settings and an agreed spend/token ceiling. No secrets in chat or Git.
 - Azure, graph services, response caching, streaming, autonomous procedural learning and rich UI polish remain optional after required gates pass.

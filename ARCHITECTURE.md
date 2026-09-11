@@ -1,6 +1,6 @@
 # Proposed memory architecture
 
-Status: design to implement and evaluate. Agreed behavior lives in [DECISIONS.md](DECISIONS.md). There is no application code at this checkpoint.
+Status: S03 infrastructure is implemented and checked; memory behavior below remains a design to implement and evaluate. Agreed behavior lives in [DECISIONS.md](DECISIONS.md), and [RUN.md](RUN.md) records actual bootstrap evidence.
 
 ## One application, several entry points
 
@@ -18,11 +18,13 @@ flowchart LR
   SEARCH --> S
 ```
 
-The API, CLI and worker are adapters around the same operations: import, process, ask, inspect, correct, forget and evaluate. No client writes directly around policy. One Python image serves API, worker, CLI and tests. Compose runs `db`, a one-shot `migrate` service, `api`, `worker`, a thin `frontend`, and a separate `tests` profile. These service names are a proposed contract, not existing files.
+The API, CLI and worker are adapters around the same operations: import, process, ask, inspect, correct, forget and evaluate. No client writes directly around policy. One Python image serves API, worker, CLI and tests. S03 Compose runs `db`, one-shot `migrate`, `api` and a `cli` tools profile; `compose.test.yaml` supplies a standalone test project. `worker` and a thin `frontend` remain later work.
 
 Run DB migrations once, wait for DB health and successful migrations, and use named volumes. Tests get a separate database and credentials with no access to the normal data volume. Compose startup order alone does not prove readiness; use health and completion conditions. [Docker guidance](https://docs.docker.com/compose/how-tos/startup-order/)
 
 The initial review service binds to loopback and uses a server-controlled local user identity. Never trust a submitted `user_id` as authorization. Keep ownership checks and cross-user test fixtures even for a single-user demo. Public deployment would require an additional approved authentication/security pass.
+
+S03 stores only policy, source and job records. The fixed synthetic CLI probe uses one transaction and the owner policy-row lock; API/CLI liveness and DB/schema readiness share `Service`. pgvector is installed, with no embeddings or search indexes. The full operations and lifecycle guarantees below are not implemented by these foundations.
 
 ## Evidence representation
 

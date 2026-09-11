@@ -1,6 +1,6 @@
 # Minimal evaluation plan for Hey Jarvis
 
-Prepared 11 September 2026. Proposed gates, not measured results. Target: 12 September afternoon IST. Grounding: [DECISIONS.md](DECISIONS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and the supplied early notes project brief. No tests or model runs exist in this planning checkpoint.
+Prepared 11 September 2026. The product/model gates below remain proposed. S03 has 23 passing real PostgreSQL bootstrap tests and verified container-replacement persistence; [RUN.md](RUN.md#actual-s03-results) records the commands and limits. No live-model runs exist. Target: 12 September afternoon IST. Grounding: [DECISIONS.md](DECISIONS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and the supplied early notes project brief.
 
 ## 1. Prove one complete journey first
 

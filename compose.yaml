@@ -1,0 +1,71 @@
+name: jarvis
+
+x-app: &app
+  image: jarvis:local
+  build: .
+  init: true
+  networks: [application]
+
+x-runtime-environment: &runtime-environment
+  JARVIS_DB_HOST: db
+  JARVIS_DB_NAME: jarvis
+  JARVIS_DB_USER: jarvis_app
+  JARVIS_DB_PASSWORD: ${JARVIS_APP_PASSWORD:?Copy .env.example to .env and set passwords}
+
+services:
+  db:
+    image: pgvector/pgvector:0.8.6-pg17-bookworm@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
+    environment:
+      POSTGRES_DB: jarvis
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${JARVIS_POSTGRES_PASSWORD:?Set JARVIS_POSTGRES_PASSWORD in .env}
+      APP_USER: jarvis_app
+      APP_PASSWORD: ${JARVIS_APP_PASSWORD:?Set JARVIS_APP_PASSWORD in .env}
+      MIGRATION_USER: jarvis_migrate
+      MIGRATION_PASSWORD: ${JARVIS_MIGRATION_PASSWORD:?Set JARVIS_MIGRATION_PASSWORD in .env}
+    volumes:
+      - database:/var/lib/postgresql/data
+      - ./docker/postgres/init-db.sh:/docker-entrypoint-initdb.d/10-jarvis.sh:ro
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -h 127.0.0.1 -U postgres -d jarvis']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    networks: [application]
+
+  migrate:
+    <<: *app
+    command: [alembic, upgrade, head]
+    environment:
+      <<: *runtime-environment
+      JARVIS_DB_USER: jarvis_migrate
+      JARVIS_DB_PASSWORD: ${JARVIS_MIGRATION_PASSWORD:?Set JARVIS_MIGRATION_PASSWORD in .env}
+    depends_on:
+      db: {condition: service_healthy}
+
+  api:
+    <<: *app
+    environment: *runtime-environment
+    ports: ['127.0.0.1:${JARVIS_API_PORT:-8000}:8000']
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD, jarvis, ready]
+      interval: 5s
+      timeout: 10s
+      retries: 12
+
+  cli:
+    <<: *app
+    profiles: [tools]
+    entrypoint: [jarvis]
+    command: [ready]
+    environment: *runtime-environment
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+
+volumes:
+  database:
+
+networks:
+  application:

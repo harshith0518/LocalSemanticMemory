@@ -18,14 +18,14 @@ Updated 11 September 2026. This distinguishes agreed product behavior from an im
 - DeepSeek owns the main reasoning/response role. Compare smaller models for typed memory-operation proposals; the backend retains control of SQL, authorization and commits. Exact endpoint/model selection remains an experiment.
 - Ask before important implementation edits outside an already approved bounded scope. The user requested starting with Phase One preservation and then progressing through the delivery steps.
 - Maintain [todo.md](todo.md) with completed, ongoing and pending work. After every meaningful completed milestone, run relevant checks, update the tracker, commit and push to `dev`; this recurring workflow is authorized. Keep `main` as the default reviewed branch. The user reviews and merges, or explicitly instructs the assistant to merge; no direct assistant commits/pushes to `main`.
-- Use the visual PDF and Markdown files in a fresh discussion chat to understand the design and resolve doubts; use Codex CLI for subsequent approved implementation. Keep one canonical checkout and record decisions before handing work to the coding session. Windows CLI authentication and Docker Linux access were checked in the [follow-up readiness check](RUN.md#dev-branch-readiness-check); the restricted CLI subprocess has separate access limits. Implementation stays pending until the final independent Phase One documents are preserved and S03 is approved.
+- Use the visual PDF and Markdown files in a fresh discussion chat to understand the design and resolve doubts; use Codex CLI for subsequent approved implementation. Keep one canonical checkout and record decisions before handing work to the coding session. Windows CLI authentication and Docker Linux access were checked in the [follow-up readiness check](RUN.md#dev-branch-readiness-check); the restricted CLI subprocess has separate access limits. The author subsequently reported Phase One complete in their possession and explicitly approved S03. Proceeding with that scope is authorized; repository preservation/mechanical checks of those finals remain pending.
 
 ## Proposed implementation choices
 
 | Choice | Reason | How to reconsider |
 | --- | --- | --- |
 | Python/FastAPI + thin CLI sharing services | One language and one policy path for application/evaluation work. | Reconsider only for a concrete blocker, not familiarity with another framework alone. |
-| PostgreSQL + pgvector and full-text search | Transactions, typed state and exact dense retrieval in one DB. | SQLite remains technically possible, but do not add a second backend under the deadline. Approve final DB choice before schema code. |
+| PostgreSQL + pgvector and full-text search | Transactions, typed state and exact dense retrieval in one DB. | SQLite remains technically possible, but do not add a second backend under the deadline. PostgreSQL with pgvector is explicitly approved for S03. |
 | Docker Desktop Linux containers with Ubuntu-24.04 integration; keep one Windows checkout for the initial image build | Existing engine and WSL integration passed readiness checks. Copy source into images and use named DB volumes, avoiding a source migration before bootstrap. | Consider a Linux-filesystem checkout if live bind mounts become useful; do not create two competing checkouts or reinstall the host. |
 | One DB-backed worker; no Redis | Durable work with fewer services. | Add infrastructure only after observed throughput/reliability need. |
 | Source-history baseline, then claims and hybrid retrieval | Lets evaluation isolate whether memory and search actually help. | Keep the simpler baseline if an addition has no demonstrated value. |
@@ -33,12 +33,21 @@ Updated 11 September 2026. This distinguishes agreed product behavior from an im
 | Buffer replies; no response cache/streaming initially | Smaller correction/revocation surface. | Add after lifecycle tests, with explicit dependency invalidation. |
 | Plain minimal UI | Meet the normal-user requirement without another large application framework. | Polish after the complete path is verified. |
 
-## Open before implementation or live calls
+## S03 implementation decisions and evidence
 
-1. Approve the bounded bootstrap in [PLAN.md](PLAN.md), including final stack and initial schema scope.
+The approved bootstrap uses synchronous SQLAlchemy/psycopg sessions in one shared service layer, with thin FastAPI/Typer adapters. Python 3.12, uv and PostgreSQL/pgvector images are pinned by digest; application, test and build dependencies are locked. One image includes developer checks, trading some image size for a single reproducible local environment. No production deployment is implied.
+
+Use a standalone `compose.test.yaml` project instead of a test profile sharing application configuration: this keeps application credentials, networks and volumes out of test services. A fail-closed target guard protects migration/fixture cleanup. Runtime logins have DML only; separate migration logins own the schema. The administrator enables pgvector once during empty-volume initialization because extension installation needs elevated DB privileges. Alembic creates only the three approved logical records; no vector data/search is implemented.
+
+`/health` / `jarvis health` are liveness; `/ready` / `jarvis ready` check DB/schema/extension readiness. The synthetic probe's fixed paired text, hash, source identity, unknown capture metadata, policy revision and pending job establish a small durable transaction without exposing a general importer before S04. Source revisions are separate records; equal text does not establish identity. Model/provider behavior and privacy/lifecycle meanings are unchanged.
+
+Keep these choices based on 23 passing isolated PostgreSQL tests, repeated migration/no-drift checks, runtime privilege checks, real outage recovery and exact state after container replacement. The first lint/format issues and test-client deprecations were resolved; actual commands and limits are in [RUN.md](RUN.md). No comparison against SQLite, another architecture or live models was run.
+
+## Open before later implementation or live calls
+
+1. Review/approve S04 source/claim contracts and policy boundaries as the next bounded implementation.
 2. Confirm access, retention/no-training settings and a spend ceiling for the [model shortlist](ARCHITECTURE.md#models-and-repair). The user selected DeepSeek main plus a smaller proposer; the proposed NVIDIA/SiliconFlow exact endpoints have not been called or compared. No credentials belong in Git or chat.
-3. Finalize and preserve the author's independently authored Phase One documents. [User-supplied source notes](docs/part-one/README.md) and earlier-chat provenance are preserved; two final acceptances have not been identified. The notes do not establish independent authorship or completion.
-4. Choose actual dependency/image versions during the first approved build and record them in lockfiles/configuration.
+3. Preserve and mechanically check the final Phase One documents when supplied. The author reports them complete and held separately; the assistant has not inspected them. [Earlier source notes/drafts](docs/part-one/README.md) retain their own provenance and do not establish independent authorship.
 
 ## Decision evidence format
 
