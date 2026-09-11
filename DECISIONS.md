@@ -18,6 +18,7 @@ Updated 11 September 2026. This distinguishes agreed product behavior from an im
 - DeepSeek owns the main reasoning/response role. Compare smaller models for typed memory-operation proposals; the backend retains control of SQL, authorization and commits. Exact endpoint/model selection remains an experiment.
 - Ask before important implementation edits outside an already approved bounded scope. The user requested starting with Phase One preservation and then progressing through the delivery steps.
 - Maintain [todo.md](todo.md) with completed, ongoing and pending work. After every meaningful completed milestone, run relevant checks, update the tracker, commit and push; this recurring commit/push workflow is authorized.
+- Use the visual PDF and Markdown files in a fresh discussion chat to understand the design and resolve doubts; use Codex CLI for subsequent approved implementation. Keep one canonical checkout and record decisions before handing work to the coding session. CLI setup/location/access remains to be verified; this workflow choice does not approve S03 or alter product behavior.
 
 ## Proposed implementation choices
 

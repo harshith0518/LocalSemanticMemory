@@ -34,6 +34,7 @@ eval/runs/
 logs/
 .cache/
 .tmp/
+tmp/pdfs/
 
 # Local editor/OS files
 .DS_Store

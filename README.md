@@ -11,6 +11,7 @@ The proposed demonstration imports a person's dictations, answers questions or p
 | Document | Purpose |
 | --- | --- |
 | [todo.md](todo.md) | Completed, ongoing and pending work; current blocker and the next action. |
+| [Visual memory guide](output/pdf/jarvis-memory-visual-guide.pdf) | 18 diagram pages with colors, shapes, labeled arrows, page/node IDs and clickable navigation. |
 | [Phase One source notes](docs/part-one/README.md) | Preserved user-supplied notes, earlier-chat provenance and mechanical word counts; final acceptances remain open. |
 | [PLAN.md](PLAN.md) | Build order, time allocation, milestone gates and scope cuts. |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Shared services, evidence representation, learning, retrieval and repair. |
@@ -21,13 +22,25 @@ The proposed demonstration imports a person's dictations, answers questions or p
 
 ## Starting a fresh implementation chat
 
-Use this implementation repository as the project folder. The current recommendation is a fresh chat in the existing desktop app, with application processes running in the verified Docker Linux environment. The repository files carry the working context; the new chat should read them rather than assume it already has the previous conversation. Keep the earlier chat for product discussion and record any new agreed decisions here.
+Use this implementation repository as the project folder. The user's updated workflow is a fresh discussion chat for understanding the PDF, resolving doubts and reviewing tradeoffs, followed by Codex CLI for approved implementation work. Application processes still run in the verified Docker Linux environment. The CLI's Windows-versus-WSL location, configuration, authentication and repository access must be checked before coding there; Docker readiness does not verify CLI setup. Keep one active checkout. The repository files carry the working context; each chat/session should read them rather than assume it has the previous conversation.
 
 At handoff, environment readiness is verified and the application is unimplemented. S03 bootstrap is the next proposed scope and still needs the user's approval for important code/schema changes. The test → update todo.md → commit → push workflow is already authorized. Final independent Phase One documents and live-model credentials/settings/budget remain open. The two chat-generated [Phase One drafts](docs/part-one/README.md#ai-assisted-drafts-supplied-in-chat) are preserved as AI-assisted reference only.
 
-Suggested starting message:
+Suggested discussion-chat starting message:
 
-> Continue Hey Jarvis implementation. Read AGENTS.md, todo.md, README.md, DECISIONS.md, PLAN.md, ARCHITECTURE.md, EVALUATION.md and RUN.md. Check the current Git state. Start by reviewing S03: backend, PostgreSQL, CLI and Docker Compose bootstrap. Explain important code/schema changes and obtain my approval before implementing them. After each meaningful milestone, test, update todo.md, commit and push. Preserve documented open items and distinguish proposed behavior from verified results.
+> Read the visual PDF and the repository's AGENTS.md, todo.md, README.md, DECISIONS.md, PLAN.md, ARCHITECTURE.md, EVALUATION.md and RUN.md. Help me understand the diagrams and compare alternatives using page/node IDs. Record agreed decisions in the Markdown files. Review the bounded S03 bootstrap scope with me and prepare a clear instruction for Codex CLI once I approve it. Preserve documented open items and distinguish proposed behavior from verified results.
+
+Suggested CLI handoff, after scope approval:
+
+> Read AGENTS.md and the planning documents linked by README.md. Check the actual Git state, approved scope and CLI/Docker access. Implement only the approved milestone through shared services. Run relevant checks, update todo.md, commit, push and verify the remote result. Ask before material changes outside the approved scope. Do not treat an AI-assisted Phase One draft, environment probe or mock model as completed submission or product evidence.
+
+## Using the visual guide
+
+The PDF is a diagram-only companion: short labels inside shapes, a consistent role-color legend, named decision branches, and the same Atlas/Mira examples across pages. Use identifiers such as **09.D** (candidate union) or **14.H** (reply-release guard) when asking questions. Its page-map cards and MAP links navigate within the PDF; page footers link to the current supporting Markdown file on GitHub.
+
+The diagram snapshot is dated 11 September 2026, based on planning checkpoint `557d1ce` plus the user's subsequent discussion-chat/CLI workflow choice. It depicts requirements and proposed behavior, with explicit status tags. It does not change the application architecture, close S01, approve S03 or provide measured product results. Markdown and tested code remain the precise, evolving implementation record.
+
+To regenerate the PDF with Python and ReportLab installed, run `python tools/build_visual_guide.py` from the repository root. It writes the PDF under `output/pdf/` and temporary layout metadata under `tmp/pdfs/`. Generation was checked with ReportLab 4.4.9 and the output rendered with Poppler for visual review. This script is documentation tooling, separate from the still-unimplemented application.
 
 The following supporting resources remain in the **parent planning workspace**, outside this Git repository. These paths are relative to the current implementation checkout. They are not automatically present in a fresh clone or isolated worktree; use the original planning workspace to access them. The implementation decisions and acceptance gates are already consolidated in this repository.
 

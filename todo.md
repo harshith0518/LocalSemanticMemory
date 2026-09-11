@@ -18,6 +18,7 @@ This is the single current-status checklist. [PLAN.md](PLAN.md) defines scope an
 - [x] Commit and push source-note preservation/tracking as [`559f3aa`](https://github.com/harshith0518/ProjectSemanticMemoryJarvis/commit/559f3aadd8fbb57bdf25760097671dc5da195759). Remote `main` was independently checked at that full commit after the push; staged whitespace passed.
 - [x] Commit and push verified Docker/WSL readiness as [`c260e6a`](https://github.com/harshith0518/ProjectSemanticMemoryJarvis/commit/c260e6af6f45a728da67694d0a87abf80a582bbc); verified clean checkout and exact local/remote commit agreement.
 - [x] Prepare [fresh-chat handoff instructions](README.md#starting-a-fresh-implementation-chat), identify supporting resources outside the repository, and preserve the two explicitly requested [AI-assisted chat drafts](docs/part-one/README.md#ai-assisted-drafts-supplied-in-chat). These drafts do not close S01 or approve S03.
+- [x] Create the [18-page visual memory guide](output/pdf/jarvis-memory-visual-guide.pdf) and its regeneration script. Review rendered diagrams for learning, retrieval, models, Private/Correct/Forget, race conditions, feedback, evaluation and delivery. Record the user's updated workflow: discussion chat with PDF/Markdown, then Codex CLI for approved coding. This is documentation, not application implementation.
 
 ## Ongoing
 
@@ -56,9 +57,12 @@ Preservation/tracker milestone checks on 11 September: UTF-8 decoding passed for
 
 Fresh-chat handoff checks: nine UTF-8 Markdown files, 30 local links/anchors, unique headings, preserved 83/378-word AI-assisted drafts, unchanged 813-token source notes and all eight referenced parent-workspace files passed. Staged whitespace is checked before committing the handoff. This verifies documentation continuity, not application behavior.
 
+Visual-guide checks: 18 rendered pages and bookmarks, 207 non-overlapping node boxes, 57 PDF links, builder syntax, exact-source excerpt and RRF arithmetic passed. All pages received visual review; corrected diagrams were rendered and reviewed again. No clipping or remaining material diagram issues were found. Markdown links/anchors and staged whitespace are checked before the documentation commit. No application or live-model tests are claimed.
+
 ## Open before dependent work
 
 - Two final independently authored Phase One submissions; source-note preservation is already complete.
 - Important implementation scopes remain subject to the user's review rule; do not treat approval of a step as approval for every later architecture change.
+- Before coding in Codex CLI: verify the chosen Windows/WSL CLI setup, authentication and access to the same repository and Docker engine. The user selected a CLI workflow, not a source migration or completed CLI setup.
 - Before live calls: provider credentials stored locally, account access, retention/no-training settings and an agreed spend/token ceiling. No secrets in chat or Git.
 - Azure, graph services, response caching, streaming, autonomous procedural learning and rich UI polish remain optional after required gates pass.
