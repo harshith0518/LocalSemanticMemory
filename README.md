@@ -19,6 +19,28 @@ The proposed demonstration imports a person's dictations, answers questions or p
 | [DECISIONS.md](DECISIONS.md) | Agreed product constraints versus proposed implementation choices. |
 | [AGENTS.md](AGENTS.md) | Contribution rules, approval boundaries and truthful progress reporting. |
 
+## Starting a fresh implementation chat
+
+Use this implementation repository as the project folder. The current recommendation is a fresh chat in the existing desktop app, with application processes running in the verified Docker Linux environment. The repository files carry the working context; the new chat should read them rather than assume it already has the previous conversation. Keep the earlier chat for product discussion and record any new agreed decisions here.
+
+At handoff, environment readiness is verified and the application is unimplemented. S03 bootstrap is the next proposed scope and still needs the user's approval for important code/schema changes. The test → update todo.md → commit → push workflow is already authorized. Final independent Phase One documents and live-model credentials/settings/budget remain open. The two chat-generated [Phase One drafts](docs/part-one/README.md#ai-assisted-drafts-supplied-in-chat) are preserved as AI-assisted reference only.
+
+Suggested starting message:
+
+> Continue Hey Jarvis implementation. Read AGENTS.md, todo.md, README.md, DECISIONS.md, PLAN.md, ARCHITECTURE.md, EVALUATION.md and RUN.md. Check the current Git state. Start by reviewing S03: backend, PostgreSQL, CLI and Docker Compose bootstrap. Explain important code/schema changes and obtain my approval before implementing them. After each meaningful milestone, test, update todo.md, commit and push. Preserve documented open items and distinguish proposed behavior from verified results.
+
+The following supporting resources remain in the **parent planning workspace**, outside this Git repository. These paths are relative to the current implementation checkout. They are not automatically present in a fresh clone or isolated worktree; use the original planning workspace to access them. The implementation decisions and acceptance gates are already consolidated in this repository.
+
+| Supporting material | Existing location |
+| --- | --- |
+| Project brief and extracted text | `../reference/Jarvis_Golden_Goose_Task_Final.pdf` and `.txt` |
+| Eight synthetic source observations | `../reference-examples/sample-dictations.jsonl` |
+| Separate evaluator questions/labels | `../reference-examples/sample-evaluation-cases.json` — never ingest as memory |
+| Deeper implementation research | `../research/implementation-strategy.md`, `implementation-evaluation.md`, `implementation-models.md` |
+| Educational memory blueprint | `../jarvis-memory-blueprint.html` |
+
+Bring the synthetic fixtures into the repository during the approved test-data/import slice and verify their contents. These existing eight observations do not satisfy the approximately 500-observation corpus requirement. The course and research artifacts are background references, not product implementation or measured results.
+
 ## Proposed starting stack
 
 | Need | Technology | Why this is enough initially |

@@ -16,10 +16,12 @@ This is the single current-status checklist. [PLAN.md](PLAN.md) defines scope an
 - [x] Create this tracker and record the user-requested test → update tracker → commit → push workflow.
 - [x] Preserve the latest user-supplied notes and inspect the relevant earlier discussion in **Explain Jarvis products** and **Document product features and plan**. Record [provenance and mechanical counts](docs/part-one/README.md): 813 whitespace-delimited tokens overall; 317 in the Phase One subsection including questions. These are source notes, not certified independent submissions.
 - [x] Commit and push source-note preservation/tracking as [`559f3aa`](https://github.com/harshith0518/ProjectSemanticMemoryJarvis/commit/559f3aadd8fbb57bdf25760097671dc5da195759). Remote `main` was independently checked at that full commit after the push; staged whitespace passed.
+- [x] Commit and push verified Docker/WSL readiness as [`c260e6a`](https://github.com/harshith0518/ProjectSemanticMemoryJarvis/commit/c260e6af6f45a728da67694d0a87abf80a582bbc); verified clean checkout and exact local/remote commit agreement.
+- [x] Prepare [fresh-chat handoff instructions](README.md#starting-a-fresh-implementation-chat), identify supporting resources outside the repository, and preserve the two explicitly requested [AI-assisted chat drafts](docs/part-one/README.md#ai-assisted-drafts-supplied-in-chat). These drafts do not close S01 or approve S03.
 
 ## Ongoing
 
-- [ ] **S01 — Final Phase One submissions.** Owner: author writes/finalizes; assistant preserves and checks mechanics. Supplied notes are now saved. The earlier five-question recap was assistant-authored; it is attributed accordingly without inferring the origin of every sentence in the latest notes.
+- [ ] **S01 — Final Phase One submissions.** Owner: author writes/finalizes; assistant preserves and checks mechanics. Supplied notes and the subsequently requested AI-assisted positioning/vision drafts are saved with their distinct provenance. The earlier five-question recap was assistant-authored; it is attributed accordingly without inferring the origin of every sentence in the supplied notes. Final independent submissions remain open.
   - Next action: author supplies the final independently written positioning statement (at most 100 words) and vision document (at most 600 words); preserve and mechanically check them. Readiness checks can continue while this remains open.
   - Acceptance: both final documents are present with source/author attribution and checked counts. Do not generate the author's argument, silently rewrite it or backdate completion.
   - Remaining gap: two final acceptances have not been identified. A 317-token subsection does not itself satisfy both deliverables or prove independent authorship.
@@ -51,6 +53,8 @@ The S01–S12 IDs match the delivery sequence discussed with the user. PLAN.md g
 6. Verify remote/local commit agreement and report the commit. If push fails, record that it remains local and resolve it without force-pushing over concurrent changes.
 
 Preservation/tracker milestone checks on 11 September: UTF-8 decoding passed for nine Markdown files; all 26 then-present local links/anchors resolved; source-note counts matched 813/317; completed/ongoing/pending headings and S01–S12 coverage passed; staged whitespace passed. Environment checks are recorded in RUN.md; recheck documentation links and staged whitespace for that milestone. No application or model tests apply yet. The latest tracker commit is available through `git log --oneline -- todo.md`; avoid inventing a self-referential commit hash inside its own content.
+
+Fresh-chat handoff checks: nine UTF-8 Markdown files, 30 local links/anchors, unique headings, preserved 83/378-word AI-assisted drafts, unchanged 813-token source notes and all eight referenced parent-workspace files passed. Staged whitespace is checked before committing the handoff. This verifies documentation continuity, not application behavior.
 
 ## Open before dependent work
 
