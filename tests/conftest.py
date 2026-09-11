@@ -54,6 +54,10 @@ def engine(settings, migrations):
     # Only the isolated, validated test target reaches this fixture.
     with engine.begin() as connection:
         for table in (
+            "claim_relations",
+            "processing_receipts",
+            "model_calls",
+            "model_budgets",
             "claim_evidence",
             "claim_revisions",
             "passages",

@@ -43,6 +43,7 @@ services:
     build: .
     init: true
     logging: {driver: none}
+    command: [python, tests/browser/server.py]
     environment:
       JARVIS_ENV: test
       JARVIS_DB_HOST: test-db

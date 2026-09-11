@@ -1,0 +1,85 @@
+{
+  "milestone": "S07",
+  "date": "2026-09-12",
+  "status": "implementation_verified_live_gate_open",
+  "base_commit": "3980b0ba7962fccdc17395698681868fd06c9a08",
+  "branch": "dev",
+  "database": "PostgreSQL 17 with pgvector; isolated jarvis-tests project",
+  "checks": [
+    {
+      "name": "backend_contracts",
+      "command": "docker compose -f compose.test.yaml run --build --rm tests",
+      "passed": 156,
+      "failed": 0,
+      "warnings": 0,
+      "seconds": 25.87
+    },
+    {
+      "name": "browser_contracts",
+      "command": "npm.cmd --prefix tests/browser test",
+      "passed": 10,
+      "failed": 0,
+      "seconds": 12.0762496
+    },
+    {
+      "name": "empty_database",
+      "command": "docker compose -f compose.test.yaml --profile browser down --volumes; docker compose -f compose.test.yaml run --build --rm tests",
+      "result": "Fresh test-volume initialization passed; empty/repeated migrations and no drift passed."
+    },
+    {
+      "name": "application_migration",
+      "command": "docker compose run --rm migrate alembic check",
+      "result": "No new upgrade operations detected; schema 0003_memory_processing ready."
+    },
+    {
+      "name": "application_preservation",
+      "result": "All eight original source/job inspections and every original S03 probe field preserved after migration and API/database/worker replacement; added job fields have safe defaults."
+    },
+    {
+      "name": "isolated_restart",
+      "result": "All rows in ten tables match before/after replacing database and browser/worker containers; 12 claim revisions, 8 processing receipts and 8 deterministic call records preserved."
+    },
+    {
+      "name": "lint_format",
+      "commands": [
+        "docker run --rm jarvis:local ruff check --no-cache src migrations tests",
+        "docker run --rm jarvis:local ruff format --check --no-cache src migrations tests"
+      ],
+      "result": "Passed; 31 Python files formatted. Frontend formatted with Prettier 3.6.2."
+    },
+    {
+      "name": "visual_review",
+      "result": "Desktop memory/evidence and mobile layouts inspected. Uncertainty/conditions moved into the memory list; raw identifiers remain expandable."
+    }
+  ],
+  "contracts_verified": [
+    "Atomic add/support/supersede/correct/conflict operations and replay receipts.",
+    "Exact passages, ownership, source and active-memory snapshots; stale work rejected.",
+    "One active lease per owner; competing connections and both policy-lock orderings tested with barriers.",
+    "Known and unknown call usage, quota races, retry caps and schema repair accounting.",
+    "Exact bundled fixtures pass the real NVIDIA adapter and source allowlist using a simulated HTTP transport; no external request.",
+    "Private denies service/worker/accounting/history/report access and HTTP body consumption; browser clears memory and rejects late responses.",
+    "Original variants share one observation; conditional meaning, disputed quantities and unknown times survive deterministic proposals."
+  ],
+  "live_evaluation": {
+    "requests_sent": 0,
+    "paid_spend": 0,
+    "credential_authentication": "not_run",
+    "semantic_accuracy": "not_measured",
+    "pending_decision": "Synthetic-only NVIDIA trial exception: at most 32 requests and 500000 total tokens, including retries; $0 paid."
+  },
+  "resolved_findings": [
+    "Initial test collection failed on a bracket typo in the deterministic fixture helper; corrected.",
+    "Two historical assertions expected old job/service fields; updated to verify preserved old fields and safe new defaults.",
+    "Review added visible uncertainty/conditions, typed duplicate rejection, duplicate-JSON rejection and evaluator collection isolation.",
+    "Offline uv cache was absent; normal resolution preserved all dependency versions while moving HTTPX into runtime."
+  ],
+  "limitations": [
+    "S07 remains incomplete until approved repeated live extraction is semantically reviewed.",
+    "No response-model or stronger-extractor comparison; S06 answer baseline remains incomplete.",
+    "Current live gate allows only the eight bundled synthetic source records, independently of declared collection names.",
+    "Processing is bounded to imported collections, 64 active context claims, 16 operations, 32 passages per claim and 60000 serialized input bytes; overflow fails.",
+    "No embeddings/search indexes, complete Correct/Forget/duplicate exclusions, general entity registry or clarification-resolution UI.",
+    "Deterministic proposals and mocked provider responses are contract evidence only; no personal inputs, credentials or raw provider traces are in this report."
+  ]
+}

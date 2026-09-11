@@ -630,3 +630,27 @@ body.private .mode-note {
     padding: 40px 22px;
   }
 }
+
+.memories-card {
+  grid-column: 1 / -1;
+}
+.memory-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.memory-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+}
+#memory-history article {
+  border-top: 1px solid var(--line, #ddd);
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+#memory-history .help {
+  overflow-wrap: anywhere;
+}

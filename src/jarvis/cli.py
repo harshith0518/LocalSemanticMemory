@@ -1,6 +1,8 @@
 import json
+import signal
 import sys
 from collections.abc import Callable
+from threading import Event
 
 import typer
 from sqlalchemy.exc import SQLAlchemyError
@@ -8,8 +10,10 @@ from sqlalchemy.exc import SQLAlchemyError
 from jarvis.config import Settings
 from jarvis.db import make_engine
 from jarvis.errors import ApplicationError, ErrorCode
+from jarvis.evaluation import extraction_pilot
 from jarvis.imports import MAX_IMPORT_BYTES
 from jarvis.services import Service
+from jarvis.worker import process_one, run_worker
 
 app = typer.Typer(no_args_is_help=True, pretty_exceptions_enable=False)
 probe = typer.Typer(help="Write/read one fixed synthetic bootstrap observation; no user imports.")
@@ -32,7 +36,7 @@ def run(operation: Callable[[Service], dict | None]) -> None:
         if result is None:
             result = {"status": "error", "reason": "probe_missing"}
         typer.echo(json.dumps(result, default=str, sort_keys=True))
-        if result.get("status") in {"not_ready", "error"}:
+        if result.get("status") in {"not_ready", "error", "failed"}:
             raise typer.Exit(1)
     except ApplicationError as error:
         typer.echo(json.dumps(error.response()))
@@ -59,6 +63,64 @@ def health() -> None:
 def ready() -> None:
     """Check database connectivity, schema revision and pgvector."""
     run(lambda service: service.ready())
+
+
+@app.command("process")
+def process_sources(
+    namespace: str = typer.Option(...),
+    expected_policy_revision: int = typer.Option(...),
+    mode: str = typer.Option(...),
+    retry_failed: bool = False,
+):
+    """Queue a collection through the same service used by the browser."""
+    run(
+        lambda service: service.request_processing(
+            service.identity.context(mode),
+            {
+                "namespace": namespace,
+                "expected_policy_revision": expected_policy_revision,
+                "retry_failed": retry_failed,
+            },
+        )
+    )
+
+
+@app.command("memories")
+def memories(
+    namespace: str = typer.Option(...), mode: str = typer.Option(...), after: str | None = None
+):
+    """Inspect memory through shared services; the browser is the primary user surface."""
+    run(
+        lambda service: service.list_memories(
+            service.identity.context(mode),
+            {
+                "namespace": namespace,
+                "after": after,
+            },
+        )
+    )
+
+
+@app.command("worker")
+def worker(once: bool = False):
+    """Run the DB-backed worker; never prints inputs, model responses or exception details."""
+
+    def work(service):
+        if once:
+            return process_one(service, service.identity.context("normal")) or {"status": "idle"}
+        stop = Event()
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            signal.signal(sig, lambda *_: stop.set())
+        run_worker(service, stop)
+        return {"status": "stopped"}
+
+    run(work)
+
+
+@app.command("evaluate-extraction")
+def evaluate_extraction(repeats: int = 3):
+    """Synthetic-only live pilot, subject to the persisted S07 allowance; no automatic grade."""
+    run(lambda service: extraction_pilot(service, repeats=repeats))
 
 
 @probe.command("write")

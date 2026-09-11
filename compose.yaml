@@ -46,7 +46,9 @@ services:
   api:
     <<: *app
     logging: {driver: none}
-    environment: *runtime-environment
+    environment:
+      <<: *runtime-environment
+      JARVIS_S07_SYNTHETIC_TRIAL_APPROVED: ${JARVIS_S07_SYNTHETIC_TRIAL_APPROVED:-false}
     ports: ['127.0.0.1:${JARVIS_API_PORT:-8000}:8000']
     depends_on:
       migrate: {condition: service_completed_successfully}
@@ -62,7 +64,20 @@ services:
     profiles: [tools]
     entrypoint: [jarvis]
     command: [ready]
-    environment: *runtime-environment
+    environment:
+      <<: *runtime-environment
+      JARVIS_S07_SYNTHETIC_TRIAL_APPROVED: ${JARVIS_S07_SYNTHETIC_TRIAL_APPROVED:-false}
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+
+  worker:
+    <<: *app
+    logging: {driver: none}
+    command: [jarvis, worker]
+    environment:
+      <<: *runtime-environment
+      JARVIS_S07_SYNTHETIC_TRIAL_APPROVED: ${JARVIS_S07_SYNTHETIC_TRIAL_APPROVED:-false}
+      NEMOTRON_30B_API_KEY: ${NEMOTRON_30B_API_KEY:-}
     depends_on:
       migrate: {condition: service_completed_successfully}
 

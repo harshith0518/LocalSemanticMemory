@@ -11,8 +11,17 @@ let opened = null;
 let nextAfter = null;
 let policyRevision = null;
 let sourceCount = 0;
+let memoryAfter = null;
 
 const messages = {
+  provider_disabled:
+    "Memory processing is disabled until provider settings and the evaluation allowance are approved.",
+  trial_input_denied:
+    "This trial permits only the bundled synthetic sample. Your sources remain saved.",
+  budget_exhausted:
+    "The evaluation allowance is exhausted. Your saved sources and memories remain available.",
+  context_limit:
+    "This collection exceeds the current processing context limit. No partial interpretation was saved.",
   import_conflict:
     "Import stopped: a record differs from the saved original. No records in this batch were changed.",
   stale_revision:
@@ -53,6 +62,12 @@ function clearEvidence() {
 }
 
 function clearSources() {
+  memoryAfter = null;
+  ui["memory-list"].replaceChildren();
+  ui["memory-history"].replaceChildren();
+  ui["processing-state"].textContent =
+    "Open a collection to inspect processing.";
+  ui["more-memories"].hidden = true;
   opened = null;
   nextAfter = null;
   policyRevision = null;
@@ -76,7 +91,9 @@ function setBusy(busy) {
   for (const node of document.querySelectorAll("[data-normal]"))
     node.disabled = busy || mode === "private";
   ui.namespace.disabled = busy || mode === "private";
-  for (const node of ui["source-list"].querySelectorAll("button"))
+  for (const node of document.querySelectorAll(
+    "#source-list button, #memory-list button",
+  ))
     node.disabled = busy || mode === "private";
   ui["normal-panel"].setAttribute("aria-busy", String(busy));
 }
@@ -246,6 +263,7 @@ ui["collection-form"].addEventListener("submit", (event) => {
   action(async (ticket, signal) => {
     clearSources();
     renderPage(await loadPage(namespace, ticket, signal));
+    await refreshMemories(ticket, signal);
     feedback("Collection opened.");
   });
 });
@@ -307,6 +325,213 @@ ui["load-more"].addEventListener("click", () => {
 
 for (const input of document.querySelectorAll('input[name="mode"]'))
   input.addEventListener("change", () => switchMode(input.value));
+
+function paragraph(text, className = "") {
+  const node = document.createElement("p");
+  node.textContent = text;
+  node.className = className;
+  return node;
+}
+
+function memoryLabel(claim) {
+  const c = claim.content;
+  const value = c.value;
+  return `${c.subject.label} · ${c.negated ? "Not: " : ""}${c.predicate.replaceAll("_", " ")}: ${value.value}${value.unit ? ` ${value.unit}` : ""}`;
+}
+
+function renderMemoryPage(page, append = false) {
+  if (!append) ui["memory-list"].replaceChildren();
+  for (const claim of page.memories) {
+    const item = document.createElement("li");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "source-button";
+    const title = document.createElement("strong");
+    title.textContent = memoryLabel(claim);
+    const qualifier = document.createElement("span");
+    const c = claim.content;
+    qualifier.textContent = `${c.evidence_status} · ${c.scope.key ?? c.scope.kind} · ${c.modality}`;
+    button.append(title, qualifier);
+    if (c.condition)
+      button.append(paragraph(`Only if: ${c.condition}`, "help"));
+    button.addEventListener("click", () =>
+      action(async (ticket, signal) => {
+        const history = await request(
+          `/memories/${encodeURIComponent(claim.claim_id)}`,
+          {},
+          ticket,
+          signal,
+        );
+        const content = document.createDocumentFragment();
+        for (const revision of history.revisions) {
+          const section = document.createElement("article");
+          const c = revision.content;
+          section.append(
+            paragraph(
+              `Revision ${revision.revision} · ${revision.lifecycle} · ${c.evidence_status}`,
+              "help",
+            ),
+          );
+          section.append(paragraph(memoryLabel(revision)));
+          section.append(
+            paragraph(
+              `Scope: ${c.scope.key ?? c.scope.kind} · Attributed to: ${c.attribution.label} · ${c.modality}${c.negated ? " · Negated" : ""}`,
+              "help",
+            ),
+          );
+          if (c.condition)
+            section.append(paragraph(`Condition: ${c.condition}`));
+          section.append(
+            paragraph(
+              `Event: ${c.time.event?.value ?? "Unknown"} · Applies from: ${c.time.valid_from?.value ?? "Unknown"} · Until: ${c.time.valid_to?.value ?? "Unknown"}`,
+              "help",
+            ),
+          );
+          for (const passage of revision.passages) {
+            section.append(
+              paragraph(
+                `Supporting passage · ${passage.variant} · source revision ${passage.source_revision}`,
+                "help",
+              ),
+            );
+            section.append(paragraph(passage.exact_text, "passage"));
+            const details = document.createElement("details");
+            const summary = document.createElement("summary");
+            summary.textContent = "Evidence details";
+            details.append(
+              summary,
+              paragraph(
+                `Source ${passage.source_id} · characters [${passage.start}, ${passage.end})`,
+                "help",
+              ),
+            );
+            const original = document.createElement("button");
+            original.type = "button";
+            original.className = "secondary";
+            original.textContent = "View original source";
+            original.setAttribute("data-normal", "");
+            original.addEventListener("click", () =>
+              inspect(passage.source_id, null),
+            );
+            details.append(original);
+            section.append(details);
+          }
+          content.append(section);
+        }
+        if (history.relations.length) {
+          const details = document.createElement("details");
+          const summary = document.createElement("summary");
+          summary.textContent = "Revision links";
+          details.append(summary);
+          for (const relation of history.relations)
+            details.append(
+              paragraph(
+                `${relation.kind}: ${relation.from_revision_id} → ${relation.to_revision_id}`,
+                "help",
+              ),
+            );
+          content.append(details);
+        }
+        ui["memory-history"].replaceChildren(content);
+        feedback("Memory history and exact supporting passages loaded.");
+      }),
+    );
+    item.append(button);
+    ui["memory-list"].append(item);
+  }
+  memoryAfter = page.next_after;
+  ui["more-memories"].hidden = !memoryAfter;
+}
+
+async function refreshMemories(ticket, signal) {
+  if (!opened) return;
+  const query = new URLSearchParams({ namespace: opened });
+  const status = await request(`/processing?${query}`, {}, ticket, signal);
+  const counts = Object.entries(status.counts)
+    .map(([name, count]) => `${count} ${name}`)
+    .join(" · ");
+  const decisions = Object.entries(status.decisions)
+    .filter(([, n]) => n > 0)
+    .map(([name, count]) => `${count} ${name.replaceAll("_", " ")}`)
+    .join(" · ");
+  const processingErrors = {
+    invalid_input: "A model proposal failed validation",
+    invalid_passage: "A proposal did not match its source passages",
+    invalid_transition: "A proposed memory change was rejected",
+    stale_revision:
+      "Sources, memories or permissions changed during processing",
+    provider_failed: "The model provider could not complete the request",
+    provider_response_invalid:
+      "The model provider returned an unusable response",
+    budget_exhausted: "The evaluation allowance is exhausted",
+    context_limit: "The processing context limit was reached",
+    operation_failed: "Processing could not complete",
+    retry_limit_reached: "The retry limit was reached",
+  };
+  const failures = [
+    ...new Set(
+      status.failures.map(
+        (f) =>
+          processingErrors[f.reason] || "A processing job could not complete",
+      ),
+    ),
+  ].join("; ");
+  ui["processing-state"].textContent =
+    `${counts || "No sources"}.${decisions ? ` Outcomes: ${decisions}.` : ""}${failures ? ` Issues: ${failures}.` : ""} ${status.provider_enabled ? "Processing is enabled; select Refresh to check progress." : "Live processing is disabled."}`;
+  renderMemoryPage(await request(`/memories?${query}`, {}, ticket, signal));
+}
+
+for (const [id, retry] of [
+  ["process-button", false],
+  ["retry-processing", true],
+])
+  ui[id].addEventListener("click", () => {
+    if (!opened) {
+      feedback("Open a collection first.", true);
+      return;
+    }
+    action(async (ticket, signal) => {
+      const result = await request(
+        "/processing",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            namespace: opened,
+            expected_policy_revision: policyRevision,
+            retry_failed: retry,
+          }),
+        },
+        ticket,
+        signal,
+      );
+      feedback(
+        `Queued ${result.requested} sources. Processing continues in the background; refresh to inspect the result.`,
+      );
+      await refreshMemories(ticket, signal);
+    });
+  });
+
+ui["refresh-memories"].addEventListener("click", () =>
+  action(async (ticket, signal) => {
+    await refreshMemories(ticket, signal);
+    feedback(opened ? "Memories refreshed." : "Open a collection first.");
+  }),
+);
+
+ui["more-memories"].addEventListener("click", () => {
+  if (!opened || !memoryAfter) return;
+  action(async (ticket, signal) => {
+    const query = new URLSearchParams({
+      namespace: opened,
+      after: memoryAfter,
+    });
+    renderMemoryPage(
+      await request(`/memories?${query}`, {}, ticket, signal),
+      true,
+    );
+  });
+});
 
 // A restored page must not resurrect the prior DOM or browser-restored file/form state.
 window.addEventListener("pagehide", () => {

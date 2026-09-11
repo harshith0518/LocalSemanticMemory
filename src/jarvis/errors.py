@@ -12,6 +12,14 @@ class ErrorCode(StrEnum):
     IMPORT_CONFLICT = "import_conflict"
     DATABASE_UNAVAILABLE = "database_unavailable"
     OPERATION_FAILED = "operation_failed"
+    PROVIDER_DISABLED = "provider_disabled"
+    PROVIDER_FAILED = "provider_failed"
+    PROVIDER_RESPONSE = "provider_response_invalid"
+    TRIAL_INPUT_DENIED = "trial_input_denied"
+    BUDGET_EXHAUSTED = "budget_exhausted"
+    CONTEXT_LIMIT = "context_limit"
+    INVALID_TRANSITION = "invalid_transition"
+    RETRY_LIMIT = "retry_limit_reached"
 
 
 class ApplicationError(Exception):

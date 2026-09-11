@@ -4,7 +4,7 @@ Updated: 12 September 2026. Target: **12 September afternoon IST**.
 
 This is the single current-status checklist. [PLAN.md](PLAN.md) defines scope and milestone gates; [DECISIONS.md](DECISIONS.md) records decisions; [EVALUATION.md](EVALUATION.md) defines evidence. Check an item only after its acceptance condition is demonstrated.
 
-**Current work:** S03–S05 and the early S10 browser source workspace are implemented; the reviewed UI checkpoint is `5da7c77a0eb7cb33e81cda406174916689839e00`. The user requested S07 scope and research before coding. The [research review](DECISIONS.md#input-to-memory-research-review) supports preserving sources plus selective claims in PostgreSQL; the [bounded S07 proposal](PLAN.md#s07-bounded-proposal-after-research-review) is pending approval. S06's [source-history baseline](PLAN.md#s06-bounded-bootstrap-proposal) remains incomplete and necessary for downstream comparison. Live inference still needs the explicit provider/budget decision. Phase One finals remain separately held and unverified here. No live model evaluation has run.
+**Current work:** The user approved modified S07 after the research review. Its source-linked extraction/reconciliation service, worker, additive migration, provider/accounting adapter, evaluator and browser memory controls are implemented and deterministically tested. [Actual checks and limits](RUN.md#s07-memory-processing), [evidence report](eval/reports/s07-contracts.json). **S07 is not fully complete:** the synthetic-only NVIDIA trial decision and repeated live semantic review remain open; no live model call has run. Next: resolve that provider decision, run/review the bounded pilot, then complete S06's source-history answer baseline before claiming S07/S08 answer-quality improvement. Phase One finals remain separately held and unverified here.
 
 ## Completed
 
@@ -36,7 +36,11 @@ This is the single current-status checklist. [PLAN.md](PLAN.md) defines scope an
 
 - [x] **Input-to-memory research review (12 September).** Reviewed current/parent planning, relevant visual-guide pages and primary memory/database sources; clarified source preservation, selective learning, storage and controlled evaluation in the existing documents. This is design evidence, not S07 implementation or measured model quality. Documentation checks are recorded in RUN.md; publish this checkpoint to `dev` only.
 
+- [x] **S07 implementation and deterministic acceptance.** Approved on 12 September. Shared service/worker/UI processing, typed evidence/reconciliation, lease/receipt fencing and bounded provider accounting are implemented. PostgreSQL/browser checks, migration/persistence and visual review are recorded in [RUN.md](RUN.md#s07-memory-processing). This closes the implementation/contract work, not the live-quality milestone gate. Commit/push to `dev` and verify the remote; merging remains user-controlled.
+
 ## Ongoing
+
+- [ ] **S07 — Live extraction gate.** The trial exception has been requested but not approved: exact bundled synthetic inputs only, $0 paid, at most 32 requests and 500,000 total tokens including retries. The application remains disabled for live inference; API/worker startup and data inspection work. `jarvis evaluate-extraction --repeats 3` is implemented but unrun and emits an explicitly ungraded report. Next: receive the provider decision, run the bounded pilot, inspect every repeat for semantic support and retain failures. Stronger-model comparison and S06/S08 answer comparisons are not claimed.
 
 - [ ] **S01 — Repository preservation/mechanical checks of final Phase One.** Author reports the independently authored final documents complete and held separately. Earlier source notes and AI-assisted drafts retain their distinct provenance; the assistant has not inspected the finals.
   - Next action: preserve the final files when supplied, with actual dates/attribution, and check the positioning/vision limits (100/600 words). Do not generate or silently rewrite their content.
@@ -49,7 +53,7 @@ This is the single current-status checklist. [PLAN.md](PLAN.md) defines scope an
 | Step | Work | Evidence required before completion |
 | --- | --- | --- |
 | S06 | Produce a real source-history answer through Kimi K3; bounded proposal prepared. | A cited answer/draft from actual stored sources; honest unknown/failure behavior; actual provider and usage recorded where permitted. |
-| S07 | [Pending bounded approval](PLAN.md#s07-bounded-proposal-after-research-review): extract selective memory and reconcile changes, inspectable through the browser. | Distinguish zero-memory decisions, new fact, genuine change, extraction error, tentative claim and unresolved conflict; verify worker replay/atomicity/Private; separately approved live proposer evaluation. |
+| S07 | [Implementation verified; live gate open](PLAN.md#s07-bounded-proposal-after-research-review): selective memory and reconciliation are inspectable through the browser once processing is enabled. | Distinguish zero-memory decisions, new fact, genuine change, extraction error, tentative claim and unresolved conflict; verify worker replay/atomicity/Private; separately approved live proposer evaluation. |
 | S08 | Improve retrieval only when evidence supports it. | Controlled lexical/dense/hybrid and history/claim comparisons, with response model and evidence budgets held fixed. |
 | S09 | Complete controls and feedback repair. | Private/Correct/Forget success and failure paths, actual DB concurrency tests, no resurrection on retries/reimport; repair the demonstrated failing layer. |
 | S10 | Complete the browser interface; source-workspace foundation brought forward after S05. | Connect S06 Ask and S09 full controls to the existing UI. No CLI required for ordinary-user flows. |

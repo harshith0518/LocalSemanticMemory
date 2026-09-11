@@ -2,6 +2,7 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     DateTime,
     ForeignKey,
@@ -62,6 +63,7 @@ class Job(Base):
             name="job_source_owner_revision",
         ),
         UniqueConstraint("owner_id", "idempotency_key", name="job_owner_idempotency"),
+        UniqueConstraint("id", "owner_id", name="job_owner"),
         CheckConstraint("attempts >= 0", name="job_attempts_nonnegative"),
         CheckConstraint("expected_policy_revision >= 0", name="job_policy_revision_nonnegative"),
         CheckConstraint(
@@ -78,6 +80,11 @@ class Job(Base):
     attempts: Mapped[int] = mapped_column(Integer, server_default="0")
     expected_source_revision: Mapped[int] = mapped_column(Integer)
     expected_policy_revision: Mapped[int] = mapped_column(Integer)
+    requested: Mapped[bool] = mapped_column(Boolean, server_default="false")
+    lease_token: Mapped[UUID | None]
+    lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    error_code: Mapped[str | None] = mapped_column(String(40))
 
 
 class Passage(Base):
@@ -151,3 +158,93 @@ class ClaimEvidence(Base):
     passage_id: Mapped[UUID] = mapped_column(primary_key=True)
     owner_id: Mapped[UUID]
     position: Mapped[int] = mapped_column(Integer)
+
+
+class ProcessingReceipt(Base):
+    __tablename__ = "processing_receipts"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["job_id", "owner_id"],
+            ["jarvis.jobs.id", "jarvis.jobs.owner_id"],
+            name="receipt_job_owner",
+        ),
+    )
+    job_id: Mapped[UUID] = mapped_column(primary_key=True)
+    owner_id: Mapped[UUID]
+    lease_token: Mapped[UUID]
+    result: Mapped[dict] = mapped_column(JSONB)
+    recorded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class ClaimRelation(Base):
+    __tablename__ = "claim_relations"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["from_revision_id", "owner_id"],
+            ["jarvis.claim_revisions.id", "jarvis.claim_revisions.owner_id"],
+            name="relation_from_owner",
+        ),
+        ForeignKeyConstraint(
+            ["to_revision_id", "owner_id"],
+            ["jarvis.claim_revisions.id", "jarvis.claim_revisions.owner_id"],
+            name="relation_to_owner",
+        ),
+        ForeignKeyConstraint(
+            ["job_id", "owner_id"],
+            ["jarvis.jobs.id", "jarvis.jobs.owner_id"],
+            name="relation_job_owner",
+        ),
+        CheckConstraint(
+            "kind IN ('supports', 'supersedes', 'corrects', 'disputes')", name="relation_kind"
+        ),
+        CheckConstraint("from_revision_id <> to_revision_id", name="relation_distinct"),
+    )
+    from_revision_id: Mapped[UUID] = mapped_column(primary_key=True)
+    to_revision_id: Mapped[UUID] = mapped_column(primary_key=True)
+    kind: Mapped[str] = mapped_column(String(16), primary_key=True)
+    owner_id: Mapped[UUID]
+    job_id: Mapped[UUID]
+
+
+class ModelBudget(Base):
+    __tablename__ = "model_budgets"
+    __table_args__ = (CheckConstraint("requests >= 0 AND tokens >= 0", name="budget_nonnegative"),)
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    requests: Mapped[int] = mapped_column(Integer, server_default="0")
+    tokens: Mapped[int] = mapped_column(Integer, server_default="0")
+
+
+class ModelCall(Base):
+    __tablename__ = "model_calls"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["job_id", "owner_id"],
+            ["jarvis.jobs.id", "jarvis.jobs.owner_id"],
+            name="call_job_owner",
+        ),
+        CheckConstraint("reserved_tokens > 0", name="call_reservation_positive"),
+        CheckConstraint(
+            "input_tokens >= 0 AND output_tokens >= 0 AND elapsed_ms >= 0",
+            name="call_usage_nonnegative",
+        ),
+        CheckConstraint("status IN ('reserved', 'succeeded', 'failed')", name="call_status"),
+    )
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    budget_key: Mapped[str] = mapped_column(ForeignKey("jarvis.model_budgets.key"))
+    owner_id: Mapped[UUID] = mapped_column(ForeignKey("jarvis.policies.owner_id"))
+    job_id: Mapped[UUID | None]
+    lease_token: Mapped[UUID | None]
+    configured_model: Mapped[str] = mapped_column(String(128))
+    returned_model: Mapped[str | None] = mapped_column(String(128))
+    prompt_version: Mapped[str] = mapped_column(String(32))
+    reserved_tokens: Mapped[int] = mapped_column(Integer)
+    input_tokens: Mapped[int | None] = mapped_column(Integer)
+    output_tokens: Mapped[int | None] = mapped_column(Integer)
+    elapsed_ms: Mapped[int | None] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(16), server_default="reserved")
+    error_code: Mapped[str | None] = mapped_column(String(40))
+    recorded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )

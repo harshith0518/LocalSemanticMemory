@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="referrer" content="no-referrer" />
-    <title>Hey Jarvis · Sources</title>
+    <title>Hey Jarvis · Sources and memories</title>
     <link rel="icon" href="/assets/icon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/assets/app.css" />
     <script src="/assets/app.js" defer></script>
@@ -211,6 +211,59 @@
             </details>
           </article>
         </section>
+        <section class="card memories-card" aria-labelledby="memories-title">
+          <div class="section-heading">
+            <span class="step">04</span>
+            <h2 id="memories-title">Memories</h2>
+          </div>
+          <p class="help">
+            Selective understanding with original evidence and revision history.
+          </p>
+          <div class="memory-actions">
+            <button
+              id="process-button"
+              type="button"
+              class="primary"
+              data-normal
+            >
+              Process pending
+            </button>
+            <button
+              id="refresh-memories"
+              type="button"
+              class="secondary"
+              data-normal
+            >
+              Refresh memories
+            </button>
+            <button
+              id="retry-processing"
+              type="button"
+              class="secondary"
+              data-normal
+            >
+              Retry failed
+            </button>
+          </div>
+          <p id="processing-state" class="help">
+            Open a collection to inspect processing.
+          </p>
+          <ul
+            id="memory-list"
+            class="memory-list"
+            aria-label="Saved memories"
+          ></ul>
+          <button
+            id="more-memories"
+            type="button"
+            class="secondary"
+            data-normal
+            hidden
+          >
+            Load more memories
+          </button>
+          <div id="memory-history" aria-live="polite"></div>
+        </section>
       </div>
       <p
         id="feedback"
@@ -236,7 +289,7 @@
     </main>
     <footer>
       <span>One observation. Original evidence preserved.</span
-      ><span>Local workspace · No model calls in this version</span>
+      ><span>Local workspace · Processing follows your provider settings</span>
     </footer>
   </body>
 </html>

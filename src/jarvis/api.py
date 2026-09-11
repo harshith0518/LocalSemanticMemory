@@ -71,6 +71,9 @@ def create_app(service: Service | None = None) -> FastAPI:
             ErrorCode.IMPORT_CONFLICT: 409,
             ErrorCode.DATABASE_UNAVAILABLE: 503,
             ErrorCode.OPERATION_FAILED: 500,
+            ErrorCode.PROVIDER_DISABLED: 503,
+            ErrorCode.BUDGET_EXHAUSTED: 429,
+            ErrorCode.TRIAL_INPUT_DENIED: 403,
         }.get(error.code, 422)
         return JSONResponse(error.response(), status_code=status)
 
@@ -146,5 +149,33 @@ def create_app(service: Service | None = None) -> FastAPI:
         if result["status"] != "ready":
             response.status_code = 503
         return result
+
+    @app.post("/processing")
+    async def process_sources(request: Request) -> dict:
+        service = app.state.service
+        context = service.identity.context(request.headers.get("X-Jarvis-Mode", ""))
+        context.require_saved_access()
+        payload = await current_input(request)
+        return await run_in_threadpool(service.request_processing, context, payload)
+
+    @app.get("/processing")
+    def processing_status(request: Request, namespace: str) -> dict:
+        service = app.state.service
+        context = service.identity.context(request.headers.get("X-Jarvis-Mode", ""))
+        return service.processing_status(context, {"namespace": namespace})
+
+    @app.get("/memories")
+    def memories(request: Request, namespace: str, after: str | None = None, limit: int = 50):
+        service = app.state.service
+        context = service.identity.context(request.headers.get("X-Jarvis-Mode", ""))
+        return service.list_memories(
+            context, {"namespace": namespace, "after": after, "limit": limit}
+        )
+
+    @app.get("/memories/{claim_id}")
+    def memory_history(request: Request, claim_id: str):
+        service = app.state.service
+        context = service.identity.context(request.headers.get("X-Jarvis-Mode", ""))
+        return service.memory_history(context, claim_id)
 
     return app

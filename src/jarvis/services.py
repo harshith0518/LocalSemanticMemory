@@ -39,6 +39,8 @@ from jarvis.imports import (
 )
 from jarvis.models import ClaimEvidence, ClaimRecord, Job, Passage, Policy, Source
 from jarvis.policy import LocalIdentity, Mode, RequestContext
+from jarvis.processing import ProcessingOperations
+from jarvis.providers import NvidiaExtractor
 
 PROBE_KEY = "bootstrap:synthetic:v1"
 PROBE_RAW = "Synthetic bootstrap observation: the blue box contains seven marbles."
@@ -51,10 +53,11 @@ def content_hash(raw: str, formatted: str | None) -> str:
     return hashlib.sha256(pair.encode("utf-8")).hexdigest()
 
 
-class Service:
-    def __init__(self, engine: Engine, identity: LocalIdentity | None = None):
+class Service(ProcessingOperations):
+    def __init__(self, engine: Engine, identity: LocalIdentity | None = None, *, extractor=None):
         self.engine = engine
         self.identity = identity or LocalIdentity()
+        self.extractor = extractor if extractor is not None else NvidiaExtractor.from_env()
         self.expected_revision = ScriptDirectory.from_config(
             Config("alembic.ini")
         ).get_current_head()
@@ -450,46 +453,51 @@ class Service:
             self._policy(session, context, command.expected_policy_revision, lock=True)
             self._support(session, context, command)
             revision = self._claim_revision(session, context, command)
-            record = ClaimRecord(
-                owner_id=context.owner_id,
-                claim_id=command.claim_id or uuid4(),
-                revision=revision,
-                policy_revision=command.expected_policy_revision,
-                content=command.content.model_dump(mode="json"),
+            return self._insert_claim(session, context, command, revision)
+
+    def _insert_claim(
+        self, session: Session, context: RequestContext, command: ClaimWrite, revision: int
+    ) -> ClaimRevision:
+        record = ClaimRecord(
+            owner_id=context.owner_id,
+            claim_id=command.claim_id or uuid4(),
+            revision=revision,
+            policy_revision=command.expected_policy_revision,
+            content=command.content.model_dump(mode="json"),
+        )
+        session.add(record)
+        session.flush()
+        for position, reference in enumerate(command.passages):
+            passage_id = session.scalar(
+                insert(Passage)
+                .values(id=uuid4(), owner_id=context.owner_id, **reference.model_dump())
+                .on_conflict_do_nothing(constraint="passage_location")
+                .returning(Passage.id)
             )
-            session.add(record)
-            session.flush()
-            for position, reference in enumerate(command.passages):
+            if passage_id is None:
                 passage_id = session.scalar(
-                    insert(Passage)
-                    .values(id=uuid4(), owner_id=context.owner_id, **reference.model_dump())
-                    .on_conflict_do_nothing(constraint="passage_location")
-                    .returning(Passage.id)
+                    select(Passage.id).where(
+                        Passage.owner_id == context.owner_id,
+                        Passage.source_id == reference.source_id,
+                        Passage.source_revision == reference.source_revision,
+                        Passage.variant == reference.variant,
+                        Passage.start == reference.start,
+                        Passage.end == reference.end,
+                        Passage.exact_text == reference.exact_text,
+                    )
                 )
                 if passage_id is None:
-                    passage_id = session.scalar(
-                        select(Passage.id).where(
-                            Passage.owner_id == context.owner_id,
-                            Passage.source_id == reference.source_id,
-                            Passage.source_revision == reference.source_revision,
-                            Passage.variant == reference.variant,
-                            Passage.start == reference.start,
-                            Passage.end == reference.end,
-                            Passage.exact_text == reference.exact_text,
-                        )
-                    )
-                    if passage_id is None:
-                        raise ApplicationError(ErrorCode.INVALID_PASSAGE)
-                session.add(
-                    ClaimEvidence(
-                        claim_revision_id=record.id,
-                        passage_id=passage_id,
-                        owner_id=context.owner_id,
-                        position=position,
-                    )
+                    raise ApplicationError(ErrorCode.INVALID_PASSAGE)
+            session.add(
+                ClaimEvidence(
+                    claim_revision_id=record.id,
+                    passage_id=passage_id,
+                    owner_id=context.owner_id,
+                    position=position,
                 )
-            session.flush()
-            return self._claim_contract(session, context, record)
+            )
+        session.flush()
+        return self._claim_contract(session, context, record)
 
     @staticmethod
     def _claim_contract(

@@ -104,6 +104,112 @@ async function importFile(page, namespace, content = fixture) {
   );
 }
 
+test("S07 processes synthetic fixtures and exposes memory history through the real backend", async (t) => {
+  const page = await pageFor(t);
+  const namespace = `memory-${randomUUID()}`;
+  await importFile(page, namespace);
+  await page
+    .getByRole("button", { name: "Process pending", exact: true })
+    .click();
+  await eventually(async () => {
+    const response = await fetch(
+      `${origin}/processing?namespace=${namespace}`,
+      { headers: { "X-Jarvis-Mode": "normal" } },
+    );
+    assert.equal((await response.json()).counts.succeeded, 8);
+  });
+  await page
+    .getByRole("button", { name: "Refresh memories", exact: true })
+    .click();
+  await eventually(async () =>
+    assert.equal(await page.locator("#memory-list button").count(), 11),
+  );
+  await page
+    .getByRole("button", { name: /Atlas · launch date: 2026-09-21/ })
+    .click();
+  await eventually(async () =>
+    assert.match(
+      await page.locator("#memory-history").innerText(),
+      /2026-09-18/,
+    ),
+  );
+  const history = await page.locator("#memory-history").innerText();
+  assert.match(history, /superseded/);
+  assert.match(history, /legal review needs more time/);
+  assert.match(history, /Applies from: Unknown/);
+  const ownerButton = page.getByRole("button", {
+    name: /Atlas · budget owner: Ravi/,
+  });
+  assert.match(await ownerButton.innerText(), /tentative.*conditional/s);
+  assert.match(await ownerButton.innerText(), /Only if: Finance signs off/);
+  await ownerButton.click();
+  await eventually(async () =>
+    assert.match(
+      await page.locator("#memory-history").innerText(),
+      /tentative/,
+    ),
+  );
+  assert.match(
+    await page.locator("#memory-history").innerText(),
+    /Finance signs off/,
+  );
+  if (process.env.JARVIS_UI_SCREENSHOTS === "1") {
+    const path = new URL("../../.tmp/ui-review/", import.meta.url);
+    await mkdir(path, { recursive: true });
+    await page.screenshot({
+      path: new URL("s07-memories.png", path).pathname.replace(
+        /^\/(\w:)/,
+        "$1",
+      ),
+      fullPage: true,
+    });
+  }
+  await page.getByRole("radio", { name: "Private", exact: true }).check();
+  assert.equal(await page.locator("#memory-list button").count(), 0);
+  assert.equal(await page.locator("#memory-history").textContent(), "");
+  await page.getByRole("radio", { name: "Normal", exact: true }).check();
+  assert.equal(await page.locator("#memory-list button").count(), 0);
+});
+
+test("Private drops late memory responses and makes no processing request", async (t) => {
+  const page = await pageFor(t);
+  await importFile(page, `late-memory-${randomUUID()}`);
+  let release;
+  let reached;
+  const arrived = new Promise((resolve) => {
+    reached = resolve;
+  });
+  const blocked = new Promise((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/memories?*", async (route) => {
+    reached();
+    await blocked;
+    try {
+      await route.fulfill({
+        json: {
+          memories: [{ content: "SYNTHETIC_LATE_MEMORY" }],
+          next_after: null,
+        },
+      });
+    } catch {}
+  });
+  await page
+    .getByRole("button", { name: "Refresh memories", exact: true })
+    .click();
+  await arrived;
+  await page.getByRole("radio", { name: "Private", exact: true }).check();
+  const requests = [];
+  page.on("request", (r) => requests.push(r.url()));
+  release();
+  await page.waitForTimeout(100);
+  assert.doesNotMatch(
+    await page.locator("body").textContent(),
+    /SYNTHETIC_LATE_MEMORY/,
+  );
+  assert.deepEqual(requests, []);
+});
+
 test("browser imports, reimports and inspects exact paired evidence through PostgreSQL", async (t) => {
   const page = await pageFor(t);
   const namespace = `ui-${randomUUID()}`;

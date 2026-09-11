@@ -1,6 +1,6 @@
 # Run and verify Hey Jarvis
 
-S05 is implemented and checked on 11 September 2026 in the existing Windows checkout using Docker Desktop Linux containers. Bounded import/inspection extends the S03 foundation and S04 evidence/policy contracts; the isolated suite now has 111 passing checks. Use the included synthetic fixtures below. The user subsequently approved the minimal browser workspace below; no CLI is required for import/inspection. A processing worker, models, retrieval and complete Correct/Forget are not implemented. Milestone-specific results below retain their historical test counts and scope.
+S03–S05 and the S07 memory-processing code are implemented in the existing Windows checkout using Docker Desktop Linux containers. The browser is the primary source/memory workflow. S07's deterministic acceptance is recorded below; live model evaluation remains disabled pending the explicit synthetic-only provider decision. Milestone-specific historical results retain their original counts and limits. S06 answers, S08 retrieval improvements and full S09 controls remain incomplete.
 
 ## Start from a checkout
 
@@ -18,13 +18,13 @@ Set the three local database passwords in `.env` before the first startup. Its e
 ```powershell
 docker compose config --quiet
 docker compose build api
-docker compose up -d --wait --wait-timeout 120 api
+docker compose up -d --wait --wait-timeout 120 api worker
 docker compose ps -a
 Invoke-RestMethod http://127.0.0.1:8000/health
 Invoke-RestMethod http://127.0.0.1:8000/ready
 ```
 
-Check `$LASTEXITCODE` after Docker/CLI commands; nonzero means failure. PowerShell does not automatically stop on native command failures. `/health` and `jarvis health` report process liveness without querying personal data or the database. `/ready` and `jarvis ready` call the same service to verify the DB connection, Alembic revision and pgvector extension. Expected readiness is `{"status":"ready","schema":"0002_evidence_contracts","pgvector":"0.8.6"}`. Readiness failures return HTTP 503 / CLI exit 1 with a short category, without raw database errors or credentials.
+Check `$LASTEXITCODE` after Docker/CLI commands; nonzero means failure. PowerShell does not automatically stop on native command failures. `/health` and `jarvis health` report process liveness without querying personal data or the database. `/ready` and `jarvis ready` call the same service to verify the DB connection, Alembic revision and pgvector extension. Expected readiness is `{"status":"ready","schema":"0003_memory_processing","pgvector":"0.8.6"}`. Readiness failures return HTTP 503 / CLI exit 1 with a short category, without raw database errors or credentials.
 
 The API is published only on `127.0.0.1`; PostgreSQL has no published host port. The server owns the fixed local identity; no endpoint accepts an owner selector. S04 validation endpoints return a receipt without echoing input. S05 import writes eligible dictations only in Normal mode, and inspection returns owned saved evidence. JSON responses explicitly declare UTF-8 so Windows PowerShell 5 decodes multilingual text correctly. Application containers run as UID 10001. Source is copied into the image, so rebuild after code changes. uv and the build backend use the checked-in lock; development checks are included in the same image.
 
@@ -60,6 +60,42 @@ The browser suite deliberately targets only `http://127.0.0.1:8001/`, the isolat
 Actual results for this slice are recorded in [the UI evidence record](eval/reports/ui-foundation.json). A first browser run passed six of seven checks; the navigation test exposed a test-harness assumption that service workers exist on `about:blank`. The harness now instruments that API only where available. No application failure was concealed. Review also added bounded network timeouts and processing details, and excluded newly installed browser dependencies from the Docker build context. The original application source/job schema and provider configuration are unchanged.
 
 Final results on 11 September: **112 isolated PostgreSQL checks passed in 10.22 s, zero warnings; all 8 Chromium checks passed in 4.44 s**. Desktop (1440×1100) and mobile (390×844) screenshots were visually reviewed. Ruff lint and formatting passed for all 21 Python files; frontend formatting and `npm ci` passed. The final image contains neither `node_modules` nor `.env`. The documented application start replaced the API container successfully; `/` and `/ready` respond, all eight diagnostic source/job inspection objects match their pre-upgrade state, and the original S03 probe remains unchanged. No application volume was reset and no live model request was made.
+
+## S07 memory processing
+
+The approved pipeline preserves original sources and writes source-linked claim revisions through the shared service. The browser adds **Process pending**, **Refresh memories**, **Retry failed**, a Memories list and expandable evidence/history. No CLI is required for these user actions. Open a collection before processing; refresh to see completed/failed jobs and zero-memory or clarification outcomes. Conditions, uncertainty and scope are visible on each memory. **View original source** opens the existing source inspector. Switching Private clears sources, memories, history and pending UI responses. Previously accepted Normal imports/jobs may finish; Private input never enters them.
+
+**Live inference is disabled in the delivered configuration.** Imports/inspection still work, and a processing request returns `provider_disabled` before saved-store access. The code contains a fixed NVIDIA Nemotron adapter, but no provider authentication, endpoint capability or semantic quality has been established by a live call. The isolated browser test server uses an explicit deterministic fixture extractor; it cannot start against the application database. Its results are contract evidence, not model output.
+
+After the separately requested provider decision is approved, an operator can set `JARVIS_S07_SYNTHETIC_TRIAL_APPROVED=true` in ignored `.env`, with the existing `NEMOTRON_30B_API_KEY`. Recreate API/worker/CLI services so settings take effect. Only the worker receives the key; database, migration and test services receive no provider credentials. The flag permits only the exact bundled synthetic source fields, not arbitrary personal imports or a caller's synthetic label. The persisted pilot ceiling is 32 calls and 500,000 total input/output tokens including repair/retry, with $0 paid spend. Do not reset or edit the application budget to bypass it. General personal inference needs compliant provider terms/settings and a new explicit decision.
+
+Optional developer commands through the same service:
+
+```powershell
+docker compose run --rm --no-deps cli process --namespace diagnostic-v1 --expected-policy-revision 0 --mode normal
+docker compose run --rm --no-deps cli memories --namespace diagnostic-v1 --mode normal
+docker compose run --rm --no-deps worker jarvis worker --once
+```
+
+Use the current policy revision from source listing, not an assumed zero after controls change it. The first/third commands require the live gate; a failure returns a fixed category. Ordinary use is **Process pending** in the browser, with the long-running Compose worker. Failed jobs can be explicitly retried at most three lease attempts; stale/expired workers are fenced. There is at most one schema-repair call per attempt. Unknown provider usage retains its conservative token reservation. Empty/invalid model output, database failures and stale packets never silently become successful zero-memory decisions.
+
+The live evaluator is ready but **has not been run**:
+
+```powershell
+# Only after the S07 provider/allowance decision; keep unrelated workers idle for the pilot.
+docker compose stop worker
+docker compose run --rm --no-deps worker jarvis evaluate-extraction --repeats 3
+```
+
+It imports only the eight bundled synthetic observations into a distinct collection per repeat and processes only that collection. It emits JSON with all call outcomes, actual usage when known, saved revisions and exact support. It labels the result `ungraded` and semantic review `pending`; retain failures and review all repeats before reporting quality. No Kimi/Ultra comparison or source-history answer is produced. The existing application allowance persists across evaluator restarts and collections.
+
+Actual acceptance results on 12 September: **156 backend tests passed in 25.87 s with zero warnings; 10 Chromium checks passed in 12.08 s.** A clean test volume initialized successfully; empty/repeated migrations and metadata drift checks passed. All ten isolated application tables matched after container replacement, including 12 claim revisions, eight receipts and eight deterministic call records. The final application restart preserved all eight original source/job inspections and every original S03 probe field. Readiness reports `0003_memory_processing`, live inference is disabled, and the application has zero model-call records. Ruff lint/format passed for 31 Python files; final desktop/mobile and memory screenshots were visually reviewed.
+
+Resolved findings: an initial fixture-helper bracket typo prevented test collection; two older assertions expected the previous schema/service shape and now verify original fields plus safe new defaults. UI review moved uncertainty/conditions into the list, and validation review added typed duplicate checks, duplicate-JSON rejection and evaluator collection isolation. The real adapter's synthetic allowlist also passes with a simulated HTTP transport; no data was sent to NVIDIA. No runtime test failure remains; no live-model result or stronger-model comparison is claimed. Documentation checks passed for 10 UTF-8 Markdown files and 147 local links/anchors; staged whitespace/credential checks run before the `dev` commit.
+
+Migration `0003_memory_processing` adds `requested`, lease token/expiry, finish time and fixed error category to jobs; creates `processing_receipts`, `claim_relations`, `model_budgets` and `model_calls`; and grants only runtime DML. Existing source/claim content stays unchanged, and old jobs default to unrequested with null processing fields. No vector columns/indexes or dependency versions changed. Source/claim/policy snapshots and lease identity are rechecked before the atomic claim/evidence/relationship/receipt/job commit. Model calls hold no DB locks. Raw responses, prompts and reasoning are not saved in accounting.
+
+Actual checks and remaining limits are recorded in [the S07 evidence report](eval/reports/s07-contracts.json). Browser acceptance uses `tests/browser/server.py` with a synthetic fixture double under the isolated test-DB guard. Run the backend suite before browser checks because it resets only test state. The clean test-volume command, backend checks and browser commands are the same as the sections above/below. Private instrumentation now covers processing, worker, accounting, memory/history and report paths, including refusal before reading an HTTP body. Full Correct/Forget/exclusions and answer-quality comparisons are still later gates.
 
 ## Migrations and schema effects
 

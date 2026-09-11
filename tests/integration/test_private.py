@@ -17,6 +17,7 @@ from jarvis.api import create_app
 from jarvis.contracts import ObservationInput
 from jarvis.errors import ApplicationError, ErrorCode
 from jarvis.models import Base
+from jarvis.worker import process_one
 
 SENTINEL = "PRIVATE_SYNTHETIC_INPUT_do_not_persist_27e16b"
 
@@ -100,6 +101,17 @@ def test_all_saved_operations_reject_private_before_parsing_or_io(
         lambda: service.import_observations(private, SENTINEL, SENTINEL),
         lambda: service.list_sources(private, SENTINEL),
         lambda: service.inspect_source(private, SENTINEL),
+        lambda: service.request_processing(private, SENTINEL),
+        lambda: service.lease_next(private),
+        lambda: service.commit_extraction(private, None, SENTINEL),
+        lambda: service.fail_processing(private, None, ErrorCode.OPERATION_FAILED),
+        lambda: service.reserve_call(private, None, 100),
+        lambda: service.finish_call(private, uuid4()),
+        lambda: service.list_memories(private, SENTINEL),
+        lambda: service.memory_history(private, SENTINEL),
+        lambda: service.processing_status(private, SENTINEL),
+        lambda: service.processing_report(private, SENTINEL),
+        lambda: process_one(service, private),
     ]
     with no_store_access(engine, monkeypatch):
         for operation in operations:
@@ -192,7 +204,8 @@ def test_private_current_context_is_not_backfilled(service, normal, private, obs
     )
     assert stored.raw_text == observation["raw_text"]
     assert SENTINEL not in json.dumps(snapshot(engine))
-    assert set(vars(service)) == {"engine", "identity", "expected_revision"}
+    assert set(vars(service)) == {"engine", "identity", "expected_revision", "extractor"}
+    assert SENTINEL not in repr(vars(service.extractor))
 
 
 def test_adapter_owner_override_and_mode_fail_closed(service, observation, engine, monkeypatch):

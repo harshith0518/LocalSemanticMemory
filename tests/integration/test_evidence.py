@@ -212,8 +212,17 @@ def test_new_migration_preserves_s03_records(engine, migrations):
             after = connection.execute(text("SELECT * FROM jarvis.sources")).mappings().one()
             assert {key: after[key] for key in before} == dict(before)
             assert after["kind"] == "unknown"
-            assert (
-                connection.execute(text("SELECT * FROM jarvis.jobs")).mappings().one() == job_before
+            job_after = connection.execute(text("SELECT * FROM jarvis.jobs")).mappings().one()
+            assert {key: job_after[key] for key in job_before} == dict(job_before)
+            assert job_after["requested"] is False
+            assert all(
+                job_after[key] is None
+                for key in (
+                    "lease_token",
+                    "lease_until",
+                    "finished_at",
+                    "error_code",
+                )
             )
         migrations(command.check)
     finally:
