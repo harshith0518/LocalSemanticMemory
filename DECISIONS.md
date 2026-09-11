@@ -25,7 +25,7 @@ Updated 11 September 2026. This distinguishes agreed product behavior from an im
 | --- | --- | --- |
 | Python/FastAPI + thin CLI sharing services | One language and one policy path for application/evaluation work. | Reconsider only for a concrete blocker, not familiarity with another framework alone. |
 | PostgreSQL + pgvector and full-text search | Transactions, typed state and exact dense retrieval in one DB. | SQLite remains technically possible, but do not add a second backend under the deadline. Approve final DB choice before schema code. |
-| Ubuntu 24.04 in WSL2 + Linux containers | Already installed; consistent Linux tools and portable review. | Use an existing native Ubuntu machine if already convenient; do not reinstall the host for this task. |
+| Docker Desktop Linux containers with Ubuntu-24.04 integration; keep one Windows checkout for the initial image build | Existing engine and WSL integration passed readiness checks. Copy source into images and use named DB volumes, avoiding a source migration before bootstrap. | Consider a Linux-filesystem checkout if live bind mounts become useful; do not create two competing checkouts or reinstall the host. |
 | One DB-backed worker; no Redis | Durable work with fewer services. | Add infrastructure only after observed throughput/reliability need. |
 | Source-history baseline, then claims and hybrid retrieval | Lets evaluation isolate whether memory and search actually help. | Keep the simpler baseline if an addition has no demonstrated value. |
 | Bounded smaller model for extraction | Potentially reduce repeated interpretation cost. | Compare against stronger extraction with other settings fixed; retain better quality when repair cost erases savings. |

@@ -4,17 +4,18 @@ Updated: 11 September 2026. Target: **12 September afternoon IST**.
 
 This is the single current-status checklist. [PLAN.md](PLAN.md) defines scope and milestone gates; [DECISIONS.md](DECISIONS.md) records decisions; [EVALUATION.md](EVALUATION.md) defines evidence. Check an item only after its acceptance condition is demonstrated.
 
-**Current work:** S01 source-note preservation and provenance checks are complete; the two final author-authored submissions remain open. S02 environment preparation can proceed independently. The application is not implemented and no live model evaluation has run.
+**Current work:** Source-note preservation and S02 environment readiness are complete. S01's two final author-authored submissions remain open; S03 bootstrap is the next implementation scope to review. The application is not implemented and no live model evaluation has run.
 
 ## Completed
 
 - [x] Establish the focused implementation plan, architecture, evaluation strategy, review contract and contribution rules.
 - [x] Replace the previous repository contents and push the planning baseline to `main`, preserving earlier Git history. Commit: [`596b034`](https://github.com/harshith0518/ProjectSemanticMemoryJarvis/commit/596b034940ea3a6adabeb3940dd6d793bc2c8b1e).
 - [x] Verify that baseline's nine-file remote tree, clean local/remote agreement, Markdown links and staged whitespace. These are documentation checks, not application tests.
-- [x] Inspect the development environment: Ubuntu 24.04 under WSL2 and Docker Desktop are installed; the engine was stopped at inspection. Installation/readiness is not claimed complete.
+- [x] **S02 — Prepare the existing environment.** Started Docker Desktop; verified Linux Docker client/server `28.4.0`, Compose `2.39.2-desktop.1` and Ubuntu-24.04 integration. Pulled the official probe image, verified a named-volume marker survived replacement of a disposable container, and removed the uniquely named probe volume. Keep one Windows checkout and run the planned backend in Linux images. [Actual checks and limits](RUN.md#environment-recommendation); no project DB or application tests yet.
 - [x] Record DeepSeek's main-model role and shortlist smaller memory-operation proposers. Public provider documentation was checked; account access, quality and cost remain untested.
 - [x] Create this tracker and record the user-requested test → update tracker → commit → push workflow.
 - [x] Preserve the latest user-supplied notes and inspect the relevant earlier discussion in **Explain Jarvis products** and **Document product features and plan**. Record [provenance and mechanical counts](docs/part-one/README.md): 813 whitespace-delimited tokens overall; 317 in the Phase One subsection including questions. These are source notes, not certified independent submissions.
+- [x] Commit and push source-note preservation/tracking as [`559f3aa`](https://github.com/harshith0518/ProjectSemanticMemoryJarvis/commit/559f3aadd8fbb57bdf25760097671dc5da195759). Remote `main` was independently checked at that full commit after the push; staged whitespace passed.
 
 ## Ongoing
 
@@ -22,7 +23,6 @@ This is the single current-status checklist. [PLAN.md](PLAN.md) defines scope an
   - Next action: author supplies the final independently written positioning statement (at most 100 words) and vision document (at most 600 words); preserve and mechanically check them. Readiness checks can continue while this remains open.
   - Acceptance: both final documents are present with source/author attribution and checked counts. Do not generate the author's argument, silently rewrite it or backdate completion.
   - Remaining gap: two final acceptances have not been identified. A 317-token subsection does not itself satisfy both deliverables or prove independent authorship.
-- [ ] **S02 — Environment preparation.** Docker Desktop is installed but its engine is stopped. Start the existing installation and check the Linux engine, container execution, temporary named-volume persistence and image-registry connectivity. Keep one active checkout; no application code is authorized by this readiness check.
 
 ## Pending
 
@@ -50,7 +50,7 @@ The S01–S12 IDs match the delivery sequence discussed with the user. PLAN.md g
 5. Create a focused commit and push it to the remote repository after every meaningful completed milestone. The user has authorized this recurring commit/push workflow; do not ask again merely to push an approved milestone.
 6. Verify remote/local commit agreement and report the commit. If push fails, record that it remains local and resolve it without force-pushing over concurrent changes.
 
-Preservation/tracker milestone checks on 11 September: UTF-8 decoding passed for nine Markdown files; all 26 local links/anchors resolved; source-note counts matched 813/317; completed/ongoing/pending headings and S01–S12 coverage passed. Check staged whitespace before committing. No application or model tests apply. Its exact commit is available through `git log --oneline -- todo.md`; avoid inventing a self-referential commit hash inside its own content.
+Preservation/tracker milestone checks on 11 September: UTF-8 decoding passed for nine Markdown files; all 26 then-present local links/anchors resolved; source-note counts matched 813/317; completed/ongoing/pending headings and S01–S12 coverage passed; staged whitespace passed. Environment checks are recorded in RUN.md; recheck documentation links and staged whitespace for that milestone. No application or model tests apply yet. The latest tracker commit is available through `git log --oneline -- todo.md`; avoid inventing a self-referential commit hash inside its own content.
 
 ## Open before dependent work
 

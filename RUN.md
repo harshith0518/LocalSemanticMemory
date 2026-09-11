@@ -10,9 +10,22 @@ Local Docker Compose application and PostgreSQL database. A hosted model provide
 
 Use Ubuntu 24.04 under WSL2 on Windows, with Docker Desktop's WSL integration, or an existing native Ubuntu installation with Docker Engine and Compose. Linux containers should run the pinned Python runtime, independent of the host's Python version.
 
-For WSL development, keep the active checkout in the Linux filesystem, such as `~/projects/ProjectSemanticMemoryJarvis`, when bind mounts are used. Database files belong in a Docker named volume. Avoid two diverging checkouts and double-editing from Windows/WSL. The current planning checkout may remain on Windows until the implementation environment is approved. [Docker WSL guidance](https://docs.docker.com/desktop/features/wsl/best-practices/)
+For the initial build, retain the current Windows checkout as the single active source directory. Run application/test processes inside Linux containers and copy source into their images; keep database files in named volumes. No second checkout or source migration is needed for this path. If live source bind mounts become necessary, a Linux-filesystem checkout can avoid cross-filesystem overhead; make that a deliberate move instead of maintaining two diverging copies. [Docker WSL guidance](https://docs.docker.com/desktop/features/wsl/best-practices/)
 
-Read-only host inspection on 11 September found Ubuntu-24.04 and Ubuntu registered as WSL2 distributions, both stopped. Docker Desktop/Compose are installed, but the Linux engine was not running. Host Python is 3.14. These are observations, not setup completion. No runtime installation, Docker startup or source migration was performed for this planning commit.
+The initial planning inspection found Docker's Linux engine stopped. During environment preparation on 11 September, the existing Docker Desktop installation was started and checked. No runtime installation, source migration, project database or application service was created.
+
+| Readiness check | Observed result |
+| --- | --- |
+| Windows Docker client / Linux server | Both `28.4.0`; context `desktop-linux`; server reports Linux. |
+| Docker Compose CLI | `2.39.2-desktop.1`. |
+| WSL integration | Ubuntu-24.04 and docker-desktop running under WSL2; Docker invoked inside Ubuntu reaches client/server `28.4.0`. |
+| Registry connectivity | Official `alpine:3.22` image pulled successfully. This tests Docker Hub access, not model-provider or Python-package access. |
+| Linux execution and named-volume persistence | One disposable container wrote a synthetic marker; a new container read the identical marker from the volume. Both ran without networking, with a read-only root filesystem and dropped capabilities. |
+| Cleanup | Both test containers auto-removed; only the uniquely named readiness volume was removed after its purpose label was checked. Existing containers and volumes were not modified by the probe. |
+
+Probe image digest: `alpine@sha256:14358309a308569c32bdc37e2e0e9694be33a9d99e68afb0f5ff33cc1f695dce`. This is a readiness-test image, not a selected application base image. Host Python remains 3.14; the proposed Python 3.12 application image will be resolved during bootstrap.
+
+Container replacement with a surviving volume was checked. Database durability, Compose service ordering, image builds, migrations, dependency installation and live model access remain untested until their respective implementation milestones. Starting Docker Desktop can resume other existing workloads according to their own restart policies; the readiness probe did not operate on them.
 
 Useful existing-tool checks from Windows PowerShell:
 
@@ -20,9 +33,10 @@ Useful existing-tool checks from Windows PowerShell:
 wsl --list --verbose
 docker version
 docker compose version
+wsl -d Ubuntu-24.04 -- docker version
 ```
 
-Before the first approved implementation slice, start Docker Desktop, enable the chosen WSL distribution's integration and verify that `docker version` shows both client and server. Do not install a second conflicting Docker daemon inside WSL without deliberately choosing that setup.
+If the engine is stopped on a later session, use `docker desktop start`, then verify that `docker version` shows both client and server. Ubuntu integration is already working on this host. Do not install a second conflicting Docker daemon inside WSL without deliberately choosing that setup.
 
 ## Required final commands and documentation
 
