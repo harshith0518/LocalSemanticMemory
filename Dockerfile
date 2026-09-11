@@ -12,6 +12,8 @@ RUN uv sync --locked --no-editable --no-build-isolation
 COPY alembic.ini ./
 COPY migrations/ migrations/
 COPY tests/ tests/
+COPY data/synthetic/sample-dictations.jsonl data/synthetic/sample-dictations.jsonl
+COPY eval/fixtures/sample-evaluation-cases.json eval/fixtures/sample-evaluation-cases.json
 RUN useradd --uid 10001 --create-home jarvis
 ENV PATH="/app/.venv/bin:$PATH"
 USER jarvis

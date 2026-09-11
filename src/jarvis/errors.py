@@ -9,6 +9,7 @@ class ErrorCode(StrEnum):
     INVALID_PASSAGE = "invalid_passage"
     INELIGIBLE_SOURCE = "ineligible_source"
     STALE_REVISION = "stale_revision"
+    IMPORT_CONFLICT = "import_conflict"
     DATABASE_UNAVAILABLE = "database_unavailable"
     OPERATION_FAILED = "operation_failed"
 

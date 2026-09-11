@@ -8,6 +8,7 @@ from starlette.concurrency import run_in_threadpool
 from jarvis.config import Settings
 from jarvis.db import make_engine
 from jarvis.errors import ApplicationError, ErrorCode
+from jarvis.imports import MAX_IMPORT_BYTES
 from jarvis.services import Service
 
 
@@ -38,6 +39,9 @@ def create_app(service: Service | None = None) -> FastAPI:
             )
         response.headers["Cache-Control"] = "no-store"
         response.headers["Pragma"] = "no-cache"
+        if response.headers.get("Content-Type") == "application/json":
+            # Windows PowerShell 5 otherwise decodes JSON as a legacy single-byte encoding.
+            response.headers["Content-Type"] = "application/json; charset=utf-8"
         return response
 
     @app.exception_handler(ApplicationError)
@@ -46,6 +50,7 @@ def create_app(service: Service | None = None) -> FastAPI:
             ErrorCode.PRIVATE_OPERATION: 403,
             ErrorCode.REFERENCE_UNAVAILABLE: 404,
             ErrorCode.STALE_REVISION: 409,
+            ErrorCode.IMPORT_CONFLICT: 409,
             ErrorCode.DATABASE_UNAVAILABLE: 503,
             ErrorCode.OPERATION_FAILED: 500,
         }.get(error.code, 422)
@@ -60,7 +65,7 @@ def create_app(service: Service | None = None) -> FastAPI:
         size = 0
         async for chunk in request.stream():
             size += len(chunk)
-            if size > 1024 * 1024:
+            if size > MAX_IMPORT_BYTES:
                 raise ApplicationError(ErrorCode.INVALID_INPUT)
             chunks.append(chunk)
         return b"".join(chunks)
@@ -84,6 +89,38 @@ def create_app(service: Service | None = None) -> FastAPI:
     @app.get("/health")
     def health() -> dict:
         return app.state.service.health()
+
+    @app.post("/sources/import")
+    async def import_sources(
+        request: Request, namespace: str, expected_policy_revision: int
+    ) -> dict:
+        service = app.state.service
+        context = service.identity.context(request.headers.get("X-Jarvis-Mode", ""))
+        context.require_saved_access()
+        payload = await current_input(request)
+        receipt = await run_in_threadpool(
+            service.import_observations,
+            context,
+            {"namespace": namespace, "expected_policy_revision": expected_policy_revision},
+            payload,
+        )
+        return receipt.model_dump(mode="json")
+
+    @app.get("/sources")
+    def list_sources(
+        request: Request, namespace: str, after: str | None = None, limit: int = 50
+    ) -> dict:
+        service = app.state.service
+        context = service.identity.context(request.headers.get("X-Jarvis-Mode", ""))
+        return service.list_sources(
+            context, {"namespace": namespace, "after": after, "limit": limit}
+        ).model_dump(mode="json")
+
+    @app.get("/sources/{source_id}")
+    def inspect_source(request: Request, source_id: str) -> dict:
+        service = app.state.service
+        context = service.identity.context(request.headers.get("X-Jarvis-Mode", ""))
+        return service.inspect_source(context, source_id).model_dump(mode="json")
 
     @app.get("/ready")
     def ready(response: Response) -> dict:

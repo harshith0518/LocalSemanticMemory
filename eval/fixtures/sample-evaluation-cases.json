@@ -1,0 +1,81 @@
+{
+  "description": "Illustrative checks for eight synthetic source records. This is a proposed evaluation format, not a completed evaluator or the full assignment corpus.",
+  "ingest_into_memory": false,
+  "corpus_file": "sample-dictations.jsonl",
+  "cases": [
+    {
+      "case_id": "latest_plan",
+      "request": "What is the latest recorded Atlas launch date?",
+      "expected_behavior": "Answer that the latest recorded planned date is 21 September 2026. Do not present the launch as an event that has already happened.",
+      "required_evidence": [
+        {"record_id": "dict_0003", "field": "raw_transcript", "quote": "the atlas launch has moved from september eighteenth to september twenty first twenty twenty six"}
+      ],
+      "must_not_claim": ["18 September is still the latest plan", "The launch has already occurred"]
+    },
+    {
+      "case_id": "change_with_original_source",
+      "request": "Compare the first recorded Atlas launch plan with the revised one. Show both records and the stated reason for the change.",
+      "expected_behavior": "Identify 18 September 2026 as the first recorded plan and 21 September 2026 as the revision. Explain that legal review needs more time and show the original and revised records.",
+      "required_evidence": [
+        {"record_id": "dict_0001", "field": "formatted_text", "quote": "the launch is set for 18 September 2026"},
+        {"record_id": "dict_0003", "field": "formatted_text", "quote": "The Atlas launch has moved from 18 September to 21 September 2026 because legal review needs more time."}
+      ],
+      "must_not_claim": ["The date changed because Finance rejected the budget"]
+    },
+    {
+      "case_id": "grounded_personalized_draft",
+      "request": "Draft an Atlas update for Mira using the latest recorded launch date, the blocker, and the next step. Use the format she requested.",
+      "expected_behavior": "Produce a draft of three bullets: the latest planned launch date is 21 September 2026; legal approval is the blocker; the next step is to ask Legal for its review date. Link the preference and factual sources. Do not send anything.",
+      "required_evidence": [
+        {"record_id": "dict_0002", "field": "raw_transcript", "quote": "mira asked me to keep atlas updates to three bullets and call out any blockers"},
+        {"record_id": "dict_0003", "field": "formatted_text", "quote": "21 September 2026"},
+        {"record_id": "dict_0006", "field": "formatted_text", "quote": "The Atlas blocker is legal approval, and the next step is to ask Legal for its review date."}
+      ],
+      "must_not_claim": ["Mira received this draft", "Legal has already completed its review", "The user wants three bullets for every topic and recipient"]
+    },
+    {
+      "case_id": "hypothetical_owner",
+      "request": "Who is confirmed to own the Atlas budget?",
+      "expected_behavior": "Explain that the records do not establish a confirmed owner. Ravi is mentioned as a conditional possibility, not an appointment.",
+      "required_evidence": [
+        {"record_id": "dict_0004", "field": "formatted_text", "quote": "If Finance signs off, we could assign Ravi to own the Atlas budget, but nobody has confirmed that yet."}
+      ],
+      "must_not_claim": ["Ravi is the confirmed owner", "Finance has signed off"]
+    },
+    {
+      "case_id": "reported_action",
+      "request": "What did I record about sending Mira the checklist, and is its review complete?",
+      "expected_behavior": "Say that the user recorded having sent the revised Atlas checklist and that the review was still pending in that record. Treat this as the user's report, not independently verified email delivery or a live review status.",
+      "required_evidence": [
+        {"record_id": "dict_0005", "field": "formatted_text", "quote": "I sent Mira the revised Atlas checklist this morning. The review is still pending."}
+      ],
+      "must_not_claim": ["A mail API verified delivery", "Mira accepted or completed the review"]
+    },
+    {
+      "case_id": "raw_formatted_conflict",
+      "request": "What is the Atlas spending limit?",
+      "expected_behavior": "Surface the discrepancy: the raw transcript says fifteen thousand rupees while the formatted version says ₹50,000. The corpus cannot establish which amount is correct; request clarification or state the uncertainty.",
+      "required_evidence": [
+        {"record_id": "dict_0008", "field": "raw_transcript", "quote": "fifteen thousand rupees"},
+        {"record_id": "dict_0008", "field": "formatted_text", "quote": "₹50,000"}
+      ],
+      "must_not_claim": ["₹15,000 is definitely correct", "₹50,000 is definitely correct"]
+    },
+    {
+      "case_id": "missing_metadata",
+      "request": "When did I dictate the Orion note, and which app was I using?",
+      "expected_behavior": "State that the source does not provide the capture time or app. Do not confuse the date mentioned in the content with the dictation's capture date.",
+      "required_evidence": [
+        {"record_id": "dict_0007", "field": "formatted_text", "quote": "For Orion, the client chose 25 September 2026."}
+      ],
+      "must_not_claim": ["The note was dictated on 25 September 2026", "The note came from Slack"]
+    },
+    {
+      "case_id": "unknown_fact",
+      "request": "What is Mira's surname?",
+      "expected_behavior": "State that the provided history does not contain Mira's surname. Do not invent a name or cite unrelated evidence as support.",
+      "required_evidence": [],
+      "must_not_claim": ["Any specific surname inferred without evidence"]
+    }
+  ]
+}

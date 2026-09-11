@@ -22,6 +22,21 @@ from jarvis.contracts import (
     parse_contract,
 )
 from jarvis.errors import ApplicationError, ErrorCode
+from jarvis.imports import (
+    IMPORT_PREFIX,
+    ImportItem,
+    ImportOptions,
+    ImportReceipt,
+    JobState,
+    SourceInspection,
+    SourceLookup,
+    SourcePage,
+    SourceQuery,
+    SourceSummary,
+    parse_dictations,
+    same_json,
+    source_key,
+)
 from jarvis.models import ClaimEvidence, ClaimRecord, Job, Passage, Policy, Source
 from jarvis.policy import LocalIdentity, Mode, RequestContext
 
@@ -182,6 +197,9 @@ class Service:
         self._authorize(context)
         command = parse_contract(ObservationWrite, payload)
         data = command.observation
+        if data.source_key.startswith(IMPORT_PREFIX):
+            # Import identity is immutable; generic writes cannot bypass conflict detection.
+            raise ApplicationError(ErrorCode.INVALID_INPUT)
         with self._session(context, write=True) as session:
             session.execute(
                 insert(Policy).values(owner_id=context.owner_id).on_conflict_do_nothing()
@@ -196,25 +214,169 @@ class Service:
             current = latest.revision if latest is not None else 0
             if command.expected_source_revision != current:
                 raise ApplicationError(ErrorCode.STALE_REVISION)
-            source = Source(
+            [(source, _)] = self._save_sources(session, context, policy, [(data, current + 1)])
+            return self._source_contract(source)
+
+    @staticmethod
+    def _save_sources(
+        session: Session,
+        context: RequestContext,
+        policy: Policy,
+        observations: list[tuple[ObservationInput, int]],
+    ) -> list[tuple[Source, Job]]:
+        sources = [
+            Source(
                 owner_id=context.owner_id,
-                revision=current + 1,
+                revision=revision,
                 content_hash=content_hash(data.raw_text, data.formatted_text),
                 **data.model_dump(),
             )
-            session.add(source)
-            session.flush()
-            session.add(
-                Job(
-                    owner_id=context.owner_id,
-                    source_id=source.id,
-                    idempotency_key=f"source:{source.id}",
-                    expected_source_revision=source.revision,
-                    expected_policy_revision=policy.revision,
+            for data, revision in observations
+        ]
+        session.add_all(sources)
+        session.flush()
+        jobs = [
+            Job(
+                owner_id=context.owner_id,
+                source_id=source.id,
+                idempotency_key=f"source:{source.id}",
+                expected_source_revision=source.revision,
+                expected_policy_revision=policy.revision,
+            )
+            for source in sources
+        ]
+        session.add_all(jobs)
+        session.flush()
+        return list(zip(sources, jobs, strict=True))
+
+    @staticmethod
+    def _job_contract(job: Job) -> JobState:
+        return JobState.model_validate({name: getattr(job, name) for name in JobState.model_fields})
+
+    def import_observations(
+        self, context: RequestContext, options: object, payload: str | bytes
+    ) -> ImportReceipt:
+        self._authorize(context)  # Before parsing content or connecting, including failure paths.
+        command = parse_contract(ImportOptions, options)
+        data = parse_dictations(command.namespace, payload)
+        with self._session(context, write=True) as session:
+            session.execute(
+                insert(Policy).values(owner_id=context.owner_id).on_conflict_do_nothing()
+            )
+            policy = self._policy(session, context, command.expected_policy_revision, lock=True)
+            existing = {
+                source.source_key: (source, job)
+                for source, job in session.execute(
+                    select(Source, Job)
+                    .outerjoin(
+                        Job,
+                        (Job.source_id == Source.id)
+                        & (Job.owner_id == Source.owner_id)
+                        & (Job.idempotency_key == func.concat("source:", Source.id)),
+                    )
+                    .where(
+                        Source.owner_id == context.owner_id,
+                        Source.source_key.in_([item.source_key for item in data]),
+                    )
+                    .distinct(Source.source_key)
+                    .order_by(Source.source_key, Source.revision.desc())
+                )
+            }
+            for item in data:
+                if pair := existing.get(item.source_key):
+                    source, job = pair
+                    if not all(
+                        same_json(getattr(source, field), value)
+                        for field, value in item.model_dump().items()
+                    ):
+                        raise ApplicationError(ErrorCode.IMPORT_CONFLICT)
+                    if job is None:
+                        raise ApplicationError(ErrorCode.OPERATION_FAILED)
+            created = self._save_sources(
+                session,
+                context,
+                policy,
+                [(item, 1) for item in data if item.source_key not in existing],
+            )
+            pairs = {**existing, **{source.source_key: (source, job) for source, job in created}}
+            return ImportReceipt(
+                namespace=command.namespace,
+                policy_revision=policy.revision,
+                created=len(created),
+                unchanged=len(existing),
+                observations=tuple(
+                    ImportItem(
+                        record_id=item.source_key.rsplit(":", 1)[1],
+                        source_id=pairs[item.source_key][0].id,
+                        revision=pairs[item.source_key][0].revision,
+                        job=self._job_contract(pairs[item.source_key][1]),
+                        outcome="unchanged" if item.source_key in existing else "created",
+                    )
+                    for item in data
+                ),
+            )
+
+    def list_sources(self, context: RequestContext, payload: object) -> SourcePage:
+        self._authorize(context)
+        query = parse_contract(SourceQuery, payload)
+        with self._session(context) as session:
+            policy = session.get(Policy, context.owner_id)
+            statement = select(
+                *(getattr(Source, name) for name in SourceSummary.model_fields)
+            ).where(
+                Source.owner_id == context.owner_id,
+                Source.source_key.startswith(f"{IMPORT_PREFIX}{query.namespace}:", autoescape=True),
+            )
+            if query.after is not None:
+                statement = statement.where(
+                    Source.source_key > source_key(query.namespace, query.after)
+                )
+            rows = (
+                session.execute(
+                    statement.distinct(Source.source_key)
+                    .order_by(Source.source_key, Source.revision.desc())
+                    .limit(query.limit + 1)
+                )
+                .mappings()
+                .all()
+            )
+            return SourcePage(
+                namespace=query.namespace,
+                policy_revision=policy.revision if policy else 0,
+                observations=tuple(
+                    SourceSummary.model_validate(row) for row in rows[: query.limit]
+                ),
+                next_after=rows[query.limit - 1]["source_key"].rsplit(":", 1)[1]
+                if len(rows) > query.limit
+                else None,
+            )
+
+    def inspect_source(self, context: RequestContext, source_id: UUID | str) -> SourceInspection:
+        self._authorize(context)
+        source_id = parse_contract(SourceLookup, {"source_id": source_id}).source_id
+        with self._session(context) as session:
+            source = session.scalar(
+                select(Source).where(Source.id == source_id, Source.owner_id == context.owner_id)
+            )
+            if source is None:
+                raise ApplicationError(ErrorCode.REFERENCE_UNAVAILABLE)
+            latest = session.scalar(
+                select(func.max(Source.revision)).where(
+                    Source.owner_id == context.owner_id, Source.source_key == source.source_key
                 )
             )
-            session.flush()
-            return self._source_contract(source)
+            job = session.scalar(
+                select(Job).where(
+                    Job.owner_id == context.owner_id,
+                    Job.source_id == source.id,
+                    Job.idempotency_key == f"source:{source.id}",
+                )
+            )
+            return SourceInspection(
+                observation=self._source_contract(source),
+                latest_revision=latest,
+                job=self._job_contract(job) if job else None,
+            )
 
     @staticmethod
     def _support(session: Session, context: RequestContext, command: ClaimWrite) -> None:

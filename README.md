@@ -2,7 +2,7 @@
 
 Technical implementation plan for the Jarvis early notes project. Target review: **12 September 2026, afternoon IST**. Primary delivery method: a local application and PostgreSQL database through Docker Compose; hosted model inference may require provider credentials and network access.
 
-**Current state: S04 evidence contracts and policy gates implemented.** The S03 Docker/PostgreSQL foundation now has typed source/passage/claim contracts, backend-owned request identity, Normal/Private gates and atomic revision checks. All 75 isolated PostgreSQL/contract checks pass; existing S03 state survives migration and container replacement. Follow [RUN.md](RUN.md) for tested commands. General import, extraction, live models, retrieval, UI and complete Correct/Forget workflows remain later milestones; no live-model results exist.
+**Current state: S05 diagnostic import and inspection implemented.** API and CLI share bounded JSONL import, stable observation identity, atomic conflict detection and idempotent reimport. The eight synthetic records and separate evaluator labels are included. All 111 isolated checks pass, including S03/S04 regressions and Private/concurrency checks. Follow [RUN.md](RUN.md) for commands and persistence evidence. Extraction, live models, retrieval, UI and complete Correct/Forget remain later milestones; no live-model results exist.
 
 The proposed demonstration imports a person's dictations, answers questions or prepares a contextual draft from supported history, and exposes Sources, Correct, Forget and Private. Backend/database/CLI development comes first; a small ordinary-user interface is part of the required result.
 
@@ -16,7 +16,7 @@ The proposed demonstration imports a person's dictations, answers questions or p
 | [PLAN.md](PLAN.md) | Build order, time allocation, milestone gates and scope cuts. |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Shared services, evidence representation, learning, retrieval and repair. |
 | [EVALUATION.md](EVALUATION.md) | Cases, deterministic tests, real-model experiments and decision rules. |
-| [RUN.md](RUN.md) | Tested setup, S04 contract/policy commands, migrations, preservation checks and isolated tests. |
+| [RUN.md](RUN.md) | Tested setup, import/inspection contract, policy commands, persistence and isolated checks. |
 | [DECISIONS.md](DECISIONS.md) | Agreed product constraints versus proposed implementation choices. |
 | [AGENTS.md](AGENTS.md) | Contribution rules, approval boundaries and truthful progress reporting. |
 
@@ -24,7 +24,7 @@ The proposed demonstration imports a person's dictations, answers questions or p
 
 Use this implementation repository as the project folder. The user's updated workflow is a fresh discussion chat for understanding the PDF, resolving doubts and reviewing tradeoffs, followed by Codex CLI for approved implementation work. Application processes still run in the verified Docker Linux environment. The CLI's Windows-versus-WSL location, configuration, authentication and repository access must be checked before coding there; Docker readiness does not verify CLI setup. Keep one active checkout. The repository files carry the working context; each chat/session should read them rather than assume it has the previous conversation.
 
-At this handoff, S04 is approved and implemented with the results in RUN.md. S05 import and inspection of diagnostic observations is next and needs its own bounded approval. The test → update todo.md → commit → push workflow on `dev` is authorized. The author reports final Phase One documents complete and held outside this checkout; repository inclusion/mechanical checks and live-model credentials/settings/budget remain open. The two chat-generated [Phase One drafts](docs/part-one/README.md#ai-assisted-drafts-supplied-in-chat) are preserved as AI-assisted reference only.
+At this handoff, S05 is approved and implemented with results in RUN.md. The user also explicitly authorized merging the tested work from `dev` into `main` and pushing it. Implementation continues on `dev`; subsequent merges still follow the user's review/authorization. S06 is next and needs its bounded model-call scope, provider access, retention/no-training settings and budget settled before live calls. Final Phase One documents remain with the author; repository inclusion/mechanical checks remain open. The two chat-generated [Phase One drafts](docs/part-one/README.md#ai-assisted-drafts-supplied-in-chat) retain their separate provenance.
 
 Suggested discussion-chat starting message:
 
@@ -52,7 +52,7 @@ The following supporting resources remain in the **parent planning workspace**, 
 | Deeper implementation research | `../research/implementation-strategy.md`, `implementation-evaluation.md`, `implementation-models.md` |
 | Educational memory blueprint | `../jarvis-memory-blueprint.html` |
 
-Bring the synthetic fixtures into the repository during the approved test-data/import slice and verify their contents. These existing eight observations do not satisfy the approximately 500-observation corpus requirement. The course and research artifacts are background references, not product implementation or measured results.
+S05 copied and hash-verified the [eight observations](data/synthetic/sample-dictations.jsonl) and [separate evaluator labels](eval/fixtures/sample-evaluation-cases.json). Fresh clones include both; only the JSONL is source input. These eight observations do not satisfy the approximately 500-observation corpus requirement. The course and research artifacts remain background references.
 
 ## Proposed starting stack
 

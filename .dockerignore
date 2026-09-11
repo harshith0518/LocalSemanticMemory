@@ -9,5 +9,11 @@
 !migrations/**
 !tests/
 !tests/**
+!data/
+!data/synthetic/
+!data/synthetic/sample-dictations.jsonl
+!eval/
+!eval/fixtures/
+!eval/fixtures/sample-evaluation-cases.json
 **/__pycache__/
 **/*.pyc

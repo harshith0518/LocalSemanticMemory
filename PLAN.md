@@ -67,7 +67,15 @@ Approved and implemented on 11 September 2026 after S03. `contracts.py`, `policy
 
 Acceptance is recorded in [RUN.md](RUN.md#actual-s04-results): the S03 regression checks pass; invalid ownership/version/variant/passages and stale revisions fail; scope, tentative meaning and unknown times survive; raw/formatted variants remain one observation; Private has zero personal-store/file-write attempts and unchanged durable snapshots through success/failure paths; guarded revision races use actual PostgreSQL connections/barriers. The complete suite has 75 passing checks.
 
-General corpus import, live models, retrieval, UI, entity resolution and complete Correct/Forget remain later scopes. S05 should build the importer on these contracts and settle source namespace, eligibility and safe idempotent reimport before personal data. A valid schema/span is not an entailment verdict. An appended claim revision does not classify a correction versus a real-world change.
+General corpus import was deferred from S04 to S05 below. Live models, retrieval, UI, entity resolution and complete Correct/Forget remain later scopes. A valid schema/span is not an entailment verdict. An appended claim revision does not classify a correction versus a real-world change.
+
+## S05 approved scope and acceptance
+
+The user approved proceeding with diagnostic import/inspection and then merging the tested work into `main` and pushing. `imports.py` defines the bounded UTF-8 JSONL interchange and typed receipts/inspection; `services.py` owns batch validation, stable namespace identity, source/job transactions and reimport conflict checks. API and Typer adapters expose those shared operations. Docker includes only the named curated source/evaluator files, kept in separate directories. No new dependency or migration is needed; existing S03/S04 records retain their meaning.
+
+Acceptance: import all eight diagnostic observations, inspect exact raw/formatted pairs and all 11 evaluator excerpts, preserve missing metadata, keep equal-text independent observations distinct, and make exact reimport return existing source/job state. Conflicting/invalid batches must leave no partial state; API/CLI must agree; Private must avoid saved access and input reads/writes; separate PostgreSQL connections/barriers must prove import serialization and the policy commit guard. Preserve the original S03 probe and all imported source/job fields across container replacement. [Actual results](RUN.md#actual-s05-results)
+
+Changed exports are rejected rather than silently revised; automatic extraction/job execution, models, retrieval, UI, complete Correct/Forget and the full approximately 500-observation corpus remain later work. S06 requires a separately bounded live-call approval and explicit provider retention/no-training/budget settings.
 
 ## Workflow cases to implement deliberately
 

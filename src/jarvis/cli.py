@@ -8,6 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from jarvis.config import Settings
 from jarvis.db import make_engine
 from jarvis.errors import ApplicationError, ErrorCode
+from jarvis.imports import MAX_IMPORT_BYTES
 from jarvis.services import Service
 
 app = typer.Typer(no_args_is_help=True, pretty_exceptions_enable=False)
@@ -15,6 +16,8 @@ probe = typer.Typer(help="Write/read one fixed synthetic bootstrap observation; 
 app.add_typer(probe, name="probe")
 contracts = typer.Typer(help="Validate synthetic contract JSON from stdin; never saves input.")
 app.add_typer(contracts, name="contracts")
+sources = typer.Typer(help="Import UTF-8 JSONL dictations and inspect saved source evidence.")
+app.add_typer(sources, name="sources")
 
 
 def run(operation: Callable[[Service], dict | None]) -> None:
@@ -88,3 +91,57 @@ def validate_observation(mode: str = typer.Option(...)) -> None:
 @contracts.command("claim")
 def validate_claim(mode: str = typer.Option(...)) -> None:
     run(lambda service: validate(service, "claim", mode))
+
+
+@sources.command("import")
+def import_sources(
+    namespace: str = typer.Option(...),
+    expected_policy_revision: int = typer.Option(...),
+    mode: str = typer.Option(...),
+) -> None:
+    """Read one bounded JSONL batch from stdin; retries preserve observation identity."""
+
+    def operation(service: Service) -> dict:
+        context = service.identity.context(mode)
+        context.require_saved_access()  # Before any stdin read, including malformed input.
+        stream = getattr(sys.stdin, "buffer", sys.stdin)
+        payload = stream.read(MAX_IMPORT_BYTES + 1)
+        return service.import_observations(
+            context,
+            {
+                "namespace": namespace,
+                "expected_policy_revision": expected_policy_revision,
+            },
+            payload,
+        ).model_dump(mode="json")
+
+    run(operation)
+
+
+@sources.command("list")
+def list_sources(
+    namespace: str = typer.Option(...),
+    mode: str = typer.Option(...),
+    after: str | None = None,
+    limit: int = 50,
+) -> None:
+    run(
+        lambda service: service.list_sources(
+            service.identity.context(mode),
+            {
+                "namespace": namespace,
+                "after": after,
+                "limit": limit,
+            },
+        ).model_dump(mode="json")
+    )
+
+
+@sources.command("inspect")
+def inspect_source(source_id: str, mode: str = typer.Option(...)) -> None:
+    run(
+        lambda service: service.inspect_source(
+            service.identity.context(mode),
+            source_id,
+        ).model_dump(mode="json")
+    )

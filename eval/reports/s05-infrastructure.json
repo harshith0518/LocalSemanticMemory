@@ -1,0 +1,98 @@
+{
+  "milestone": "S05",
+  "recorded_on": "2026-09-11",
+  "scope": "Deterministic diagnostic import and infrastructure; no live model evaluation",
+  "environment": {
+    "checkout": "existing Windows checkout",
+    "containers": "Docker Desktop Linux",
+    "database": "PostgreSQL 17 with pgvector",
+    "test_project": "jarvis-tests",
+    "test_database": "jarvis_test",
+    "application_project": "jarvis",
+    "schema": "0002_evidence_contracts"
+  },
+  "schema_changes": [],
+  "dependency_changes": [],
+  "fixtures": [
+    {
+      "path": "data/synthetic/sample-dictations.jsonl",
+      "sha256": "021ba1318952de4d5f1caf4b84fafea32c314c42c6b46bf26e30d7b5316a4cfc",
+      "observations": 8,
+      "byte_identical_to_parent_original": true
+    },
+    {
+      "path": "eval/fixtures/sample-evaluation-cases.json",
+      "sha256": "6eb3ae695b13e9d3996fcdaf19f0cb6a29507d68148b8de14767679c170a63aa",
+      "cases": 8,
+      "exact_evidence_excerpts": 11,
+      "ingested": false,
+      "byte_identical_to_parent_original": true
+    }
+  ],
+  "checks": [
+    {
+      "command": "docker compose -f compose.test.yaml run --build --rm tests",
+      "passed": 111,
+      "failed": 0,
+      "warnings": 0,
+      "duration_seconds": 15.46
+    },
+    {
+      "command": "ruff check --no-cache src migrations tests",
+      "result": "passed; locked tool in Linux container"
+    },
+    {
+      "command": "ruff format --check --no-cache src migrations tests",
+      "result": "20 files already formatted; locked tool in Linux container"
+    },
+    {
+      "command": "docker compose config --quiet; docker compose build api; docker compose up -d --wait --wait-timeout 120 api",
+      "result": "passed"
+    },
+    {
+      "command": "docker compose run --rm migrate alembic upgrade head",
+      "result": "passed"
+    },
+    {
+      "command": "docker compose run --rm migrate alembic check",
+      "result": "No new upgrade operations detected."
+    }
+  ],
+  "application_acceptance": {
+    "status": "passed",
+    "imported": 8,
+    "api_reimport_unchanged": 8,
+    "restart_reimport_unchanged": 8,
+    "exact_source_job_inspections": 8,
+    "s03_probe_unchanged": true,
+    "api_and_db_replaced": true,
+    "private_http_status": 403,
+    "api_log_driver": "none",
+    "schema": "0002_evidence_contracts"
+  },
+  "private_evidence": {
+    "tested_sinks": "engine connections, SQL calls, file writes, input streams, application errors/logs and all durable table snapshots",
+    "saved_access_attempts": 0,
+    "durable_write_attempts": 0,
+    "body_or_stdin_reads": 0,
+    "snapshots_unchanged": true,
+    "live_http_denial": 403,
+    "live_cli_denial_exit": 1
+  },
+  "resolved_findings": [
+    "Initial lint: unused ErrorCode import removed.",
+    "Review: JSONB numeric notation must not turn an exact reimport into a conflict; booleans remain distinct from numbers.",
+    "Review: reimport selects the original ingestion job explicitly.",
+    "First Windows application smoke run failed the Unicode API/CLI comparison: PowerShell 5 used legacy decoding without a charset. Explicit UTF-8 JSON response headers fixed it; the suite and complete Windows acceptance run passed afterward."
+  ],
+  "remaining_failures": [],
+  "limitations": [
+    "Eight synthetic observations are not the required approximately 500-observation corpus.",
+    "No semantic-entailment or live-model answer/extraction evaluation.",
+    "Jobs are saved but no processing worker exists.",
+    "Changed exports under an existing identity are rejected; automatic source revision/correction is deferred.",
+    "Full Correct/Forget, duplicate exclusion across namespaces, retrieval and UI are later milestones."
+  ],
+  "next_milestone": "S06: source-history answering through DeepSeek after bounded approval, provider access, retention/no-training settings and a spend ceiling.",
+  "reproduction": "RUN.md#s05-import-and-inspection"
+}

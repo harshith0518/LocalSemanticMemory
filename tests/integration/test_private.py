@@ -97,6 +97,9 @@ def test_all_saved_operations_reject_private_before_parsing_or_io(
         lambda: service.save_observation(private, SENTINEL),
         lambda: service.validate_claim(private, SENTINEL),
         lambda: service.commit_claim(private, SENTINEL),
+        lambda: service.import_observations(private, SENTINEL, SENTINEL),
+        lambda: service.list_sources(private, SENTINEL),
+        lambda: service.inspect_source(private, SENTINEL),
     ]
     with no_store_access(engine, monkeypatch):
         for operation in operations:

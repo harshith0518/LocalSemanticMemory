@@ -1,6 +1,6 @@
 # Run and verify the backend
 
-S04 is implemented and checked on 11 September 2026 in the existing Windows checkout using Docker Desktop Linux containers. Typed evidence contracts and Normal/Private gates extend the S03 foundation; the isolated suite now has 75 passing checks. Use the synthetic fixtures below. General corpus import, a processing worker, models, retrieval, UI and complete Correct/Forget are not implemented.
+S05 is implemented and checked on 11 September 2026 in the existing Windows checkout using Docker Desktop Linux containers. Bounded import/inspection extends the S03 foundation and S04 evidence/policy contracts; the isolated suite now has 111 passing checks. Use the included synthetic fixtures below. A processing worker, models, retrieval, UI and complete Correct/Forget are not implemented.
 
 ## Start from a checkout
 
@@ -27,7 +27,7 @@ docker compose run --rm --no-deps cli ready
 
 Check `$LASTEXITCODE` after Docker/CLI commands; nonzero means failure. PowerShell does not automatically stop on native command failures. `/health` and `jarvis health` report process liveness without querying personal data or the database. `/ready` and `jarvis ready` call the same service to verify the DB connection, Alembic revision and pgvector extension. Expected readiness is `{"status":"ready","schema":"0002_evidence_contracts","pgvector":"0.8.6"}`. Readiness failures return HTTP 503 / CLI exit 1 with a short category, without raw database errors or credentials.
 
-The API is published only on `127.0.0.1`; PostgreSQL has no published host port. The server owns the fixed local identity. No endpoint accepts an owner selector or durable user-content writes. S04 adds validation-only POST endpoints that return a fixed receipt without echoing the input. Application containers run as UID 10001. Source is copied into the image, so rebuild after code changes. uv and the build backend use the checked-in lock; the development checks are included in the same image for this milestone.
+The API is published only on `127.0.0.1`; PostgreSQL has no published host port. The server owns the fixed local identity; no endpoint accepts an owner selector. S04 validation endpoints return a receipt without echoing input. S05 import writes eligible dictations only in Normal mode, and inspection returns owned saved evidence. JSON responses explicitly declare UTF-8 so Windows PowerShell 5 decodes multilingual text correctly. Application containers run as UID 10001. Source is copied into the image, so rebuild after code changes. uv and the build backend use the checked-in lock; development checks are included in the same image.
 
 ## Migrations and schema effects
 
@@ -47,7 +47,7 @@ The synthetic service creates the source and pending job in one transaction unde
 
 ## Verify persistence
 
-This CLI accepts no personal input: it writes one fixed synthetic observation and returns all saved source/job fields. Repeated writes return that record without duplicating it.
+The `probe` CLI accepts no personal input: it writes one fixed synthetic observation and returns all saved source/job fields. Repeated writes return that record without duplicating it. S05 import/inspection commands are documented separately below.
 
 ```powershell
 $s03Before = docker compose run --rm --no-deps cli probe write
@@ -89,6 +89,75 @@ docker compose -f compose.test.yaml run --build --rm tests
 ```
 
 The fixed test project owns only `jarvis-tests_test-database`. This reset does not touch `jarvis_database`. Keep the application and test project names distinct; do not override their names to collide. A host uv workflow is optional: from the repository root, use Python 3.12 and `uv sync --locked`. The supported DB verification path remains the isolated Compose command above.
+
+## S05 import and inspection
+
+Only import records you intend to retain in Normal mode. The included [JSONL](data/synthetic/sample-dictations.jsonl) contains eight synthetic observations; [evaluation questions/labels](eval/fixtures/sample-evaluation-cases.json) are separate and must never be supplied as source input. Docker copies only these named curated files, not private imports or evaluator runs.
+
+Each JSONL line is an object with required `record_id` and `raw_transcript`, optional/null `formatted_text`, and optional/null `metadata` object. Namespace and record ID are case-sensitive, 1–96 ASCII letters/digits/`.`/`_`/`-`, starting with a letter or digit. Keep the namespace stable for the same original collection, and retain original record IDs across exports/retries; filenames/text hashes are not identity. A source key is `import:<namespace>:<record_id>`, owned by the backend's local user. No owner, source kind or revision selector is accepted inside records.
+
+Preserve text exactly, including whitespace, combining characters and raw/formatted disagreements. Optional metadata is retained; `{}` and null stay distinct. `metadata.captured_at`, when present/non-null, must be a zoned ISO timestamp such as `2026-09-01T10:00:00+05:30`. The typed capture time represents that instant; original metadata retains the supplied string. No capture/event time is inferred from import time or dates mentioned in text. Only exact supporting passages count as structurally valid references; offsets are zero-based, half-open Unicode code points.
+
+Limits: 1 MiB UTF-8 per batch, up to 1,000 records, up to 65,536 characters per nonblank text variant. Split larger collections into bounded batches using the **same namespace**; each batch is atomic. Optional UTF-8 BOM, CRLF and blank lines are accepted. Duplicate JSON keys/record IDs, unknown top-level fields, non-finite numbers, invalid UTF-8, NUL and naive/numeric capture timestamps are rejected. This importer accepts supplied dictations; it does not extract facts, execute embedded instructions or certify provenance/semantic truth.
+
+Inspect the current policy revision before import (zero for an untouched owner). A stale revision is rejected even for an exact retry. The CLI reads UTF-8 bytes from stdin; redirect inside the Linux container for the bundled fixture so legacy PowerShell piping cannot alter its encoding:
+
+```powershell
+docker compose run --rm --no-deps cli sources list --namespace diagnostic-v1 --mode normal
+docker compose run --rm --no-deps --entrypoint sh cli -c 'jarvis sources import --namespace diagnostic-v1 --expected-policy-revision 0 --mode normal < data/synthetic/sample-dictations.jsonl'
+$page = docker compose run --rm --no-deps cli sources list --namespace diagnostic-v1 --mode normal | ConvertFrom-Json
+$sourceId = $page.observations[0].id
+docker compose run --rm --no-deps cli sources inspect $sourceId --mode normal
+```
+
+For an unfamiliar host JSONL file, the API accepts its bytes without a bind mount or shell text conversion. This example uses the same synthetic fixture; replace only the filename/namespace and use the returned current policy revision for another collection:
+
+```powershell
+$headers = @{'X-Jarvis-Mode'='normal'}
+$bytes = [System.IO.File]::ReadAllBytes((Join-Path (Get-Location) 'data/synthetic/sample-dictations.jsonl'))
+Invoke-RestMethod 'http://127.0.0.1:8000/sources/import?namespace=diagnostic-v1&expected_policy_revision=0' -Method Post -Headers $headers -ContentType 'application/x-ndjson; charset=utf-8' -Body $bytes
+$page = Invoke-RestMethod 'http://127.0.0.1:8000/sources?namespace=diagnostic-v1&limit=50' -Headers $headers
+$sourceId = $page.observations[0].id
+Invoke-RestMethod "http://127.0.0.1:8000/sources/$sourceId" -Headers $headers
+```
+
+Listing returns summaries, current policy revision and `next_after`; use it as CLI `--after` or API `after` for the next page. Limit defaults to 50 and cannot exceed 100. Inspection returns the complete observation, latest revision and ingestion job state. A pending job means saved but **not processed**. API/CLI requests require explicit mode; an owner header never overrides backend identity.
+
+The first import reports `created: 8, unchanged: 0`; exact retries report `created: 0, unchanged: 8` with the same source/job IDs, timestamps, revisions, attempts and status. JSON object order/numeric notation does not change metadata meaning; booleans remain distinct from numbers. Changed text or metadata under the same identity returns HTTP 409 / CLI exit 1 with `import_conflict`; the entire batch is rolled back. Reimport never silently updates a source or requeues a failed job. Corrected exports need a later explicit revision/control workflow; do not work around a conflict by renaming an existing observation.
+
+Private import/list/inspect return `private_operation_denied` (HTTP 403 / CLI exit 1) before reading import bodies/stdin or accessing the personal store. Missing/invalid mode and input return bounded errors without content/tracebacks. The API sets `Cache-Control: no-store`; API/CLI container logging remains disabled. Full browser session controls and provider retention are later work.
+
+To repeat the complete source/job persistence comparison for the listed diagnostic page (the separate S03 probe comparison is above):
+
+```powershell
+$savedSources = @{}
+foreach ($item in $page.observations) {
+    $savedSources[$item.id] = docker compose run --rm --no-deps cli sources inspect $item.id --mode normal
+    if ($LASTEXITCODE -ne 0) { throw 'Source inspection failed' }
+}
+$apiBefore = docker compose ps -q api
+$dbBefore = docker compose ps -q db
+docker compose down
+if ($LASTEXITCODE -ne 0) { throw 'Container removal failed' }
+docker compose up -d --wait --wait-timeout 120 api
+if ($LASTEXITCODE -ne 0) { throw 'Container replacement failed' }
+if ($apiBefore -eq (docker compose ps -q api) -or $dbBefore -eq (docker compose ps -q db)) { throw 'Containers were not replaced' }
+foreach ($item in $page.observations) {
+    $after = docker compose run --rm --no-deps cli sources inspect $item.id --mode normal
+    if ($LASTEXITCODE -ne 0 -or $savedSources[$item.id] -cne $after) { throw 'Source/job state changed' }
+}
+'Source/job persistence passed'
+```
+
+### Actual S05 results
+
+The final isolated run passed **111 tests with zero warnings**, including all S03/S04 checks. The suite imports all eight observations, verifies every raw/formatted pair and the 11 evaluator excerpts, and keeps questions/labels out of stored sources. It checks Unicode and missing metadata, distinct equal-text identities, complete-state reimport stability, malformed/oversized input before DB access, metadata conflicts, owner isolation, pagination, late job-failure rollback, policy revisions, concurrent idempotent imports and the policy lock using separate PostgreSQL connections/barriers. Private adapters refuse even a body/stdin stream that would throw if read; DB/SQL/file-write instrumentation stays at zero and durable snapshots remain identical.
+
+The actual application run used the startup/migration commands above, CLI import/list/inspect, API byte import and source inspection, then `docker compose down` and `docker compose up -d --wait --wait-timeout 120 api`. All eight complete source/job inspections and the original S03 probe were compared before/after replacing both API and DB containers. Exact reimport remains unchanged after restart. The `jarvis_database` volume is retained; no S03/S04 schema/data migration was needed. Alembic upgrade/check and Ruff lint/format pass.
+
+The first Windows application comparison exposed a real encoding issue: PowerShell 5 decoded a JSON response without a charset as single-byte text, corrupting the displayed rupee symbol while the stored text and UTF-8 client were correct. Explicit UTF-8 JSON response headers fixed it; the documented PowerShell commands were rerun. Self-review also fixed numeric-notation reimport comparisons and selected the original ingestion job explicitly. An initial unused-import lint finding was removed. No failed check remains hidden behind the final result. [Reproducible evidence record](eval/reports/s05-infrastructure.json)
+
+Scope limits: eight synthetic observations, no measured live-model/semantic answer quality, no extraction worker, embeddings/retrieval, UI, automatic source correction or complete Correct/Forget/no-resurrection behavior. A repeated import under a **different** namespace is a different declared collection; cross-import duplicate/exclusion controls remain S09. The next milestone is S06 source-history answering through DeepSeek after bounded approval and provider/settings/budget readiness.
 
 ## S04 contracts and policy checks
 
@@ -162,10 +231,10 @@ The first implementation-chat audit on 11 September found the Linux engine stopp
 
 The requested read-only coding CLI session completed in the earlier readiness milestone. The Windows CLI at `C:/Users/ASUS/AppData/Roaming/npm/codex.cmd` reported version 0.153.4 and successful ChatGPT authentication via `login status`; credential files were not opened. Its restricted nested sandbox could read the checkout but denied CLI-status/Docker-context probes. The parent session verified those under the normal Windows account using approved execution outside that sandbox. Docker operations still need the appropriate execution context; no global sandbox relaxation or Git configuration change is required.
 
-Assistant changes/commits/pushes use `dev`; `main` stays the reviewed default branch. The user controls merging. Use `git log -1 --oneline` and compare `git rev-parse HEAD` with `git ls-remote origin refs/heads/dev` to identify and verify the published milestone commit.
+Assistant implementation commits/pushes use `dev`; `main` stays the reviewed default branch. The user controls merging and explicitly authorized merging/pushing the completed S05 work. Use `git log -1 --oneline` and compare `git rev-parse dev` / `git rev-parse main` with `git ls-remote origin refs/heads/dev refs/heads/main` to verify the published tips.
 
 ## Later review contract
 
-S05 is next: import and inspect the diagnostic observations, including safe reimport and exact source identity. S04's contracts and Private gates are now the required service boundary. Subsequent milestones provide import, processing, model calls, retrieval, controls and the ordinary-user UI. Provider access, retention/no-training settings and a spend ceiling must be agreed before live inference. The final acceptance still needs a clean-checkout import/UI/evaluation/reset walkthrough and exact tested release commit; S03 is not that final product gate.
+S06 is next: produce a source-history answer through DeepSeek using the S05 stored evidence and S04 policy boundary. Subsequent milestones provide processing, selective memory, retrieval, full controls and the ordinary-user UI. Provider access, retention/no-training settings and a spend ceiling must be agreed before live inference. The final acceptance still needs a clean-checkout import/UI/evaluation/reset walkthrough and exact tested release commit; S05 is not that final product gate.
 
 Implementation references: [uv Docker integration](https://docs.astral.sh/uv/guides/integration/docker/), [pgvector installation](https://github.com/pgvector/pgvector#docker), [Compose startup ordering](https://docs.docker.com/compose/how-tos/startup-order/), [FastAPI containers](https://fastapi.tiangolo.com/deployment/docker/).
