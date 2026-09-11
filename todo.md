@@ -4,7 +4,7 @@ Updated: 11 September 2026. Target: **12 September afternoon IST**.
 
 This is the single current-status checklist. [PLAN.md](PLAN.md) defines scope and milestone gates; [DECISIONS.md](DECISIONS.md) records decisions; [EVALUATION.md](EVALUATION.md) defines evidence. Check an item only after its acceptance condition is demonstrated.
 
-**Current work:** Source-note preservation and S02 environment readiness are complete. S01's two final author-authored submissions remain open; S03 bootstrap is the next implementation scope to review. The application is not implemented and no live model evaluation has run.
+**Current work:** Source-note preservation and S02 readiness checks are complete. Follow-up host checks verified Windows CLI authentication and Docker Linux access; the read-only CLI session completed with sandbox access limits recorded in RUN.md. Assistant work now uses `dev`; the user controls merges to `main`. S01's final independently authored documents and approval of the concrete S03 proposal remain open. The application is not implemented and no live Jarvis model evaluation has run.
 
 ## Completed
 
@@ -21,6 +21,8 @@ This is the single current-status checklist. [PLAN.md](PLAN.md) defines scope an
 - [x] Create the [18-page visual memory guide](output/pdf/jarvis-memory-visual-guide.pdf) and its regeneration script. Review rendered diagrams for learning, retrieval, models, Private/Correct/Forget, race conditions, feedback, evaluation and delivery. Record the user's updated workflow: discussion chat with PDF/Markdown, then Codex CLI for approved coding. This is documentation, not application implementation.
 - [x] Clarify page 2: the project's broad semantic-memory scope includes facts, scoped preferences and useful episodes; automatic procedural learning is deferred by our plan. Add three clickable reference cards to every page and a [reference register](docs/visual-guide-references.md) with exact brief locators, source support and limitations. Align PLAN.md and ARCHITECTURE.md without changing implementation scope.
 - [x] Validate the implementation-chat handoff against the repository, parent planning workspace, project brief, fixtures, educational site and archived history. Recheck source counts, local links, archive hashes and existing teaching tests. Confirm the clean starting checkout matches remote `main` at `3eca8fb43be8825f4db205d4fe9533c5466e2431`. Docker's Linux engine is currently stopped; the earlier S02 probe remains historical evidence. See the [current environment recheck](RUN.md#implementation-chat-recheck).
+
+- [x] Record the user's `dev`/`main` workflow and prepare the [bounded S03 proposal](PLAN.md#first-implementation-approval-scope) with files, schema effects and acceptance checks. Run the requested read-only CLI session and verify host CLI authentication plus Windows/Ubuntu Docker access; [actual results and sandbox limits](RUN.md#dev-branch-readiness-check). The CLI made no implementation or Git changes. Other-session visual-guide edits remain separate from this readiness/proposal checkpoint; S01 preservation and S03 approval remain open.
 
 ## Ongoing
 
@@ -52,7 +54,7 @@ The S01–S12 IDs match the delivery sequence discussed with the user. PLAN.md g
 2. Implement the bounded milestone and run relevant checks. Use documentation checks for documentation, actual DB tests for persistence/concurrency and explicitly labeled live runs for model behavior.
 3. Inspect the diff and results. Fix failures or record the limitation without marking the milestone passed. No credentials, private data or unrelated edits enter the commit.
 4. Update this tracker, relevant decisions and run instructions with what changed, what was tested, the result and the next step.
-5. Create a focused commit and push it to the remote repository after every meaningful completed milestone. The user has authorized this recurring commit/push workflow; do not ask again merely to push an approved milestone.
+5. Create a focused commit on `dev` and push to remote `dev` after every meaningful completed milestone. The user has authorized this recurring commit/push workflow; do not ask again merely to push an approved milestone. The user reviews and merges into `main`, or explicitly instructs the assistant to merge. Do not commit or push directly to `main`.
 6. Verify remote/local commit agreement and report the commit. If push fails, record that it remains local and resolve it without force-pushing over concurrent changes.
 
 Preservation/tracker milestone checks on 11 September: UTF-8 decoding passed for nine Markdown files; all 26 then-present local links/anchors resolved; source-note counts matched 813/317; completed/ongoing/pending headings and S01–S12 coverage passed; staged whitespace passed. Environment checks are recorded in RUN.md; recheck documentation links and staged whitespace for that milestone. No application or model tests apply yet. The latest tracker commit is available through `git log --oneline -- todo.md`; avoid inventing a self-referential commit hash inside its own content.
@@ -69,6 +71,6 @@ Implementation-chat handoff checks on 11 September: nine UTF-8 Markdown files an
 
 - Two final independently authored Phase One submissions; source-note preservation is already complete.
 - Important implementation scopes remain subject to the user's review rule; do not treat approval of a step as approval for every later architecture change.
-- Before coding in Codex CLI: verify the chosen Windows/WSL CLI setup, authentication and access to the same repository and Docker engine. The user selected a CLI workflow, not a source migration or completed CLI setup.
+- Before S03 implementation: preserve final Phase One documents and obtain scope approval. Windows Codex CLI authentication and host Docker/Ubuntu access are verified; Docker commands inside a restricted CLI subprocess require the appropriate approved execution context. Keep the existing checkout on `dev` and preserve other sessions' changes.
 - Before live calls: provider credentials stored locally, account access, retention/no-training settings and an agreed spend/token ceiling. No secrets in chat or Git.
 - Azure, graph services, response caching, streaming, autonomous procedural learning and rich UI polish remain optional after required gates pass.

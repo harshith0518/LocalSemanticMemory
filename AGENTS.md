@@ -8,7 +8,7 @@ Read todo.md for current status, then README.md, DECISIONS.md, PLAN.md, ARCHITEC
 - A milestone approval covers its necessary routine implementation and fixes. Ask again for material scope changes, schema meaning, model/provider behavior, privacy/lifecycle semantics, major dependencies or deployment outside the approved scope. Do not ask for every small line change.
 - Documentation corrections, read-only investigation and tests within an approved implementation scope can proceed. Never use them to conceal an unapproved architecture change.
 - The user asked to begin with preservation of independently authored Phase One documents and then progress step by step. Locate and mechanically check those originals without generating their content. Follow already approved bounded work without repeated confirmation; important implementation changes outside that scope still need review.
-- After each meaningful completed milestone, run relevant checks, update todo.md, commit and push to the remote. The user has explicitly authorized this ongoing commit/push workflow. Verify the push; do not claim a milestone is remotely available while it is only local.
+- After each meaningful completed milestone, run relevant checks, update todo.md, commit and push to remote `dev`. The user has explicitly authorized this ongoing commit/push workflow. Verify the push; do not claim a milestone is remotely available while it is only local. The user reviews and merges into `main`; the assistant may merge only when explicitly instructed.
 
 ## Product invariants
 
@@ -28,7 +28,7 @@ Read todo.md for current status, then README.md, DECISIONS.md, PLAN.md, ARCHITEC
 - The brief requires an ordinary-user UI and actual backend, persistence, retrieval and model decisions. A CLI, static guide or mock demonstration alone is insufficient.
 - Phase One positioning/vision are independently authored author work. Do not generate them or claim these AI-assisted technical documents satisfy that requirement.
 - Keep docs consolidated. Maintain completed/ongoing/pending status and the next action in todo.md; record tradeoffs in DECISIONS.md and real results in the evaluator's report directory once implemented. Do not create competing status checklists.
-- Use `codex/` for new implementation branches unless the user names another branch. Do not force-push or erase prior history without separate explicit authorization.
+- Maintain `main` as the default reviewed branch and `dev` as the assistant's working branch. Make changes and commits on `dev`; do not commit or push directly to `main`, merge into it, or introduce another branch without the user's instruction. Do not force-push or erase prior history without separate explicit authorization. In this shared checkout, preserve other sessions' edits and stage only the current task's changes.
 - Do not commit credentials, private imports, databases, dependency directories, local course artifacts or raw private traces. Curated synthetic corpus and evaluation results must remain reproducible and distinguishable from personal data.
 
 ## Verification

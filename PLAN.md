@@ -31,9 +31,35 @@ Corpus generation and test-case design can proceed alongside approved implementa
 
 ## First implementation approval scope
 
-Propose one bounded bootstrap: `pyproject.toml` and lockfile, Dockerfile, Compose services and health/migration setup, package/service layout, API health endpoint, CLI entry point, minimal source/job/policy schema and isolated DB smoke checks. No memory extraction logic, hosted model calls, UI implementation or deployment in this first scope.
+**S03 proposal, pending approval.** The user's readiness handoff explicitly keeps implementation pending until both final independently authored Phase One documents are preserved and mechanically checked, and the user approves S03. Implement and commit on `dev`; the user controls merging into `main`.
 
-Before starting, explain files, data effects, tradeoffs and the acceptance gate, then obtain approval. Routine fixes inside the approved scope do not need repeated permission. Ask again for schema semantics, model behavior, privacy/lifecycle changes, new significant dependencies or deployment outside that scope.
+| Proposed files | Bounded behavior |
+| --- | --- |
+| `pyproject.toml`, `uv.lock`, `.python-version` | Python 3.12; FastAPI, Uvicorn, Pydantic, SQLAlchemy, psycopg, Alembic and Typer. pytest, HTTPX and Ruff for development checks. Resolve compatible exact versions during the approved build and install from the frozen lock. |
+| `Dockerfile`, `compose.yaml`, `.dockerignore`, `.env.example`, `docker/postgres/init-db.sh` | One Python image; PostgreSQL `db`, one-shot `migrate`, loopback `api`, developer CLI profile and isolated test services. Initialize separate runtime/migration database roles. Pin tool/image versions and image digests. Keep secrets, private inputs, local caches and parent-workspace artifacts out of the build context. |
+| `alembic.ini`, `migrations/env.py`, `migrations/versions/0001_bootstrap.py` | One migration path for the minimal source/job/policy records below. Application startup waits for database health and successful migration. |
+| `src/jarvis/` | Configuration, per-operation DB sessions/transactions, backend-owned local identity and policy boundary, shared services, thin FastAPI and Typer adapters. `GET /health` and `jarvis health` call the same readiness service to check DB connectivity and migration revision. |
+| `tests/integration/` and existing run/status documents | Synthetic persistence, migration, API/CLI parity, rollback, constraint and isolation checks on actual PostgreSQL. Record commands and observed results after they work. |
+
+Proposed schema effects are limited to three logical records plus Alembic's revision table:
+
+- **Policy:** owner ID and a nonnegative policy revision, providing the row for later guarded transactions. The server supplies the local owner identity; request fields cannot select another owner.
+- **Sources:** owner-scoped source identity, source revision, paired raw/formatted text, content hash, actual import time and nullable supplied capture/app metadata. Keep raw/formatted variants together; text equality is not observation identity, and missing capture times remain unknown.
+- **Jobs:** owner/source references, idempotency key, pending status, attempt count and expected source/policy revisions. Enforce matching source ownership with database constraints. A shared internal service atomically saves a synthetic source and pending job for the checks; this does not expose a general import endpoint or execute processing jobs.
+
+This migration introduces durable tables in the selected application database; the acceptance run writes only synthetic records to disposable test storage. Tests use a separate PostgreSQL service, credentials and volume with no application-volume mount or application DB credentials. Test configuration must reject the application database target. Routine startup preserves volumes; reset removes only the explicitly selected test resources.
+
+Use synchronous SQLAlchemy/psycopg transactions initially to keep the API and CLI path small and explicit. PostgreSQL adds a service but tests the actual selected persistence backend; a SQLite test substitute would not prove its constraints or transaction behavior. Copy source into images and retain the existing Windows checkout. pgvector activation/search indexes, worker processing, extraction, hosted model calls, user-content import, full Private/Correct/Forget behavior, UI and deployment belong to later scopes. A source/policy table is not evidence that those controls already work.
+
+Acceptance requires all of the following:
+
+1. Build with pinned images and a frozen dependency lock; start the documented Compose services from empty isolated storage, with DB health before migration and migration completion before API readiness.
+2. Apply migrations to an empty database; repeat without duplicate objects or schema drift. Use a non-superuser application role and restrict schema-changing privileges to the migration path.
+3. API and CLI report the same DB/schema readiness. Database unavailability or a stale schema produces a bounded failure and a nonzero CLI exit / HTTP 503 without leaking credentials or raw error payloads.
+4. Commit a synthetic source and pending job, replace both application and database containers while retaining the designated test volume, and verify the exact saved state. Container restart alone is insufficient evidence of volume persistence.
+5. Pass real PostgreSQL tests for atomic source/job writes and rollback, uniqueness, owner consistency and test-target isolation, plus Ruff and relevant API/CLI checks. If a concurrency guarantee is claimed, use separate connections and explicit barriers. These checks make no claim about live models or complete lifecycle controls.
+
+After these gates pass, update the existing tracker/run instructions, commit and push the coherent S03 implementation to `dev`, and verify the remote commit. The user reviews and merges. Routine fixes within the approved scope need no repeated permission; material changes to schema meaning, model behavior, privacy/lifecycle semantics, significant dependencies or deployment still require review.
 
 ## Workflow cases to implement deliberately
 

@@ -44,6 +44,27 @@ On 11 September, the fresh implementation session found Docker client `28.4.0` a
 
 Host Python `3.14` and Node `24.11.1` are available. `uv`, `codex` and Poppler commands were not found on this session's PowerShell PATH; that is not proof they are uninstalled elsewhere. The standalone coding CLI's location and authentication remain unverified. Existing course/blueprint checks run with Node; PDF inspection used installed pypdf and PyMuPDF. No application dependency lock, container build, database test or model-provider access was validated in this audit.
 
+### Dev-branch readiness check
+
+In the follow-up session on 11 September, the Windows user account resolved `C:/Users/ASUS/AppData/Roaming/npm/codex.cmd`. It reported `codex-cli 0.153.4`, and `login status` exited successfully with `Logged in using ChatGPT`. The requested ephemeral, read-only CLI session also completed against this checkout. Authentication status is the CLI's supported check; no credential files were opened. [Official CLI authentication documentation](https://learn.chatgpt.com/docs/auth#check-authentication-or-sign-out)
+
+Docker Desktop was already running at this check. Windows `desktop-linux` and Docker invoked inside Ubuntu-24.04 both reached the Linux server at version `28.4.0`; Compose reported `2.39.2-desktop.1`. No installation, new Docker daemon, container/volume probe or Jarvis model-provider call was needed. The earlier stopped-engine observation above is historical, not the current result.
+
+The nested CLI's read-only sandbox could inspect Git and documents, but its CLI-status and Docker-context probes returned access denied. The parent session verified those commands under the normal Windows account through approved execution outside the sandbox. This establishes host authentication and engine access, not unrestricted Docker access inside the CLI sandbox. Future Docker operations need the appropriate approved execution context; do not disable sandbox protections or change global settings merely to hide that distinction.
+
+Reproduce the host checks in the same Windows checkout:
+
+```powershell
+& 'C:/Users/ASUS/AppData/Roaming/npm/codex.cmd' --version
+& 'C:/Users/ASUS/AppData/Roaming/npm/codex.cmd' login status
+docker version
+docker compose version
+wsl -d Ubuntu-24.04 -- docker version
+git status --short --branch
+```
+
+The user selected `dev` for assistant changes/commits and `main` for reviewed merges. Only `main` existed remotely at the start of this check; `dev` was created locally from `0d847171a6855b1327747770cff2b556523badcc`. Another session was editing the visual guide and related documentation, so the checkout was no longer clean during the CLI run. Preserve those edits; do not bundle them into readiness work or switch the shared branch underneath ongoing work. Application dependency installation, migrations, API/database behavior and restart persistence remain untested until the approved [S03 acceptance run](PLAN.md#first-implementation-approval-scope).
+
 ## Required final commands and documentation
 
 Implementation must provide and verify the following operations through the CLI and appropriate UI. Exact executable commands will replace this checklist after they work:
