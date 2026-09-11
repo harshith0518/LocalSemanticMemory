@@ -26,7 +26,9 @@ The initial review service binds to loopback and uses a server-controlled local 
 
 ## Evidence representation
 
-History preserves original records. Semantic memory stores reusable facts and scoped preferences; episodes preserve what was reported to have happened. Procedures describe how to act and are not automatically created from every trace. Persistence describes lifetime, independently of those categories.
+The project uses **semantic memory as a broad product term**: our planned scope includes facts, scoped preferences and useful episodes. In the narrower content taxonomy, semantic understanding means reusable facts/preferences, episodic understanding preserves reported happenings and their context, and procedural knowledge describes how to act. We defer **automatic procedural learning**, not episodic understanding. This is our scope choice; the brief does not mandate that deferral. [Brief locators and terminology sources](docs/visual-guide-references.md#project-brief)
+
+History preserves original records and their support for derived understanding. Persistence describes lifetime independently of content kind, and these categories do not require separate databases. A reported event is not an independently verified action; ordinary reviewed code and prompts can guide behavior without learning procedures automatically.
 
 | Logical record | Required information |
 | --- | --- |

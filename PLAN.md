@@ -6,6 +6,8 @@ Status: proposed implementation sequence, 11 September 2026. Deadline: 12 Septem
 
 Build a narrow complete journey: import dictations → ask a supported history question → produce a contextual draft → inspect Sources → resolve uncertainty → Correct/Forget → prove subsequent behavior changed. Use the same backend from CLI, API, UI and evaluator.
 
+The brief's broad use of "semantic memory" includes factual, episodic and preference-level understanding. Our scope includes useful reported episodes as well as facts and scoped preferences; only automatic procedural learning is deferred. See the [verified brief locators](docs/visual-guide-references.md#project-brief) and visual guide page 2 for the terminology mapping.
+
 Backend + database + CLI first is the development sequence. The brief requires a normal-user interface connected to real state and model decisions, so reserve a small UI slice. Defer visual polish rather than the interface itself. No ASR implementation, native insertion, external message sending or Azure deployment is needed for this slice.
 
 Preserve the author's independently authored Phase One documents before starting Part Two. Their content must come from the author. This technical plan does not establish their completion.

@@ -17,11 +17,13 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 
+from visual_guide_sources import CHECKED, PAGE_REFS, SOURCES
+
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "output/pdf/jarvis-memory-visual-guide.pdf"
 QA = ROOT / "tmp/pdfs"
-W, H = 1440, 960
-BASE = "https://github.com/harshith0518/ProjectSemanticMemoryJarvis/blob/main/"
+W, H = 1440, 1140
+BASE = "https://github.com/harshith0518/ProjectSemanticMemoryJarvis/blob/dev/"
 INK = "#23364B"
 MUTED = "#586B80"
 PAPER = "#F7F9FC"
@@ -43,6 +45,8 @@ STATUS = {
     "UNTESTED": "risk",
     "DECIDED": "data",
     "REFERENCE": "user",
+    "INCLUDED": "data",
+    "DEFERRED": "decision",
 }
 
 
@@ -323,13 +327,40 @@ class Page:
         c.setStrokeColor(color("#D9E1EA"))
         c.setLineWidth(1)
         c.line(54, H - 897, 1386, H - 897)
+        text(c, "REFERENCES  /  CLICK A CARD", 54, 913, 14, True, MUTED)
+        text(c, "Source register: support, limits + exact brief locators", 1386, 913, 13,
+             False, COLORS["data"][0], "right")
+        c.linkURL(BASE + "docs/visual-guide-references.md", (950, H - 936, 1386, H - 908),
+                  relative=0, thickness=0)
+        refs = PAGE_REFS[self.number]
+        assert len(refs) == 3
+        for index, source_id in enumerate(refs):
+            source = SOURCES[source_id]
+            x, y, w, h = 54 + index * 450, 946, 432, 124
+            role = "data" if source["kind"] == "PRIMARY SOURCE" else "user"
+            stroke, bg = COLORS[role]
+            c.setFillColor(color(bg))
+            c.setStrokeColor(color(stroke))
+            c.roundRect(x, H - y - h, w, h, 10, fill=1, stroke=1)
+            text(c, source["kind"], x + 15, y + 12, 11, True, stroke)
+            title_lines = wrap(source["title"], w - 30, 17, True)
+            assert len(title_lines) == 1, source_id
+            text(c, title_lines[0], x + 15, y + 33, 17, True, stroke)
+            support_lines = wrap(source["supports"], w - 30, 16)
+            assert len(support_lines) <= 3, source_id
+            for line_index, line in enumerate(support_lines):
+                text(c, line, x + 15, y + 60 + 18 * line_index, 16)
+            c.linkURL(source["url"], (x, H - y - h, x + w, H - y),
+                      relative=0, thickness=0)
+        text(c, "References explain methods or record requirements. They do not prove Jarvis works. See the register for each source's limits.",
+             54, 1080, 12, False, MUTED)
         text(c, "PLAN SNAPSHOT  11 SEP 2026  |  Product implementation & live evaluation: pending",
-             54, 913, 13, False, MUTED)
+             54, 1110, 13, False, MUTED)
         ref_label = f"READ: {self.ref}"
-        text(c, ref_label, 900, 913, 13, True, COLORS["data"][0])
-        c.linkURL(BASE + self.ref.split("#")[0], (895, 22, 1310, 49), relative=0, thickness=0)
-        text(c, "MAP", 1346, 913, 13, True, COLORS["data"][0])
-        c.linkRect("", "P01", (1336, 22, 1390, 49), relative=0, thickness=0)
+        text(c, ref_label, 900, 1110, 13, True, COLORS["data"][0])
+        c.linkURL(BASE + self.ref, (895, H - 1132, 1310, H - 1102), relative=0, thickness=0)
+        text(c, "MAP", 1346, 1110, 13, True, COLORS["data"][0])
+        c.linkRect("", "P01", (1336, H - 1132, 1390, H - 1102), relative=0, thickness=0)
         c.showPage()
 
 
@@ -367,18 +398,21 @@ def build_pages():
     p.label(55, 846, "STATUS TAGS: DECIDED / PROPOSED / VERIFIED / UNTESTED  |  Color never means 'already built'.", 15)
     pages.append(p)
 
-    p = Page(2, "Semantic and persistent are different axes", "What is remembered?  x  How long is it kept?", "ARCHITECTURE.md")
-    p.group(54, 162, 1332, 300, "AXIS 1  /  CONTENT KIND")
-    p.n("A", 79, 209, 405, 205, "Semantic", "Reusable facts + scoped preferences\nMira: three-bullet Atlas updates", "data", "document")
-    p.n("B", 516, 209, 405, 205, "Episodic", "What was reported to happen\nUser reported sending a checklist", "data", "document")
-    p.n("C", 953, 209, 405, 205, "Procedural", "How to carry out a task\nReviewed steps; automatic learning deferred", "model", "document")
-    p.group(54, 491, 1332, 244, "AXIS 2  /  LIFETIME")
+    p = Page(2, "Semantic memory: assignment scope + terminology", "Includes useful episodes; automatic procedural learning is deferred.", "ARCHITECTURE.md")
+    p.group(54, 162, 884, 305, 'ASSIGNMENT UMBRELLA: "SEMANTIC MEMORY"', "data")
+    p.n("A", 79, 209, 405, 215, "Semantic understanding", "Reusable facts + scoped preferences\nMira: three-bullet Atlas updates", "data", "document", tag="INCLUDED")
+    p.n("B", 516, 209, 405, 215, "Episodic understanding", "Reported events + their context\nUser reported sending a checklist", "data", "document", tag="INCLUDED")
+    p.label(79, 439, "PLANNED SCOPE: FACTS + PREFERENCES + USEFUL EPISODES", 14, COLORS["data"][0], True)
+    p.group(953, 162, 433, 305, "PROCEDURAL / HOW TO ACT", "decision")
+    p.n("C", 967, 209, 405, 215, "Automatic procedure learning", "Learning reusable task steps\nReviewed code + prompts will guide v1 behavior", "decision", "document", tag="DEFERRED", title_size=21)
+    p.label(974, 439, "Deferral is our scope choice, not a brief rule.", 14, COLORS["decision"][0])
+    p.group(54, 491, 1332, 244, "PERSISTENCE = LIFETIME, INDEPENDENT OF CONTENT KIND")
     p.n("D", 80, 543, 305, 140, "Persistent store", "Survives requests / restart\nCan hold different content kinds", "data", "cylinder")
     p.n("E", 563, 543, 306, 140, "Working context", "Selected evidence + current request\nFits the model input budget", "code")
     p.n("F", 1048, 543, 306, 140, "Model response", "Uses the supplied context\nDoes not update model weights", "model", "hex")
     p.e("D", "E", label="retrieve", at=(473, 599))
     p.e("E", "F", label="prompt", at=(956, 599))
-    p.n("G", 80, 775, 605, 83, "Factual memory belongs under semantic memory", kind="data", title_size=21)
+    p.n("G", 80, 775, 605, 83, "Categories do not require separate databases", kind="data", title_size=21)
     p.n("H", 749, 775, 605, 83, "Saved claim does not mean independently verified", kind="decision", title_size=21)
     pages.append(p)
 
@@ -686,7 +720,7 @@ def build_pages():
     row(p, list("ABC"), 167, ["Diagram + Markdown", "Design discussion", "Codex CLI implementation"],
         ["PDF: ask about page + node\nMarkdown: precise requirements",
          "Explain tradeoffs; resolve doubts\nRecord agreed changes + approved scope",
-         "Read repo docs + actual Git state\nCLI location/auth/access still to verify"],
+         "Read repo docs + actual Git state\nCurrent CLI / Docker checks: RUN.md"],
         ["data", "user", "code"], ["document", "pill", "round"], h=137, w=406, gap=57)
     p.group(54, 338, 1332, 210, "CURRENT CHECKPOINT  /  VERIFIED ENVIRONMENT DOES NOT MEAN IMPLEMENTED PRODUCT")
     p.n("D", 78, 388, 406, 150, "S01  Final independent Phase One", "User owns final positioning + vision\nAI-assisted references preserved", "decision", tag="OPEN", title_size=20, body_size=16)
@@ -700,8 +734,8 @@ def build_pages():
         p.n(key,54+i*346,589,294,128,title,body,"code",title_size=23,body_size=18)
     for a,b in zip("GHI","HIJ"):
         p.e(a,b)
-    p.n("K",54,744,847,126,"Approved scope -> build -> test -> update tracker -> commit -> push -> verify",
-        "Same repository; one active checkout; truthful results; fix failed gates before completion",
+    p.n("K",54,744,847,126,"Approved scope -> build -> test -> update tracker -> commit -> push dev -> verify",
+        "One active checkout; user reviews / merges to main; fix failed gates before completion",
         "code",title_size=22,body_size=17)
     p.n("L",950,744,436,126,"Target: 12 Sep afternoon IST",
         "Optional experiment freeze: 10:00 proposed\nReserve final hours for clean review",
@@ -710,11 +744,69 @@ def build_pages():
     return pages
 
 
+def write_references(pages):
+    """Keep the footer links and readable reference register in one source of truth."""
+    assert set(PAGE_REFS) == {p.number for p in pages}
+    lines = [
+        "# Visual guide: references and evidence limits",
+        "",
+        f"Sources checked: **{CHECKED}**. This is an AI-assisted planning reference register, not an implementation or evaluation report.",
+        "",
+        "Generated from `tools/visual_guide_sources.py` by `python tools/build_visual_guide.py`. Edit the source data and regenerate the PDF and this register together.",
+        "",
+        "The PDF links to primary technical sources where they support the mechanism shown, the assignment where it defines requirements, and project documents where a rule is our design choice. Public sources were revisited for this revision; newly added explanations are supporting references, not a claim that every source originally determined our decisions. Provider documentation does not establish account access, quality or cost. No live-model or application result is claimed.",
+        "",
+        "## Assignment brief",
+        "",
+        "Source: **Jarvis_Golden_Goose_Task_Final.pdf**, seven pages, supplied in the parent planning workspace at `../reference/Jarvis_Golden_Goose_Task_Final.pdf` relative to the repository root. This is a local source, not bundled in this repository and not assigned an invented public URL. Page numbers below are physical PDF pages, starting at 1.",
+        "",
+        "SHA-256: `9c30ac90c80b77118438c05e72c9539d166c38fd8f949ce8cb140bba6550937a`.",
+        "",
+        "| Locator | What the brief supports |",
+        "| --- | --- |",
+        "| Page 2, introductory definition | Durable understanding of preferences, facts and continuing user context. |",
+        '| Page 3, Begin with the use case | "Semantic memory may make factual, episodic, and preference-level understanding possible." The author chooses which forms matter for the product. |',
+        "| Page 4, Build the complete experience / Build the system beneath it | Ordinary-user UI; transcript replay is allowed; real backend state, persistence, retrieval and model decisions; relate factual, episodic and preference-level understanding to the chosen product. |",
+        "| Pages 4-5, Prove it yourself | Approximately 500 development records with raw/formatted content and metadata; inspect the complete pipeline, provenance, behavior and measurements. These are observations, not 500 evaluation questions. |",
+        "| Page 5, Our evaluation | Unfamiliars examine learned facts, preferences and episodes on their own corpus. |",
+        "| Page 6, Our evaluation / submission requirements | Recover distributed information, support answers with original interactions, avoid unsupported answers, and provide reproducible project artifacts. |",
+        "",
+        "**Scope interpretation:** Jarvis includes useful reported episodes alongside reusable facts and scoped preferences. Automatic procedural learning is deferred by our plan, not prohibited by the brief. Content categories do not require separate databases. The narrower terminology in the LangChain source explains the categories; it does not override the assignment's broader product term.",
+        "",
+        "## Page-by-page reference map",
+        "",
+        "Each page has three clickable source cards. The cards identify the type of support; this register records the limits. Page 12 intentionally cites our own Private requirements and tests, because an external framework does not guarantee our proposed privacy contract.",
+        "",
+    ]
+    for p in pages:
+        lines.extend([f"### Page {p.number:02}: {p.title}", ""])
+        for source_id in PAGE_REFS[p.number]:
+            source = SOURCES[source_id]
+            lines.append(f'- **{source["kind"]}**: [{source["title"]}](#{source_id}) - {source["supports"]}')
+        lines.append("")
+    lines.extend(["## Source details", ""])
+    for source_id, source in SOURCES.items():
+        assert source["url"].startswith("https://"), source_id
+        lines.extend([
+            f'<a id="{source_id}"></a>',
+            f'### {source["title"]}',
+            "",
+            f'**{source["kind"]}** - [Open reference]({source["url"]})',
+            "",
+            f'**Supports:** {source["supports"]}',
+            "",
+            f'**Limits:** {source["limits"]}',
+            "",
+        ])
+    (ROOT / "docs/visual-guide-references.md").write_text("\n".join(lines), encoding="utf-8")
+
+
 def main():
     fonts()
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     QA.mkdir(parents=True, exist_ok=True)
     pages = build_pages()
+    write_references(pages)
     c = canvas.Canvas(str(OUTPUT), pagesize=(W, H), pageCompression=1, invariant=1)
     c.setTitle("Hey Jarvis - Semantic Memory Visual Guide")
     c.setAuthor("ProjectSemanticMemoryJarvis - AI-assisted planning diagrams")
@@ -725,8 +817,10 @@ def main():
     report = {
         "page_count": len(pages),
         "output": str(OUTPUT.relative_to(ROOT)),
-        "basis_commit": "557d1ce",
-        "pages": [{"page": p.number, "title": p.title, "nodes": p.fit_report} for p in pages],
+        "basis_commit": "3eca8fb",
+        "references_checked": CHECKED,
+        "pages": [{"page": p.number, "title": p.title, "nodes": p.fit_report,
+                   "references": PAGE_REFS[p.number]} for p in pages],
     }
     (QA / "visual-guide-layout.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(f"Created {OUTPUT} ({len(pages)} pages, {OUTPUT.stat().st_size:,} bytes)")
