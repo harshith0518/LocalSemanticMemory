@@ -16,7 +16,8 @@ Updated 11 September 2026. This distinguishes agreed product behavior from an im
 - The project requires an ordinary-user UI, actual backend/model behavior, approximately 500 development observations, import of unfamiliar unfamiliar data, source-inspectable evaluation, reproducible run/reset instructions and an exact release commit.
 - Delivery target: 12 September afternoon IST. Prefer Docker Compose; Azure is optional only after completing the local result.
 - DeepSeek owns the main reasoning/response role. Compare smaller models for typed memory-operation proposals; the backend retains control of SQL, authorization and commits. Exact endpoint/model selection remains an experiment.
-- Ask before important implementation edits. Current authorization covers the repository documentation restart and push; it does not authorize substantial product code yet.
+- Ask before important implementation edits outside an already approved bounded scope. The user requested starting with Phase One preservation and then progressing through the delivery steps.
+- Maintain [todo.md](todo.md) with completed, ongoing and pending work. After every meaningful completed milestone, run relevant checks, update the tracker, commit and push; this recurring commit/push workflow is authorized.
 
 ## Proposed implementation choices
 
@@ -35,7 +36,7 @@ Updated 11 September 2026. This distinguishes agreed product behavior from an im
 
 1. Approve the bounded bootstrap in [PLAN.md](PLAN.md), including final stack and initial schema scope.
 2. Confirm access, retention/no-training settings and a spend ceiling for the [model shortlist](ARCHITECTURE.md#models-and-repair). The user selected DeepSeek main plus a smaller proposer; the proposed NVIDIA/SiliconFlow exact endpoints have not been called or compared. No credentials belong in Git or chat.
-3. Preserve the author's independently authored Phase One documents. No files in this restart substitute for them or establish their completion.
+3. Finalize and preserve the author's independently authored Phase One documents. [User-supplied source notes](docs/part-one/README.md) and earlier-chat provenance are preserved; two final acceptances have not been identified. The notes do not establish independent authorship or completion.
 4. Choose actual dependency/image versions during the first approved build and record them in lockfiles/configuration.
 
 ## Decision evidence format

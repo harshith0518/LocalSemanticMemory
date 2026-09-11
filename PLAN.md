@@ -1,6 +1,6 @@
 # Implementation plan
 
-Status: proposed, 11 September 2026. Deadline: 12 September afternoon IST. The current authorization covers replacing repository content with these documents. **Ask before substantial implementation changes.**
+Status: proposed implementation sequence, 11 September 2026. Deadline: 12 September afternoon IST. See [todo.md](todo.md) for completed, ongoing and pending work. The user requested beginning with Phase One preservation and then progressing step by step. **Ask before substantial implementation changes outside already approved scope.** After each meaningful completed milestone, test, update the tracker, commit and push.
 
 ## Delivery strategy
 
@@ -16,7 +16,7 @@ The times below are work budgets, not guarantees. Cut optional features when a b
 
 | Order | Scope and proposed commit | Acceptance evidence | Budget |
 | --- | --- | --- | --- |
-| 0 | `docs: establish minimal memory implementation plan` | Consistent documentation, explicit proposals and no fabricated implementation/results. | Current step |
+| 0 | `docs: establish minimal memory implementation plan` | Consistent documentation, explicit proposals and no fabricated implementation/results. | Complete: `596b034` |
 | 1 | `chore: bootstrap compose and shared backend` | Locked Python environment; DB health; one migration path; API/CLI share services; isolated test DB; import job persistence survives restart. | ~2 h |
 | 2 | `feat: import and inspect source evidence` | Raw/formatted pairing, missing metadata, exact spans and safe idempotent reimport; general importer accepts unfamiliar projects/names. | ~2 h |
 | 3 | `feat: extract and reconcile supported claims` | Real model proposals; schema/span validation; explicit change, tentative owner and amount conflict stay distinct; rejected proposals visible. | ~3 h |

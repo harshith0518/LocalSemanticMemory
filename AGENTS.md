@@ -1,13 +1,14 @@
 # Working agreement
 
-Read README.md, DECISIONS.md, PLAN.md, ARCHITECTURE.md, EVALUATION.md and RUN.md before implementation. These documents replace the older planning baseline. They describe proposed behavior until code and evidence establish otherwise.
+Read todo.md for current status, then README.md, DECISIONS.md, PLAN.md, ARCHITECTURE.md, EVALUATION.md and RUN.md before implementation. These documents replace the older planning baseline. They describe proposed behavior until code and evidence establish otherwise.
 
 ## Approval boundary
 
 - The user explicitly requests approval before important code edits. Explain the proposed files, behavior/data effects, alternatives and acceptance gate; wait before implementing that bounded scope.
 - A milestone approval covers its necessary routine implementation and fixes. Ask again for material scope changes, schema meaning, model/provider behavior, privacy/lifecycle semantics, major dependencies or deployment outside the approved scope. Do not ask for every small line change.
 - Documentation corrections, read-only investigation and tests within an approved implementation scope can proceed. Never use them to conceal an unapproved architecture change.
-- The current authorization is the documentation restart and push to this repository. Application implementation has not yet been approved.
+- The user asked to begin with preservation of independently authored Phase One documents and then progress step by step. Locate and mechanically check those originals without generating their content. Follow already approved bounded work without repeated confirmation; important implementation changes outside that scope still need review.
+- After each meaningful completed milestone, run relevant checks, update todo.md, commit and push to the remote. The user has explicitly authorized this ongoing commit/push workflow. Verify the push; do not claim a milestone is remotely available while it is only local.
 
 ## Product invariants
 
@@ -26,7 +27,7 @@ Read README.md, DECISIONS.md, PLAN.md, ARCHITECTURE.md, EVALUATION.md and RUN.md
 - Deterministic model doubles test application contracts; real models need separately labeled repeated evaluations. Keep evaluation questions/labels out of the memory corpus.
 - The brief requires an ordinary-user UI and actual backend, persistence, retrieval and model decisions. A CLI, static guide or mock demonstration alone is insufficient.
 - Phase One positioning/vision are independently authored author work. Do not generate them or claim these AI-assisted technical documents satisfy that requirement.
-- Keep docs consolidated. Record observed tradeoffs in DECISIONS.md and real results in the evaluator's report directory once implemented.
+- Keep docs consolidated. Maintain completed/ongoing/pending status and the next action in todo.md; record tradeoffs in DECISIONS.md and real results in the evaluator's report directory once implemented. Do not create competing status checklists.
 - Use `codex/` for new implementation branches unless the user names another branch. Do not force-push or erase prior history without separate explicit authorization.
 - Do not commit credentials, private imports, databases, dependency directories, local course artifacts or raw private traces. Curated synthetic corpus and evaluation results must remain reproducible and distinguishable from personal data.
 

@@ -10,6 +10,8 @@ The proposed demonstration imports a person's dictations, answers questions or p
 
 | Document | Purpose |
 | --- | --- |
+| [todo.md](todo.md) | Completed, ongoing and pending work; current blocker and the next action. |
+| [Phase One source notes](docs/part-one/README.md) | Preserved user-supplied notes, earlier-chat provenance and mechanical word counts; final acceptances remain open. |
 | [PLAN.md](PLAN.md) | Build order, time allocation, milestone gates and scope cuts. |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Shared services, evidence representation, learning, retrieval and repair. |
 | [EVALUATION.md](EVALUATION.md) | Cases, deterministic tests, real-model experiments and decision rules. |
@@ -43,8 +45,8 @@ Approximately 500 development observations and a separate unfamiliar corpus of a
 
 ## History, evidence and AI use
 
-This commit replaces the earlier repository contents with a focused planning baseline. Prior commits remain reachable through normal Git history. Future commits should represent completed, checked milestones; neither timestamps nor results should be manufactured to suggest progress.
+Commit `596b034` replaced the earlier repository contents with a focused planning baseline. Prior commits remain reachable through normal Git history. After each meaningful milestone, run relevant checks, update [todo.md](todo.md), commit and push the completed work. Neither timestamps nor results should be manufactured to suggest progress.
 
-These technical documents were prepared with AI assistance, including explainer agents, source research and review. The project's **Phase One positioning and vision must be independently formed and written by the author and preserved before Part Two**. These documents do not fulfill Phase One; its completion is not established in this repository. Do not generate replacement positioning or vision text.
+These technical documents were prepared with AI assistance, including explainer agents, source research and review. The project's **Phase One positioning and vision must be independently formed and written by the author and preserved before Part Two**. The author's supplied [source notes](docs/part-one/README.md) are preserved with provenance and counts; two final acceptances have not been identified. These technical documents do not fulfill Phase One. Do not generate replacement positioning or vision text.
 
 Azure is an optional final experiment after the local review path passes. It is not a dependency of submission. The architecture and evaluation are hypotheses to test, not claims of a best-performing memory system.
