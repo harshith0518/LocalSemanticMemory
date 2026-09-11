@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Hey Jarvis · Sources</title>
+    <link rel="icon" href="/assets/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/app.css" />
+    <script src="/assets/app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip" href="#workspace">Skip to workspace</a>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Hey Jarvis home"
+        ><span class="mark" aria-hidden="true">k</span>hey jarvis<span class="tag"
+          >LOCAL</span
+        ></a
+      >
+      <div class="connection">
+        <span id="connection-dot" class="dot"></span
+        ><span id="connection">Checking connection…</span>
+      </div>
+    </header>
+    <main id="workspace">
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">YOUR MEMORY WORKSPACE</p>
+          <h1 id="page-title">Start with the source.</h1>
+          <p class="subtitle">
+            Keep your dictations together. See exactly what you recorded.
+          </p>
+        </div>
+        <fieldset class="mode-switch">
+          <legend>Session mode</legend>
+          <label
+            ><input
+              type="radio"
+              name="mode"
+              value="normal"
+              checked
+            />Normal</label
+          ><label
+            ><input type="radio" name="mode" value="private" />Private</label
+          >
+        </fieldset>
+      </section>
+      <div id="mode-note" class="mode-note" role="status">
+        Normal mode · Imports are saved to your local workspace.
+      </div>
+      <section
+        id="private-panel"
+        class="private-panel"
+        hidden
+        aria-labelledby="private-title"
+      >
+        <span class="privacy-symbol" aria-hidden="true">○</span>
+        <p class="eyebrow">A FRESH CONTEXT</p>
+        <h2 id="private-title">Your saved sources stay out.</h2>
+        <p>
+          Import and browsing are paused in Private mode. The displayed sources
+          and selected file have been cleared.
+        </p>
+        <p class="muted">
+          Private conversation is not available yet. Switch to Normal to work
+          with saved sources.
+        </p>
+      </section>
+      <div id="normal-panel" class="workspace-grid">
+        <section
+          class="card collection-card"
+          aria-labelledby="collection-title"
+        >
+          <div class="section-heading">
+            <span class="step">01</span>
+            <h2 id="collection-title">Your collection</h2>
+          </div>
+          <form id="collection-form" autocomplete="off">
+            <label for="namespace">Collection name</label>
+            <div class="input-action">
+              <input
+                id="namespace"
+                name="namespace"
+                value="diagnostic-v1"
+                maxlength="96"
+                pattern="[A-Za-z0-9][A-Za-z0-9._-]*"
+                required
+                autocomplete="off"
+                spellcheck="false"
+                aria-describedby="namespace-help"
+              /><button type="submit" class="secondary" data-normal>
+                Open
+              </button>
+            </div>
+            <p id="namespace-help" class="help">
+              Use the same name when importing more of this collection.
+            </p>
+          </form>
+          <div class="rule"></div>
+          <form id="import-form" autocomplete="off">
+            <label for="import-file">Add dictations</label>
+            <div class="file-box">
+              <span class="file-symbol" aria-hidden="true">↥</span>
+              <p>Choose a JSONL export</p>
+              <p class="help">
+                Up to 1 MB · Original and formatted text stay together
+              </p>
+              <input
+                id="import-file"
+                type="file"
+                accept=".jsonl,.ndjson,application/x-ndjson"
+                required
+                data-normal
+              />
+            </div>
+            <button
+              id="import-button"
+              type="submit"
+              class="primary wide"
+              data-normal
+            >
+              Import to collection <span aria-hidden="true">↗</span>
+            </button>
+            <p class="help">
+              Exact reimports keep existing records. Changed records need an
+              explicit correction.
+            </p>
+          </form>
+          <details class="format-help">
+            <summary>What should my file contain?</summary>
+            <p>
+              One JSON object per line with <code>record_id</code> and
+              <code>raw_transcript</code>. You can include
+              <code>formatted_text</code> and <code>metadata</code>. Keep the
+              original record IDs.
+            </p>
+            <p>
+              Try the supplied
+              <code>data/synthetic/sample-dictations.jsonl</code> file.
+              Evaluation questions are not source data.
+            </p>
+          </details>
+        </section>
+        <section class="card sources-card" aria-labelledby="sources-title">
+          <div class="section-heading">
+            <span class="step">02</span>
+            <h2 id="sources-title">Sources</h2>
+            <span id="source-count" class="count">—</span>
+          </div>
+          <p id="list-state" class="empty-state">
+            Open a collection to see its sources.<br /><span class="muted"
+              >Nothing is loaded automatically.</span
+            >
+          </p>
+          <ul
+            id="source-list"
+            class="source-list"
+            aria-label="Saved sources"
+          ></ul>
+          <button
+            id="load-more"
+            class="secondary wide"
+            type="button"
+            hidden
+            data-normal
+          >
+            Load more sources
+          </button>
+        </section>
+        <section class="card evidence-card" aria-labelledby="evidence-title">
+          <div class="section-heading">
+            <span class="step">03</span>
+            <h2 id="evidence-title">Original evidence</h2>
+          </div>
+          <div id="evidence-empty" class="evidence-empty">
+            <span aria-hidden="true">❝</span>
+            <h3>The record, in its own words.</h3>
+            <p>
+              Select a source to inspect both versions and its capture details.
+            </p>
+          </div>
+          <article id="evidence" hidden aria-live="polite">
+            <div class="evidence-top">
+              <h3 id="record-title"></h3>
+              <span id="revision" class="pill"></span>
+            </div>
+            <p id="job-state" class="help"></p>
+            <h4>Original transcript</h4>
+            <p id="raw-text" class="passage"></p>
+            <h4>
+              Formatted text <span class="muted">· same observation</span>
+            </h4>
+            <p id="formatted-text" class="passage"></p>
+            <dl class="metadata">
+              <dt>Captured</dt>
+              <dd id="captured-at"></dd>
+              <dt>Imported</dt>
+              <dd id="imported-at"></dd>
+            </dl>
+            <details>
+              <summary>Source details</summary>
+              <dl class="metadata">
+                <dt>Source ID</dt>
+                <dd id="source-id"></dd>
+                <dt>Processing</dt>
+                <dd id="job-status"></dd>
+                <dt>Attempts</dt>
+                <dd id="job-attempts"></dd>
+              </dl>
+              <pre id="capture-metadata"></pre>
+            </details>
+          </article>
+        </section>
+      </div>
+      <p
+        id="feedback"
+        class="feedback"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      ></p>
+      <aside class="next-note">
+        <span class="next-label">UP NEXT</span>
+        <p>
+          <strong>Answers grounded in your sources.</strong> Source-based
+          answers, Correct and Forget will appear here as their backend checks
+          pass.
+        </p>
+        <span class="pill">In progress</span>
+      </aside>
+      <noscript
+        ><p class="feedback">
+          Enable JavaScript to use this workspace. No sources have been loaded.
+        </p></noscript
+      >
+    </main>
+    <footer>
+      <span>One observation. Original evidence preserved.</span
+      ><span>Local workspace · No model calls in this version</span>
+    </footer>
+  </body>
+</html>

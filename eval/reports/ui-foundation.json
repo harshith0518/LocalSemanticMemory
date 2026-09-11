@@ -1,0 +1,74 @@
+{
+  "milestone": "Early S10 source-workspace UI after the S03-S05 audit",
+  "date": "2026-09-11",
+  "base_commit": "a599414b431783661f54aff2c542a11ebeb0e78a",
+  "scope": "Browser import, source inspection and transient Normal/Private workspace; no inference or lifecycle schema change",
+  "backend": {
+    "command": "docker compose -f compose.test.yaml run --build --rm tests",
+    "database": "isolated PostgreSQL jarvis_test on test-db",
+    "passed": 112,
+    "failed": 0,
+    "warnings": 0,
+    "duration_seconds": 10.22,
+    "checks": [
+      "All S03-S05 bootstrap, migration, evidence, policy, import and actual PostgreSQL concurrency regressions",
+      "UI shell/assets require no personal-store connection or writes",
+      "No-store, no cookies, content security policy, frame/referrer/nosniff headers",
+      "Static asset path traversal and environment-file access rejected"
+    ]
+  },
+  "browser": {
+    "command": "npm.cmd --prefix tests/browser test",
+    "playwright": "1.62.1",
+    "target": "http://127.0.0.1:8001/ (isolated test backend only)",
+    "passed": 8,
+    "failed": 0,
+    "duration_seconds": 4.435494,
+    "viewports": [[1440, 1100], [390, 844]],
+    "checks": [
+      "Eight synthetic observations imported through the browser and inspected from PostgreSQL; exact reimport preserves source identity",
+      "Raw/formatted amount conflict, Unicode and missing capture time displayed faithfully",
+      "Conflicting and malformed batches show bounded errors without partial records or input echoes",
+      "HTML-like source text is rendered as text and never executes",
+      "Oversized file rejected before saved-data requests; pagination reaches all 55 synthetic records without duplicates",
+      "Private clears evidence, selected files and form state with no saved-data requests or Normal backfill",
+      "Explicitly delayed Normal response cannot repopulate Private or a subsequent Normal context",
+      "Network errors are distinguished from empty collections and raw failure content is not displayed",
+      "Mobile layout has no horizontal overflow; keyboard form submission and navigation clearing work",
+      "Fresh browser contexts make no external requests, cookies or instrumented browser-storage writes"
+    ],
+    "visual_review": "Desktop and mobile synthetic screenshots inspected; no material layout issues found.",
+    "recordings": "Disabled; optional synthetic screenshots go only to ignored .tmp/ui-review."
+  },
+  "runtime": {
+    "application_url": "http://127.0.0.1:8000/",
+    "compose_start": "Passed; API container replaced, database volume retained",
+    "readiness": "ready; schema 0002_evidence_contracts; pgvector 0.8.6",
+    "s03_probe": "Original source and job unchanged after API replacement",
+    "s05_sources": "All eight diagnostic source/job inspection objects unchanged after API replacement",
+    "image_exclusions": "No node_modules or .env in the final image",
+    "schema_effects": "None",
+    "provider_calls": 0
+  },
+  "code_checks": {
+    "ruff_lint": "passed",
+    "ruff_format": "21 Python files passed",
+    "frontend_format": "Pinned Prettier 3.6.2 checks passed",
+    "browser_locked_install": "npm ci passed; two packages installed from the separate browser-test lockfile"
+  },
+  "resolved_findings": [
+    "First browser run: six of seven passed; the navigation test's instrumentation assumed serviceWorker exists on about:blank. Fixed the harness guard and reran all cases.",
+    "Excluded newly installed browser node_modules from the Docker context; verified absence in final image.",
+    "Added bounded request timeouts, processing status/attempt details and explicit successful-import/failed-refresh behavior during review.",
+    "Formatter required the explicit HTML parser for the SVG icon; final applicable formatting checks passed."
+  ],
+  "limits": [
+    "Source-workspace portion of S10 only: no Ask/model answer, extraction, retrieval or complete Correct/Forget workflow",
+    "Private saved-source access is denied; Private conversation is unavailable",
+    "A Normal import accepted before a mode switch can finish; cancellation is not rollback or Forget",
+    "No provider credential authentication, paid call, live model evaluation or no-training certification",
+    "NVIDIA trial-terms exception and live budget remain pending",
+    "Browser extension/OS behavior and manual user exports are outside the application's storage guarantee",
+    "Full approximately 500-observation corpus and final clean-checkout UI/model/lifecycle review remain later gates"
+  ]
+}

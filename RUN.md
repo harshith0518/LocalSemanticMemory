@@ -1,6 +1,6 @@
-# Run and verify the backend
+# Run and verify Hey Jarvis
 
-S05 is implemented and checked on 11 September 2026 in the existing Windows checkout using Docker Desktop Linux containers. Bounded import/inspection extends the S03 foundation and S04 evidence/policy contracts; the isolated suite now has 111 passing checks. Use the included synthetic fixtures below. A processing worker, models, retrieval, UI and complete Correct/Forget are not implemented.
+S05 is implemented and checked on 11 September 2026 in the existing Windows checkout using Docker Desktop Linux containers. Bounded import/inspection extends the S03 foundation and S04 evidence/policy contracts; the isolated suite now has 111 passing checks. Use the included synthetic fixtures below. The user subsequently approved the minimal browser workspace below; no CLI is required for import/inspection. A processing worker, models, retrieval and complete Correct/Forget are not implemented. Milestone-specific results below retain their historical test counts and scope.
 
 ## Start from a checkout
 
@@ -22,12 +22,44 @@ docker compose up -d --wait --wait-timeout 120 api
 docker compose ps -a
 Invoke-RestMethod http://127.0.0.1:8000/health
 Invoke-RestMethod http://127.0.0.1:8000/ready
-docker compose run --rm --no-deps cli ready
 ```
 
 Check `$LASTEXITCODE` after Docker/CLI commands; nonzero means failure. PowerShell does not automatically stop on native command failures. `/health` and `jarvis health` report process liveness without querying personal data or the database. `/ready` and `jarvis ready` call the same service to verify the DB connection, Alembic revision and pgvector extension. Expected readiness is `{"status":"ready","schema":"0002_evidence_contracts","pgvector":"0.8.6"}`. Readiness failures return HTTP 503 / CLI exit 1 with a short category, without raw database errors or credentials.
 
 The API is published only on `127.0.0.1`; PostgreSQL has no published host port. The server owns the fixed local identity; no endpoint accepts an owner selector. S04 validation endpoints return a receipt without echoing input. S05 import writes eligible dictations only in Normal mode, and inspection returns owned saved evidence. JSON responses explicitly declare UTF-8 so Windows PowerShell 5 decodes multilingual text correctly. Application containers run as UID 10001. Source is copied into the image, so rebuild after code changes. uv and the build backend use the checked-in lock; development checks are included in the same image.
+
+## Browser workflow
+
+After the setup above, open **[http://127.0.0.1:8000/](http://127.0.0.1:8000/)** (use your configured port if different). Importing and inspecting sources require no CLI, Python, Node or API key. The browser is the primary ordinary-user surface; CLI/HTTP examples later in this file are optional developer diagnostics and historical acceptance commands. Initial Compose setup remains an operator step.
+
+1. Check that the top bar says **Workspace connected**. Leave **Normal** selected to work with saved sources.
+2. Choose a **Collection name**. Use `diagnostic-v1` with the bundled synthetic sample; keep the name stable on reimport. Select **Open** to browse an existing collection, or select `data/synthetic/sample-dictations.jsonl` under **Add dictations** and choose **Import to collection**. The UI handles policy revisions; the backend rechecks them atomically.
+3. Read the saved/unchanged receipt. Exact retries preserve IDs and job state. Invalid or conflicting batches show a bounded error; fix the source of a conflict instead of renaming old records. Use **Load more sources** for larger collections.
+4. Select a source. Original and formatted text belong to one observation. `dict_0008` retains the ₹15,000/₹50,000 disagreement; `dict_0007` has no capture time even though its content mentions a date. **Source details** exposes original metadata and processing status. Pending means memory extraction has not run.
+5. Switch to **Private**. The displayed collection/evidence and selected file are cleared; import/browsing are unavailable. Switching back does not restore them or import anything. Private conversation, Ask, Correct and Forget are not yet available; the UI makes no fabricated model/action claims.
+
+The supported page keeps no local/session storage, cookies, IndexedDB, service worker or analytics and loads no third-party assets. Saved data loads only after an explicit Normal action. Mode changes abort pending requests and reject late responses; page hide/restoration clears context. A Normal import accepted before the switch may still commit. Cancellation cannot undo that write; safely reopen/reimport the same collection/file if the result was interrupted. Browser extensions, OS memory and explicit user screenshots are outside this application's storage guarantee.
+
+### Browser acceptance checks
+
+Only developers need Node/npm for these optional checks. The runtime UI has no npm dependencies. Run the backend suite first to initialize/reset the isolated test database; do not run DB reset tests concurrently with browser tests.
+
+```powershell
+docker compose -f compose.test.yaml run --build --rm tests
+docker compose -f compose.test.yaml --profile browser up -d --wait --wait-timeout 120 web
+npm.cmd ci --prefix tests/browser --ignore-scripts --no-audit --no-fund
+Push-Location tests/browser
+npx.cmd playwright install chromium
+Pop-Location
+npm.cmd --prefix tests/browser test
+docker compose -f compose.test.yaml --profile browser stop web
+```
+
+The browser suite deliberately targets only `http://127.0.0.1:8001/`, the isolated test backend. The Compose web profile receives only test runtime credentials, with no application credentials/volume or provider keys. Playwright is pinned to 1.62.1 in a separate lockfile; `node_modules` is excluded from Git and image context. Tests use fresh browser contexts and synthetic data, with no recordings/traces. Optional synthetic screenshots: set `$env:JARVIS_UI_SCREENSHOTS='1'` for the test command; files go to ignored `.tmp/ui-review/`.
+
+Actual results for this slice are recorded in [the UI evidence record](eval/reports/ui-foundation.json). A first browser run passed six of seven checks; the navigation test exposed a test-harness assumption that service workers exist on `about:blank`. The harness now instruments that API only where available. No application failure was concealed. Review also added bounded network timeouts and processing details, and excluded newly installed browser dependencies from the Docker build context. The original application source/job schema and provider configuration are unchanged.
+
+Final results on 11 September: **112 isolated PostgreSQL checks passed in 10.22 s, zero warnings; all 8 Chromium checks passed in 4.44 s**. Desktop (1440×1100) and mobile (390×844) screenshots were visually reviewed. Ruff lint and formatting passed for all 21 Python files; frontend formatting and `npm ci` passed. The final image contains neither `node_modules` nor `.env`. The documented application start replaced the API container successfully; `/` and `/ready` respond, all eight diagnostic source/job inspection objects match their pre-upgrade state, and the original S03 probe remains unchanged. No application volume was reset and no live model request was made.
 
 ## Migrations and schema effects
 
@@ -43,7 +75,7 @@ docker compose run --rm migrate alembic check
 
 Revision `0001_bootstrap` creates `jarvis.policies`, `jarvis.sources` and `jarvis.jobs`, plus Alembic's version table. Policies store the owner and nonnegative revision. Sources pair raw/formatted text, source identity/revision, SHA-256 and actual import time; supplied capture time/metadata remain nullable. The hash covers a UTF-8 JSON pair and does not define observation identity. Jobs have an owner-scoped idempotency key, pending status, attempts, and expected source/policy revisions. A composite foreign key requires the job to match its source's owner and revision. There are no embeddings, vector columns or search indexes yet.
 
-The synthetic service creates the source and pending job in one transaction under the owner's policy-row lock. It cannot process the job. S04 now gates every implemented personal-store service operation, but complete Correct/Forget and UI session behavior remain later work. Future schema changes need a new reviewed migration; do not edit an applied migration to change its meaning.
+The synthetic service creates the source and pending job in one transaction under the owner's policy-row lock. It cannot process the job. S04 gates every implemented personal-store service operation. The early UI slice adds session clearing above; complete Correct/Forget remains later work. Future schema changes need a new reviewed migration; do not edit an applied migration to change its meaning.
 
 ## Verify persistence
 
@@ -92,6 +124,8 @@ The fixed test project owns only `jarvis-tests_test-database`. This reset does n
 
 ## S05 import and inspection
 
+The [browser workflow](#browser-workflow) is the primary user path. The contract and commands below remain for optional developer checks; users do not need to enter them.
+
 Only import records you intend to retain in Normal mode. The included [JSONL](data/synthetic/sample-dictations.jsonl) contains eight synthetic observations; [evaluation questions/labels](eval/fixtures/sample-evaluation-cases.json) are separate and must never be supplied as source input. Docker copies only these named curated files, not private imports or evaluator runs.
 
 Each JSONL line is an object with required `record_id` and `raw_transcript`, optional/null `formatted_text`, and optional/null `metadata` object. Namespace and record ID are case-sensitive, 1–96 ASCII letters/digits/`.`/`_`/`-`, starting with a letter or digit. Keep the namespace stable for the same original collection, and retain original record IDs across exports/retries; filenames/text hashes are not identity. A source key is `import:<namespace>:<record_id>`, owned by the backend's local user. No owner, source kind or revision selector is accepted inside records.
@@ -125,7 +159,7 @@ Listing returns summaries, current policy revision and `next_after`; use it as C
 
 The first import reports `created: 8, unchanged: 0`; exact retries report `created: 0, unchanged: 8` with the same source/job IDs, timestamps, revisions, attempts and status. JSON object order/numeric notation does not change metadata meaning; booleans remain distinct from numbers. Changed text or metadata under the same identity returns HTTP 409 / CLI exit 1 with `import_conflict`; the entire batch is rolled back. Reimport never silently updates a source or requeues a failed job. Corrected exports need a later explicit revision/control workflow; do not work around a conflict by renaming an existing observation.
 
-Private import/list/inspect return `private_operation_denied` (HTTP 403 / CLI exit 1) before reading import bodies/stdin or accessing the personal store. Missing/invalid mode and input return bounded errors without content/tracebacks. The API sets `Cache-Control: no-store`; API/CLI container logging remains disabled. Full browser session controls and provider retention are later work.
+Private import/list/inspect return `private_operation_denied` (HTTP 403 / CLI exit 1) before reading import bodies/stdin or accessing the personal store. Missing/invalid mode and input return bounded errors without content/tracebacks. The API sets `Cache-Control: no-store`; API/CLI container logging remains disabled. The early UI slice adds browser context clearing above; complete conversation/control behavior and provider retention remain later work.
 
 To repeat the complete source/job persistence comparison for the listed diagnostic page (the separate S03 probe comparison is above):
 
@@ -157,7 +191,7 @@ The actual application run used the startup/migration commands above, CLI import
 
 The first Windows application comparison exposed a real encoding issue: PowerShell 5 decoded a JSON response without a charset as single-byte text, corrupting the displayed rupee symbol while the stored text and UTF-8 client were correct. Explicit UTF-8 JSON response headers fixed it; the documented PowerShell commands were rerun. Self-review also fixed numeric-notation reimport comparisons and selected the original ingestion job explicitly. An initial unused-import lint finding was removed. No failed check remains hidden behind the final result. [Reproducible evidence record](eval/reports/s05-infrastructure.json)
 
-Scope limits: eight synthetic observations, no measured live-model/semantic answer quality, no extraction worker, embeddings/retrieval, UI, automatic source correction or complete Correct/Forget/no-resurrection behavior. A repeated import under a **different** namespace is a different declared collection; cross-import duplicate/exclusion controls remain S09. The next milestone is S06 source-history answering through DeepSeek after bounded approval and provider/settings/budget readiness.
+Scope limits: eight synthetic observations, no measured live-model/semantic answer quality, no extraction worker, embeddings/retrieval, UI, automatic source correction or complete Correct/Forget/no-resurrection behavior. A repeated import under a **different** namespace is a different declared collection; cross-import duplicate/exclusion controls remain S09. The next milestone is S06 source-history answering through Kimi K3 after bounded approval and provider/settings/budget readiness.
 
 ## S04 contracts and policy checks
 
@@ -233,8 +267,39 @@ The requested read-only coding CLI session completed in the earlier readiness mi
 
 Assistant implementation commits/pushes use `dev`; `main` stays the reviewed default branch. The user controls merging and explicitly authorized merging/pushing the completed S05 work. Use `git log -1 --oneline` and compare `git rev-parse dev` / `git rev-parse main` with `git ls-remote origin refs/heads/dev refs/heads/main` to verify the published tips.
 
+## S06 readiness audit
+
+Actual audit on 11 September 2026, before S06 implementation. Audited application commit: `a599414b431783661f54aff2c542a11ebeb0e78a` (completed S05). The existing checkout was clean on `dev`; a fetch and remote-tip check showed both `origin/dev` and `origin/main` at that exact commit. The user explicitly authorized this audit checkpoint's publication to `main`; subsequent implementation stays on `dev`.
+
+Read AGENTS, tracker and all seven planning/run documents; extracted the full text of the 18-page [visual guide](output/pdf/jarvis-memory-visual-guide.pdf), rendered every page with PyMuPDF, reviewed all three contact sheets and inspected the evaluation page at full size. Read-only PDF inspection leaves the original snapshot unchanged.
+
+| Guide reference | Implementation/evidence and remaining boundary |
+| --- | --- |
+| 03.B–03.F, 03.H–03.K | Shared API/CLI services, PostgreSQL, ordered migration startup and isolated test DB are implemented. UI, workers and model adapters remain later work. |
+| 04.A–04.H, page 5 | Paired variants, exact owned/versioned passages, typed scope/uncertainty/time and unknown metadata are preserved. These checks do not establish semantic entailment. |
+| 06.A–06.E, 06.G, 06.I; 07.G | Import/policy validation, atomic source/job writes and idempotent reimport are implemented. Live extraction, reconciliation and searchable derived views are pending. |
+| Page 12; 14.A–14.G and 14.I | Existing Private routes gate input/store access and durable activity. Real PostgreSQL barriers check guarded writes. Provider privacy and buffered reply publication are not yet implemented. |
+| Pages 8–11; 16.B and 16.D | Source-history answers, real model calls and the all-history baseline are S06 work; retrieval improvements are S08. PDF DeepSeek labels on pages 9–11 and 16 are superseded by Kimi K3. |
+| Pages 13 and 15–18 | Complete Correct/Forget/repair, UI, expanded corpus and repeated live evaluation remain later gates. Page 18's pending bootstrap status and implementation-pending footers are historical, not current status. |
+
+Fresh commands/results against the audited source:
+
+```powershell
+docker compose -f compose.test.yaml run --build --rm tests
+docker run --rm jarvis:local ruff check --no-cache src migrations tests
+docker run --rm jarvis:local ruff format --check --no-cache src migrations tests
+docker compose run --rm migrate alembic check
+git ls-remote origin refs/heads/dev refs/heads/main
+```
+
+Results: **111 tests passed in 12.56 s, zero warnings**; lint passed; all 20 Python files passed formatting; application migration check returned `No new upgrade operations detected.` Docker server is Linux 28.4.0, application API/database are healthy, and migration exited successfully. The isolated suite rechecks empty/repeated migrations and existing S03–S05 contracts. Earlier actual container replacement/persistence evidence remains in the S03–S05 sections; it was not repeated or relabeled as a new persistence experiment in this documentation-only audit.
+
+Local configuration inspection reported `KIMI_K3_API_KEY`, `NEMOTRON_30B_API_KEY` and `NEMOTRON_550B_API_KEY` present with NVIDIA key prefixes, and no malformed environment projects. Only names/presence were emitted; no key values were displayed, staged or sent to a provider. This is not credential authentication or evidence of account quota. The API/CLI currently do not consume these keys. Live inference remains blocked by the provider-terms/budget decision in [DECISIONS.md](DECISIONS.md#s06-readiness-decisions); no S06 live result is claimed.
+
+Review conclusion: continue with the existing architecture and [bounded S06 proposal](PLAN.md#s06-bounded-bootstrap-proposal). The no-training conflict is a real open gate, not an infrastructure failure. Phase One final files are still held separately by the author and have not been mechanically verified here. Full product acceptance remains S12.
+
 ## Later review contract
 
-S06 is next: produce a source-history answer through DeepSeek using the S05 stored evidence and S04 policy boundary. Subsequent milestones provide processing, selective memory, retrieval, full controls and the ordinary-user UI. Provider access, retention/no-training settings and a spend ceiling must be agreed before live inference. The final acceptance still needs a clean-checkout import/UI/evaluation/reset walkthrough and exact tested release commit; S05 is not that final product gate.
+S06 is next: produce a source-history answer through Kimi K3 using the S05 stored evidence and S04 policy boundary. Connect source-history Ask to the existing browser UI as part of S06. Subsequent milestones provide processing, selective memory, retrieval and full controls in that same surface; keep CLI commands optional for developers. Provider access, retention/no-training settings and a spend ceiling must be agreed before live inference. The final acceptance still needs a clean-checkout import/UI/evaluation/reset walkthrough and exact tested release commit; S05 is not that final product gate.
 
 Implementation references: [uv Docker integration](https://docs.astral.sh/uv/guides/integration/docker/), [pgvector installation](https://github.com/pgvector/pgvector#docker), [Compose startup ordering](https://docs.docker.com/compose/how-tos/startup-order/), [FastAPI containers](https://fastapi.tiangolo.com/deployment/docker/).

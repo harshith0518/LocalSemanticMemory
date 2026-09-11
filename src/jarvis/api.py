@@ -1,8 +1,10 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
 from jarvis.config import Settings
@@ -10,6 +12,8 @@ from jarvis.db import make_engine
 from jarvis.errors import ApplicationError, ErrorCode
 from jarvis.imports import MAX_IMPORT_BYTES
 from jarvis.services import Service
+
+WEB_ROOT = Path(__file__).parent / "web"
 
 
 def create_app(service: Service | None = None) -> FastAPI:
@@ -27,6 +31,11 @@ def create_app(service: Service | None = None) -> FastAPI:
                 engine.dispose()
 
     app = FastAPI(title="Hey Jarvis backend", lifespan=lifespan)
+    app.mount("/assets", StaticFiles(directory=WEB_ROOT), name="assets")
+
+    @app.get("/", include_in_schema=False)
+    def interface() -> FileResponse:
+        return FileResponse(WEB_ROOT / "index.html")
 
     @app.middleware("http")
     async def input_boundary(request: Request, call_next):
@@ -39,6 +48,15 @@ def create_app(service: Service | None = None) -> FastAPI:
             )
         response.headers["Cache-Control"] = "no-store"
         response.headers["Pragma"] = "no-cache"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Referrer-Policy"] = "no-referrer"
+        response.headers["X-Frame-Options"] = "DENY"
+        if request.url.path == "/" or request.url.path.startswith("/assets/"):
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'none'; script-src 'self'; style-src 'self'; "
+                "connect-src 'self'; img-src 'self'; base-uri 'none'; "
+                "form-action 'none'; frame-ancestors 'none'; object-src 'none'"
+            )
         if response.headers.get("Content-Type") == "application/json":
             # Windows PowerShell 5 otherwise decodes JSON as a legacy single-byte encoding.
             response.headers["Content-Type"] = "application/json; charset=utf-8"

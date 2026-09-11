@@ -8,6 +8,8 @@ S05 copied and hash-verified the [eight synthetic observations](data/synthetic/s
 
 The project requires an ordinary-user interface connected to real persistence, retrieval, and model decisions. Frontend polish can wait; a tiny working surface cannot: import/status, Ask Jarvis, reply with Sources, Private, Correct, and Forget. Verify the same backend through both UI and evaluation; a prepared transcript or mock response does not satisfy the demonstration.
 
+The user brought the minimal source-workspace UI forward after S05. Browser import, listing and inspection now complement developer checks; CLI commands are not required in the unfamiliar's workflow. Full Ask/controls remain later gates. `tests/browser/workspace.test.mjs` uses real Chromium and the isolated PostgreSQL-backed web service to test import/reimport, Unicode/exact pairs, malformed/conflicting/oversized files, 55-record pagination, unknown time, literal HTML-like source text, Private clearing, delayed responses, network failures and mobile keyboard/navigation behavior. Fresh test contexts instrument attempted browser-storage writes and reject external requests; no model double is presented as an answer. **Actual UI milestone evidence: 112 backend checks and 8 browser checks passed**, with application state preserved; [full results and limitations](eval/reports/ui-foundation.json).
+
 ## 2. Deterministic contract tests
 
 These run without paid model calls. Inject controlled extraction proposals to exercise backend rules, including malicious or malformed proposals. They prove behavior under those inputs, not extraction quality.
@@ -27,9 +29,9 @@ Use **two real database connections and explicit test barriers**, not timing sle
 
 ## 3. Live models and nondeterminism
 
-First verify provider availability, documented credentials, retention/no-training settings, model identifiers, and a configured spend/token ceiling. Run a minimal schema smoke call within that ceiling. If access or budget is unavailable, continue deterministic work, report live evaluation blocked, and never relabel mocked runs as model results.
+First verify provider availability, documented credentials, retention/no-training settings, model identifiers, and a configured spend/token ceiling. NVIDIA trial terms currently conflict with the no-training requirement; the [proposed synthetic-only exception](DECISIONS.md#s06-readiness-decisions) is pending. Presence of an API key does not clear this gate. After explicit approval or compliant provider terms, run a minimal schema smoke call within that ceiling. If access or budget is unavailable, continue deterministic work, report live evaluation blocked, and never relabel mocked runs as model results.
 
-Use the [documented model shortlist](ARCHITECTURE.md#models-and-repair): DeepSeek remains the fixed response model while comparing Nemotron Lightning and Qwen3-8B as proposers; use DeepSeek extraction as a stronger reference on the diagnostic subset. Probe JSON/schema behavior and record tool support rather than assuming either from a model card. Include Hindi/Hinglish or other expected input languages. If only one provider is available, report the missing comparison and run the complete supported baseline.
+Use the [documented model shortlist](ARCHITECTURE.md#models-and-repair): Kimi K3 is the selected S06 response candidate and must remain fixed during later proposer comparisons; Nemotron Lightning and Qwen3-8B are extraction candidates, with stronger-model extraction as a separately scoped reference. Ultra is optional and must not silently replace Kimi on failed calls. Probe JSON/schema behavior and record tool support rather than assuming either from a model card. Include Hindi/Hinglish or other expected input languages. If only one provider is available, report the missing comparison and run the complete supported baseline.
 
 Run each original case three times from clean state. Reimport on repeated extraction runs; reuse a frozen index when measuring generation-only variability. Record sampling settings, model/prompt/schema versions and seeds where supported; temperature zero does not guarantee reproducibility.
 

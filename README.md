@@ -2,9 +2,9 @@
 
 Technical implementation plan for the Jarvis early notes project. Target review: **12 September 2026, afternoon IST**. Primary delivery method: a local application and PostgreSQL database through Docker Compose; hosted model inference may require provider credentials and network access.
 
-**Current state: S05 diagnostic import and inspection implemented.** API and CLI share bounded JSONL import, stable observation identity, atomic conflict detection and idempotent reimport. The eight synthetic records and separate evaluator labels are included. All 111 isolated checks pass, including S03/S04 regressions and Private/concurrency checks. Follow [RUN.md](RUN.md) for commands and persistence evidence. Extraction, live models, retrieval, UI and complete Correct/Forget remain later milestones; no live-model results exist.
+**Current state: working browser UI for S03–S05.** After Compose starts, open [Hey Jarvis](http://127.0.0.1:8000/) to import dictations, browse collections, inspect paired source evidence and switch Normal/Private modes. No CLI is needed for these user actions. The UI calls the existing shared backend; the CLI remains optional developer tooling. The eight synthetic records and separate evaluation labels are included. [RUN.md](RUN.md#browser-workflow) gives the browser walkthrough and actual checks. Source-based answers, extraction, retrieval and complete Correct/Forget remain later milestones; no live-model results exist.
 
-The proposed demonstration imports a person's dictations, answers questions or prepares a contextual draft from supported history, and exposes Sources, Correct, Forget and Private. Backend/database/CLI development comes first; a small ordinary-user interface is part of the required result.
+The proposed demonstration imports a person's dictations, answers questions or prepares a contextual draft from supported history, and exposes Sources, Correct, Forget and Private. The minimal browser interface is now the primary review surface; further backend milestones must connect their user actions there.
 
 ## Read in this order
 
@@ -24,7 +24,7 @@ The proposed demonstration imports a person's dictations, answers questions or p
 
 Use this implementation repository as the project folder. The user's updated workflow is a fresh discussion chat for understanding the PDF, resolving doubts and reviewing tradeoffs, followed by Codex CLI for approved implementation work. Application processes still run in the verified Docker Linux environment. The CLI's Windows-versus-WSL location, configuration, authentication and repository access must be checked before coding there; Docker readiness does not verify CLI setup. Keep one active checkout. The repository files carry the working context; each chat/session should read them rather than assume it has the previous conversation.
 
-At this handoff, S05 is approved and implemented with results in RUN.md. The user also explicitly authorized merging the tested work from `dev` into `main` and pushing it. Implementation continues on `dev`; subsequent merges still follow the user's review/authorization. S06 is next and needs its bounded model-call scope, provider access, retention/no-training settings and budget settled before live calls. Final Phase One documents remain with the author; repository inclusion/mechanical checks remain open. The two chat-generated [Phase One drafts](docs/part-one/README.md#ai-assisted-drafts-supplied-in-chat) retain their separate provenance.
+At this handoff, S05 is approved and implemented with results in RUN.md. The user also explicitly authorized merging the tested work from `dev` into `main` and pushing it. Implementation continues on `dev`; subsequent merges still follow the user's review/authorization. The user requested an S03–S05 audit, publication to `main`, and starting S06, then explicitly brought the minimal frontend forward so user workflows no longer require the CLI. The audit and bounded S06 proposal are recorded in [RUN.md](RUN.md#s06-readiness-audit) and [PLAN.md](PLAN.md#s06-bounded-bootstrap-proposal). Provider access, retention/no-training terms and the live-call budget remain unsettled; no external inference is authorized by the presence of a key. Final Phase One documents remain with the author; repository inclusion/mechanical checks remain open. The two chat-generated [Phase One drafts](docs/part-one/README.md#ai-assisted-drafts-supplied-in-chat) retain their separate provenance.
 
 Suggested discussion-chat starting message:
 
@@ -39,6 +39,8 @@ Suggested CLI handoff, after scope approval:
 The PDF is a visual companion: short labels inside shapes, a consistent role-color legend, named decision branches, and the same Atlas/Mira examples across pages. Use identifiers such as **09.D** (candidate union) or **14.H** (reply-release guard) when asking questions. Its page-map cards and MAP links navigate within the PDF; every page ends with three clickable reference cards and its supporting Markdown link. The [source register](docs/visual-guide-references.md) records exact brief locators, page-by-page references and evidence limits. Page 2 explicitly maps the project's broad term to our included facts, preferences and useful episodes; automatic procedural learning is deferred.
 
 The diagram snapshot is dated 11 September 2026, revised from visual-guide checkpoint `3eca8fb` to clarify the existing episodic scope and add verified references. Repository reference cards follow `dev`; page 18 records assistant commits to `dev` and user-controlled merges to `main`. It depicts requirements and proposed behavior, with explicit status tags. It does not change the application architecture, close S01, approve S03 or provide measured product results. Markdown and tested code remain the precise, evolving implementation record.
+
+The S06 readiness audit reviewed all 18 pages against the implemented boundaries. The PDF's DeepSeek labels on pages 9–11 and 16, page 18's pending S03 status, and its implementation-pending footer are historical: S03–S05 are implemented and Kimi K3 is now the response candidate. The diagrams still guide the sequence; selective extraction, retrieval, full controls and live evaluation remain unimplemented. The minimal source workspace was subsequently brought forward from S10 at the user's request. [Page-to-code audit and actual checks](RUN.md#s06-readiness-audit)
 
 To regenerate the PDF with Python and ReportLab installed, run `python tools/build_visual_guide.py` from the repository root. It writes the PDF under `output/pdf/`, regenerates `docs/visual-guide-references.md` from `tools/visual_guide_sources.py`, and writes temporary layout metadata under `tmp/pdfs/`. Generation was checked with ReportLab 4.4.9 and the output rendered with Poppler for visual review. This script is documentation tooling, separate from the S03 backend.
 
@@ -64,9 +66,9 @@ S05 copied and hash-verified the [eight observations](data/synthetic/sample-dict
 | DB access and schema changes | SQLAlchemy, psycopg, Alembic | Explicit transactions and reproducible migrations. |
 | Developer/unfamiliar CLI | Typer calling the same application services | Import, process, inspect, ask, evaluate and reset without duplicated business rules. |
 | Reproducible checks | pytest, HTTPX test client, Ruff, locked dependencies with uv | Cheap contract tests plus separately identified real-model evaluation. |
-| Ordinary-user surface | Small HTML/CSS/JavaScript client | Import/status, Ask, Sources and memory controls; richer UI is optional. |
+| Ordinary-user surface | Small HTML/CSS/JavaScript client served by FastAPI | Import, Sources and Normal/Private source-workspace switching implemented; add Ask and complete controls when their backend gates pass. No separate frontend server/build step. |
 
-The S03 backend versions are now resolved in `uv.lock` and image digests are pinned in Dockerfile/Compose; retrieval and UI entries describe later work. No Redis, separate vector service, graph cluster, autonomous memory framework or Kubernetes is required for the first implementation.
+The S03 backend versions are now resolved in `uv.lock` and image digests are pinned in Dockerfile/Compose; retrieval and full Ask/control flows describe later work. Browser tests use an optional separately locked Playwright dependency; end users need neither Node nor Python installed. No Redis, separate vector service, graph cluster, autonomous memory framework or Kubernetes is required for the first implementation.
 
 ## What must be demonstrated
 
@@ -76,7 +78,7 @@ The S03 backend versions are now resolved in `uv.lock` and image digests are pin
 4. Correct changes later use; Forget prevents retrieval and relearning; Private neither reads saved personal data nor persists activity.
 5. A unfamiliar can import an unfamiliar corpus, inspect actual state, operate the UI and reproduce evaluation.
 
-Approximately 500 development observations and a separate unfamiliar corpus of approximately 500 are required. Eight synthetic Atlas examples in the planning workspace are the starting diagnostic cases, not the complete dataset. DeepSeek is selected for the main model role; [the current shortlist](ARCHITECTURE.md#models-and-repair) compares NVIDIA Nemotron Lightning and Qwen3-8B for memory proposals. Exact model performance, provider access, spend ceiling and retention settings must be verified before live calls.
+Approximately 500 development observations and a separate unfamiliar corpus of approximately 500 are required. Eight synthetic Atlas examples in the planning workspace are the starting diagnostic cases, not the complete dataset. The user now selected **Kimi K3** as the S06 response candidate, replacing DeepSeek; [the current shortlist](ARCHITECTURE.md#models-and-repair) compares NVIDIA Nemotron Lightning and Qwen3-8B for memory proposals. Exact model performance, provider access, spend ceiling and retention settings must be verified before live calls.
 
 ## History, evidence and AI use
 

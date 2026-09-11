@@ -17,3 +17,4 @@
 !eval/fixtures/sample-evaluation-cases.json
 **/__pycache__/
 **/*.pyc
+**/node_modules/

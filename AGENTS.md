@@ -12,7 +12,8 @@ Read todo.md for current status, then README.md, DECISIONS.md, PLAN.md, ARCHITEC
 
 ## Product invariants
 
-- One service layer for API, CLI, worker and evaluation; authorization is backend-owned.
+- The browser UI is the primary ordinary-user workflow. Users import, inspect and use later Ask/controls without CLI commands; the existing CLI is optional developer/automation tooling.
+- One service layer for UI via API, optional CLI, worker and evaluation; authorization is backend-owned.
 - Learn only from eligible user messages/imported dictations. Raw/formatted variants are one observation; generated replies are not corroboration; historical instructions do not authorize execution.
 - Preserve source passages, subject, scope, attribution, uncertainty, negation, units and unknown times. Correct differs from world change. Similar names do not establish identity.
 - Private uses temporary current context only: no saved personal reads, durable private activity/content, logging, embeddings, jobs, retries, exports or browser persistence. No backfill.

@@ -8,7 +8,7 @@ Status: S03 infrastructure, S04 evidence/policy boundaries and S05 diagnostic im
 flowchart LR
   UI[Small ordinary-user UI] --> API[FastAPI]
   API --> S[Shared application services]
-  CLI[Typer CLI] --> S
+  CLI[Optional developer CLI] --> S
   EVAL[Evaluation harness] --> S
   WORKER[One worker] --> S
   S --> POLICY[Mode and evidence policy]
@@ -18,7 +18,7 @@ flowchart LR
   SEARCH --> S
 ```
 
-The API, CLI and worker are adapters around the same operations: import, process, ask, inspect, correct, forget and evaluate. No client writes directly around policy. One Python image serves API, worker, CLI and tests. S03 Compose runs `db`, one-shot `migrate`, `api` and a `cli` tools profile; `compose.test.yaml` supplies a standalone test project. `worker` and a thin `frontend` remain later work.
+The API, CLI and worker are adapters around the same operations: import, process, ask, inspect, correct, forget and evaluate. No client writes directly around policy. One Python image serves API, worker, CLI and tests. S03 Compose runs `db`, one-shot `migrate`, `api` and a `cli` tools profile; `compose.test.yaml` supplies a standalone test project. The minimal frontend is served by the existing FastAPI container at `/`; no separate frontend service is needed. `worker` remains later work. Users work in the browser; the CLI is optional for developers.
 
 Run DB migrations once, wait for DB health and successful migrations, and use named volumes. Tests get a separate database and credentials with no access to the normal data volume. Compose startup order alone does not prove readiness; use health and completion conditions. [Docker guidance](https://docs.docker.com/compose/how-tos/startup-order/)
 
@@ -52,7 +52,7 @@ Supporting passages identify source ID/revision, raw or formatted variant, zero-
 
 Entity IDs remain null until a backend registry exists. Calendar dates are not coerced into instants; numeric/naive timestamps are rejected, and unknown event/effective times remain unknown. Tentative or conditional meaning is retained. An exact real passage establishes a structurally valid reference, not semantic entailment or independent truth.
 
-Every implemented personal-store service operation gates Private before session creation. Current-input observation validation is pure and permitted in either mode. API/CLI errors expose only fixed categories; the supported Compose API/CLI have no persistent container logs. No content, prior context or activity is retained between validation calls. Mode is explicit per request; persistent mode preference, UI state, provider behavior and full controls are not implemented. [Actual checks and limits](RUN.md#actual-s04-results)
+Every implemented personal-store service operation gates Private before session creation. Current-input observation validation is pure and permitted in either mode. API/CLI errors expose only fixed categories; the supported Compose API/CLI have no persistent container logs. No content, prior context or activity is retained between validation calls. Mode is explicit per request; persistent mode preference, provider behavior and full controls are not implemented. The later UI foundation below adds transient page state and mode clearing. [Actual checks and limits](RUN.md#actual-s04-results)
 
 ## Implemented S05 import boundary
 
@@ -63,6 +63,16 @@ The UTF-8 JSONL contract requires `record_id` and `raw_transcript`; `formatted_t
 Validate the whole bounded batch before SQL. Under the same owner policy lock as S04 writes, require the current policy revision, compare any existing observation and atomically insert all new sources and their pending ingestion jobs. Equal source fields/metadata return the same source/job IDs without changing timestamps, attempts or job status. JSON object order/numeric notation is immaterial; booleans differ from numbers. Any changed field under an existing identity returns `import_conflict` and writes nothing from that batch. Import cannot silently revise, correct, relabel or retry a failed job. A genuinely new observation needs its own original ID; corrected source exports await an explicit revision/control workflow.
 
 Private denies import before reading API bodies/CLI stdin, and denies listing/inspection before DB access. Shared services independently enforce the same gate. Read-only pages return current policy revision and an opaque-to-clients source-row ID for inspection; exact variants and ingestion job status are available from that ID. Jobs remain pending until a later worker exists. Known-duplicate exclusion and no-resurrection after Forget belong to S09; namespace identity alone does not implement those controls.
+
+## Implemented browser workspace
+
+`src/jarvis/web/` contains plain HTML/CSS/JavaScript served by FastAPI; no frontend package is needed at runtime. The UI calls existing `/sources` and `/sources/import` operations with the explicit mode header and backend-owned identity. Users select a collection/file and inspect evidence without command-line work or manually supplying policy revisions. Future Ask and controls must use this same surface and service boundary. The optional CLI remains useful for automation and readiness tests.
+
+No automatic saved-data load, local/session storage, cookies, IndexedDB, service worker, analytics or remote assets. Source/metadata text is inserted with `textContent`, never as HTML. Self-only content security policy, no-store responses, no-referrer and frame/nosniff headers protect the supported page. Requests have a timeout; input is not placed in page URLs, error messages or browser history.
+
+Normal/Private switching clears the list, evidence, metadata, collection input and selected file; aborts in-flight requests; and increments a context generation checked after each response. This prevents late Normal responses from repopulating Private or a new Normal page. Page hide/restoration clears evidence too; normal page initialization reads only readiness. Existing Normal operations may already have committed when cancelled: clearing the client is not a rollback or a Forget operation. Private source operations remain gated in the backend even if a caller bypasses disabled controls. Private conversation is unavailable until a compliant provider path exists.
+
+The separately locked Playwright checks use an ephemeral Chromium context and loopback test backend with the isolated PostgreSQL service. They do not authenticate to live providers, test the application database, or ship browser dependencies in the image. Scope/evidence: [browser workflow and results](RUN.md#browser-workflow).
 
 ## Learning and reconciliation
 
@@ -99,20 +109,21 @@ Pass a compact packet of claims, original supporting passages, identifiers, time
 
 ## Models and repair
 
-The user selected **DeepSeek for the main reasoning/response role**, with a smaller model to propose memory operations. The following exact hosted candidates were checked against public provider/model documentation on 11 September 2026; account access and actual behavior have not been tested.
+The user replaced DeepSeek with **Kimi K3 as the S06 reasoning/response candidate**, with a smaller model to propose memory operations in S07. Nemotron Ultra is an optional later comparison, not an automatic fallback. The following exact hosted candidates were checked against public provider/model documentation on 11 September 2026; account access and actual behavior have not been tested.
 
 | Role | Candidate | Selection reason and limit |
 | --- | --- | --- |
-| Main reasoning / response | NVIDIA `deepseek-ai/deepseek-v4-pro-0813` at `https://integrate.api.nvidia.com/v1` | A documented dated DeepSeek endpoint. Probe callability and hosted output/tool behavior; do not assume strict schema enforcement. |
+| Main reasoning / response | NVIDIA `moonshotai/kimi-k3` at `https://integrate.api.nvidia.com/v1` | User-selected S06 candidate. Probe account access and structured response behavior; always-on thinking needs an explicit bounded output allowance. No live quality result yet. |
+| Optional response comparison / backup | NVIDIA `nvidia/nemotron-3-ultra-550b-a55b` at the same endpoint | Key present locally, but unused. No automatic fallback; compare only after explicit scope and budget approval. |
 | Small-operation candidate A | NVIDIA `nvidia/nemotron-3.5-lightning-30b-a3b` at the same endpoint | Reuses one provider/key; documented tools and structured-output training. 30B total / 3B active is sparse computation, not a 3B local memory footprint. Hindi/Hinglish quality needs testing. |
 | Small-operation candidate B | SiliconFlow `Qwen/Qwen3-8B` at `https://api.siliconflow.com/v1` | Dense 8.2B multilingual comparison candidate. Provider documents non-thinking and JSON modes; JSON validity does not prove schema compliance or factual support. Requires another provider/key. |
 | Optional dense retrieval | SiliconFlow `Qwen/Qwen3-Embedding-0.6B` at its embeddings API | Multilingual embedding candidate; fix supported dimension and query convention, version the index, and compare with lexical retrieval. |
 
-Start with the NVIDIA main + candidate A smoke test if that account is ready. Compare candidate B on the same small labeled set when access/budget allows; a second provider must not block source import, lexical retrieval, controls or the UI. Do not select a winner from advertised parameter count or benchmark scores. Prefer hosted inference for the deadline; no new local GPU-serving stack.
+Start with the Kimi source-history baseline after provider-policy and budget approval. Candidate A belongs to S07, not the S06 pilot. Compare candidate B on the same small labeled set when access/budget allows; a second provider must not block source import, lexical retrieval, controls or the UI. Do not select a winner from advertised parameter count or benchmark scores. Prefer hosted inference for the deadline; no new local GPU-serving stack.
 
-Sources: [DeepSeek NVIDIA endpoint](https://build.nvidia.com/deepseek-ai/deepseek-v4-pro-0813), [Nemotron endpoint](https://build.nvidia.com/nvidia/nemotron-3.5-lightning-30b-a3b), [Nemotron model card](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16), [Qwen3-8B card](https://huggingface.co/Qwen/Qwen3-8B), [SiliconFlow chat contract](https://docs.siliconflow.com/en/api-reference/chat-completions/chat-completions), [JSON mode](https://docs.siliconflow.com/en/userguide/guides/json-mode), [embedding API](https://docs.siliconflow.com/en/api-reference/embeddings/create-embeddings), [embedding card](https://huggingface.co/Qwen/Qwen3-Embedding-0.6B).
+Sources: [Kimi K3 model card](https://build.nvidia.com/moonshotai/kimi-k3/modelcard), [Nemotron Ultra model card](https://build.nvidia.com/nvidia/nemotron-3-ultra-550b-a55b/modelcard), [Nemotron endpoint](https://build.nvidia.com/nvidia/nemotron-3.5-lightning-30b-a3b), [Nemotron model card](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16), [Qwen3-8B card](https://huggingface.co/Qwen/Qwen3-8B), [SiliconFlow chat contract](https://docs.siliconflow.com/en/api-reference/chat-completions/chat-completions), [JSON mode](https://docs.siliconflow.com/en/userguide/guides/json-mode), [embedding API](https://docs.siliconflow.com/en/api-reference/embeddings/create-embeddings), [embedding card](https://huggingface.co/Qwen/Qwen3-Embedding-0.6B).
 
-Prototype availability is not a service guarantee. Confirm account quotas, retention, no-training settings and a spend ceiling before calls. Model catalogs change: some older NVIDIA small-model endpoints are deprecated, and direct DeepSeek aliases are being changed. Do not silently substitute an alias or provider; record the configured and returned model identifiers and test date. [Example deprecated endpoint](https://build.nvidia.com/microsoft/phi-4-mini-instruct), [DeepSeek current model contract](https://api-docs.deepseek.com/quick_start/pricing/).
+Prototype availability is not a service guarantee. Confirm account quotas, retention, no-training settings and a spend ceiling before calls. The current NVIDIA trial terms permit content use for model improvement, so live calls remain blocked pending a synthetic-only exception or compliant provider terms. [Policy decision](DECISIONS.md#s06-readiness-decisions). Model catalogs and account quotas can change. Do not silently substitute an alias or provider; record the configured and returned model identifiers and test date. [Example deprecated endpoint](https://build.nvidia.com/microsoft/phi-4-mini-instruct), [DeepSeek current model contract](https://api-docs.deepseek.com/quick_start/pricing/).
 
 The smaller model returns typed proposals such as `ADD_CLAIM`, `LINK_EVIDENCE`, `PROPOSE_SUPERSESSION`, `NOOP` or `NEEDS_CLARIFICATION`, with source references, exact support and expected revisions. It does not receive unrestricted SQL execution, choose the authenticated user, or bypass transitions. Free-form destructive database commands are outside its tool surface.
 

@@ -8,7 +8,7 @@ Build a narrow complete journey: import dictations → ask a supported history q
 
 The brief's broad use of "semantic memory" includes factual, episodic and preference-level understanding. Our scope includes useful reported episodes as well as facts and scoped preferences; only automatic procedural learning is deferred. See the [verified brief locators](docs/visual-guide-references.md#project-brief) and visual guide page 2 for the terminology mapping.
 
-Backend + database + CLI first is the development sequence. The brief requires a normal-user interface connected to real state and model decisions, so reserve a small UI slice. Defer visual polish rather than the interface itself. No ASR implementation, native insertion, external message sending or Azure deployment is needed for this slice.
+The user brought the minimal frontend forward after S05. **Browser first for user workflows:** import/status, source inspection and Normal/Private switching now use the web interface; connect Ask and full controls as their backend milestones pass. The existing CLI remains optional for developer checks and automation, with no user-flow dependency. Keep one shared backend and no separate frontend deployment. No ASR implementation, native insertion, external message sending or Azure deployment is needed for this slice.
 
 The author reports Phase One complete and held separately, and explicitly approved proceeding with S03. Repository inclusion and mechanical checks remain pending; the assistant has not inspected those final documents. Their content must come from the author.
 
@@ -24,7 +24,7 @@ The times below are work budgets, not guarantees. Cut optional features when a b
 | 3 | `feat: extract and reconcile supported claims` | Real model proposals; schema/span validation; explicit change, tentative owner and amount conflict stay distinct; rejected proposals visible. | ~3 h |
 | 4 | `feat: retrieve evidence and answer with sources` | Source-only baseline; optional dense branch; query/time/scope handling; evidence-linked response/draft and honest abstention; usage measured. | ~3 h |
 | 5 | `feat: enforce memory controls and repair` | Private/Correct/Forget behavior and real DB race tests; bounded feedback repair; no resurrection through retries. | ~3 h |
-| 6 | `feat: connect the minimal unfamiliar interface` | User imports, asks, opens sources and uses controls without a console. UI and CLI produce the same backend behavior. | ~2 h |
+| 6 | `feat: complete the minimal unfamiliar interface` | Source-workspace UI brought forward after S05. Complete Ask, Sources and controls through shared services without requiring a console. | ~2 h remaining integration |
 | 7 | `test: publish evaluation and reproducible review` | Approximately 500 records; separated labels; measured baseline/candidate results including failures; clean start/reset/import/UI/evaluate walkthrough. | Remaining time; reserve ≥3 h |
 
 Corpus generation and test-case design can proceed alongside approved implementation once the input contract is stable. Run small live checks during milestones 3–5; discovering provider or schema failure in the final evaluation is too late.
@@ -76,6 +76,44 @@ The user approved proceeding with diagnostic import/inspection and then merging 
 Acceptance: import all eight diagnostic observations, inspect exact raw/formatted pairs and all 11 evaluator excerpts, preserve missing metadata, keep equal-text independent observations distinct, and make exact reimport return existing source/job state. Conflicting/invalid batches must leave no partial state; API/CLI must agree; Private must avoid saved access and input reads/writes; separate PostgreSQL connections/barriers must prove import serialization and the policy commit guard. Preserve the original S03 probe and all imported source/job fields across container replacement. [Actual results](RUN.md#actual-s05-results)
 
 Changed exports are rejected rather than silently revised; automatic extraction/job execution, models, retrieval, UI, complete Correct/Forget and the full approximately 500-observation corpus remain later work. S06 requires a separately bounded live-call approval and explicit provider retention/no-training/budget settings.
+
+## Approved early UI foundation
+
+The user's latest instruction explicitly approves a minimal frontend and a browser-first plan instead of requiring CLI user actions. Implement this bounded S10 foundation immediately after the S03–S05 audit, leaving the underlying S06–S09 model/control gates intact.
+
+Files: `src/jarvis/web/` for plain HTML/CSS/JavaScript and a local icon; `src/jarvis/api.py` for the shell/static route and security/cache headers; `tests/integration/test_web.py` and `tests/browser/` for regression and browser checks; `compose.test.yaml` for a loopback test web service using only the isolated PostgreSQL environment; `.dockerignore` to exclude test dependencies. Update the consolidated instructions/plan/run/tracker. No migration, Python dependency change, model call, frontend build process or new runtime container.
+
+Behavior: choose a collection, import a bounded JSONL file, inspect paginated original sources and job status, preserve exact text/metadata, and switch between Normal and Private. The browser obtains the policy revision automatically while the shared backend still checks it atomically. Private clears displayed context and selected files, aborts pending requests and suppresses late responses; it does not send imports or browse saved sources. Returning to Normal or restoring a page does not restore old evidence or backfill. Already accepted Normal writes may finish after a mode switch and are not represented as Private writes or rollback.
+
+Acceptance: S03–S05 isolated PostgreSQL checks stay green; browser import/reimport, malformed/conflicting/oversized input, unknown metadata, Unicode/HTML-like text, pagination, mobile/keyboard use, no browser-storage writes, Private switching, late-response rejection and network errors work. API asset routes require no personal-store access and expose no cookies/cache or path traversal. Rebuild/start the application and verify existing synthetic records remain intact. No fake Ask/Correct/Forget controls or claimed model outputs.
+
+The alternative is a separate frontend framework/build/server or deleting the tested developer CLI. Neither is needed to remove CLI dependence from the ordinary-user journey. Keep those optional tools and prove the browser path directly. Complete the full S10 gate only when Ask and S09 controls are connected.
+
+## S06 bounded bootstrap proposal
+
+The user requested the completed S03–S05 audit/publication and starting S06. This section makes the next important implementation changes reviewable under AGENTS.md. The live-call policy exception below remains unapproved; no model call has run. Scope: **source-history answering only**, using the existing Windows checkout, Linux containers and shared backend.
+
+| Proposed files | Behavior and data effects |
+| --- | --- |
+| `src/jarvis/answers.py`, `src/jarvis/providers.py` | Typed question, full-history packet, answer/abstention and exact source citations; small responder interface and buffered Kimi HTTP adapter. Fixed endpoint/model, bounded timeout/output, at most one schema-repair attempt, no automatic provider/model fallback. Treat source text as evidence, never instructions. |
+| `src/jarvis/services.py`, `src/jarvis/api.py`, `src/jarvis/cli.py`, `src/jarvis/errors.py` | One source-history operation, exposed through `POST /ask` and the browser's Ask panel; an optional `jarvis ask` developer command can use JSON stdin. Backend identity and Private gates precede saved reads, input logging, accounting and provider calls. Load all eligible latest observations in the selected namespace; keep raw/formatted paired and unknown metadata intact. Return an explicit does-not-fit result rather than silently dropping history. Recheck policy/source revisions before provider use and buffered publication; reject stale work. |
+| `src/jarvis/models.py`, `migrations/versions/0003_model_calls.py` | One additive Normal/evaluation call-accounting table: owner/run/attempt identifiers, policy revision, configured/returned model, prompt version, reservation/actual token counts, latency, status and fixed error category. No stored prompts, answers, reasoning or credentials. Reserve budget under the existing policy guard before a call; retain failed/unknown reservations to prevent concurrent calls, retries or restarts bypassing the cap. Preserve every S03–S05 row. No extraction jobs or claims are created by answering. |
+| `src/jarvis/config.py`, `compose.yaml`, `.env.example`, `pyproject.toml`, `uv.lock` | Provider configuration disabled by default. Pass only the Kimi key to API/CLI when enabled; no provider credentials in database/migration/test services. Move already-locked HTTPX into runtime dependencies. Keep secrets out of representations, errors and logs. |
+| `tests/integration/test_answers.py`, provider transport tests, existing regression fixtures | Deterministic contract/failure tests, real PostgreSQL revision/budget races, API/CLI parity and zero-access Private checks. Transport doubles are not model-quality evidence. |
+| Evaluator command/module, `eval/reports/`, RUN/DECISIONS/EVALUATION/todo | After live-call approval, run the eight existing cases three times with actual configured/returned model, all attempts, tokens, latency and failures. Preserve source/label separation, inspect faithfulness and unknown/conflict behavior, and report failures without changing gold labels to fit output. |
+
+**Provider decision required:** NVIDIA trial terms conflict with the project's no-training rule. Proposed exception: only exact checked-in synthetic observations and diagnostic questions, $0 paid spend, maximum 32 total requests and 500,000 total input/output tokens including retries. Enforce allowed content in code; a namespace or caller-supplied "synthetic" flag alone is insufficient. Block personal inputs and Private provider requests. No allowance carries into S07 or Ultra experiments. Alternative: build/test locally with live inference disabled until provider terms/settings satisfy no training. The product's general no-training/Private requirements are unchanged unless the user explicitly decides otherwise.
+
+Acceptance before declaring S06 complete:
+
+1. Existing S03–S05 tests pass in the isolated PostgreSQL project; the new empty/repeated migration has no drift and preserves existing source/job state.
+2. Browser Ask and API return a cited source-history answer through the shared service, with optional CLI parity checks, with no model-generated learning or external-action claim.
+3. Invalid/cross-owner/non-context citations and stale policy/source revisions fail; full-history overflow fails explicitly. Raw/formatted conflicts, tentative owners, scoped preferences, reported actions and unknown times retain their meaning.
+4. Private, invalid input, disabled provider, quota, timeout and malformed output paths reveal only bounded errors. Private causes no personal-store reads, durable activity or external provider request.
+5. Actual PostgreSQL connections/barriers verify revision and budget ordering; no DB lock is held during network inference. Failed/retried/unknown calls remain accounted for across process/container restart.
+6. After the separate live gate is approved, retain three runs of all eight synthetic cases and manually assess semantic support, not just citation validity. Publish limitations and actual results. A blocked or failing live gate leaves S06 incomplete.
+
+Keep selective extraction, worker processing, retrieval/ranking/embeddings, automatic Ultra fallback and complete Correct/Forget in S07–S10. Extend the existing browser UI in each corresponding backend milestone. This first baseline will not claim general Private conversation support with a noncompliant provider. The simpler alternative to a new call table is process-local accounting; reject that alternative because API/CLI concurrency and restarts would bypass the agreed ceiling.
 
 ## Workflow cases to implement deliberately
 

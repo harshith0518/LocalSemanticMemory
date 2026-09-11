@@ -36,5 +36,27 @@ services:
       test-db: {condition: service_healthy}
     command: [pytest, -q, -p, no:cacheprovider]
 
+  # Browser checks use only this isolated backend, never the application volume.
+  web:
+    profiles: [browser]
+    image: jarvis:local
+    build: .
+    init: true
+    logging: {driver: none}
+    environment:
+      JARVIS_ENV: test
+      JARVIS_DB_HOST: test-db
+      JARVIS_DB_NAME: jarvis_test
+      JARVIS_DB_USER: jarvis_test_app
+      JARVIS_DB_PASSWORD: synthetic-test-runtime
+    ports: ["127.0.0.1:8001:8000"]
+    depends_on:
+      test-db: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=3)"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
 volumes:
   test-database:
