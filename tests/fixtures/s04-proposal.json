@@ -1,0 +1,12 @@
+{
+  "subject": {"label": "Atlas", "entity_id": null},
+  "predicate": "possible_launch_date",
+  "value": {"kind": "text", "value": "18 September"},
+  "scope": {"kind": "project", "key": "Atlas"},
+  "attribution": {"label": "Mira", "entity_id": null},
+  "evidence_status": "tentative",
+  "modality": "conditional",
+  "negated": false,
+  "condition": "The budget is approved",
+  "time": {"event": null, "valid_from": null, "valid_to": null}
+}

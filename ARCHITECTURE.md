@@ -1,6 +1,6 @@
 # Proposed memory architecture
 
-Status: S03 infrastructure is implemented and checked; memory behavior below remains a design to implement and evaluate. Agreed behavior lives in [DECISIONS.md](DECISIONS.md), and [RUN.md](RUN.md) records actual bootstrap evidence.
+Status: S03 infrastructure and S04 evidence contracts/request-policy gates are implemented and checked; extraction, retrieval and complete lifecycle behavior below remain designs to implement and evaluate. Agreed behavior lives in [DECISIONS.md](DECISIONS.md), and [RUN.md](RUN.md) records actual bootstrap evidence.
 
 ## One application, several entry points
 
@@ -24,7 +24,7 @@ Run DB migrations once, wait for DB health and successful migrations, and use na
 
 The initial review service binds to loopback and uses a server-controlled local user identity. Never trust a submitted `user_id` as authorization. Keep ownership checks and cross-user test fixtures even for a single-user demo. Public deployment would require an additional approved authentication/security pass.
 
-S03 stores only policy, source and job records. The fixed synthetic CLI probe uses one transaction and the owner policy-row lock; API/CLI liveness and DB/schema readiness share `Service`. pgvector is installed, with no embeddings or search indexes. The full operations and lifecycle guarantees below are not implemented by these foundations.
+S03 stores policy, source and job records; S04 adds owned exact passages, claim revisions and evidence links. API/CLI and future worker operations share `Service`, a backend-issued request context and the owner policy-row commit guard. Validation-only adapters exercise the contracts without exposing a general importer. pgvector is installed, with no embeddings or search indexes. Full extraction, retrieval and lifecycle workflows below remain later work.
 
 ## Evidence representation
 
@@ -43,6 +43,16 @@ History preserves original records and their support for derived understanding. 
 | Jobs / operation trace | Idempotency key, attempt, source/model/prompt revisions, selected evidence, stage timing, result/error category and actual outcome. |
 
 Do not call a proposed, reported or inferred claim independently verified. Distinguish capture time, import/record time, event time and the period a claim applies. A launch date is not its claim's `valid_from`. Unknown effective times remain unknown. Newest ingestion must not automatically win. [Bitemporal history](https://martinfowler.com/articles/bitemporal-history.html), [W3C provenance](https://www.w3.org/TR/prov-overview/)
+
+## Implemented S04 contract boundary
+
+Source identity is owner + source key; each revision has a distinct source-row ID and one raw/formatted pair. Original text, nullable capture metadata and actual import time remain separate. New source writes require the expected current source/policy revision; previous revisions are preserved. The new provenance column defaults existing records to `unknown`, which cannot support a claim until a later explicit eligibility path exists.
+
+Supporting passages identify source ID/revision, raw or formatted variant, zero-based half-open Unicode code-point offsets and the exact text. The service validates owned latest sources under the commit guard; relational foreign keys also enforce source/passage/claim ownership. Claim content is a validated JSONB value with typed subject/attribution labels, value and units, scope, uncertainty, negation, condition and explicit-precision time. Revision/lifecycle/owner fields and evidence links are relational. JSONB keeps the bounded contract readable without introducing an entity/search schema before its milestone.
+
+Entity IDs remain null until a backend registry exists. Calendar dates are not coerced into instants; numeric/naive timestamps are rejected, and unknown event/effective times remain unknown. Tentative or conditional meaning is retained. An exact real passage establishes a structurally valid reference, not semantic entailment or independent truth.
+
+Every implemented personal-store service operation gates Private before session creation. Current-input observation validation is pure and permitted in either mode. API/CLI errors expose only fixed categories; the supported Compose API/CLI have no persistent container logs. No content, prior context or activity is retained between validation calls. Mode is explicit per request; persistent mode preference, UI state, provider behavior and full controls are not implemented. [Actual checks and limits](RUN.md#actual-s04-results)
 
 ## Learning and reconciliation
 

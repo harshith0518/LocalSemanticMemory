@@ -43,9 +43,21 @@ Use a standalone `compose.test.yaml` project instead of a test profile sharing a
 
 Keep these choices based on 23 passing isolated PostgreSQL tests, repeated migration/no-drift checks, runtime privilege checks, real outage recovery and exact state after container replacement. The first lint/format issues and test-client deprecations were resolved; actual commands and limits are in [RUN.md](RUN.md). No comparison against SQLite, another architecture or live models was run.
 
+## S04 implementation decisions and review
+
+The user explicitly approved typed observations/passages/claim revisions, ownership/version/exact-support validation, backend request identity, Normal/Private gates, guarded writes and an additive migration. Implemented within that scope, with no dependency changes, model calls, general importer, retrieval or UI.
+
+Keep Pydantic contracts with strict text/boolean/revision fields and explicit-precision time. Store owned claim revision metadata and evidence links relationally, with typed claim content in JSONB. This avoids prematurely flattening every subject/value/time alternative into a broad schema while preserving exact source links and inspectable payloads. A later query requirement can justify a reviewed indexing/schema change. Do not infer resolved entity IDs or semantic entailment from labels or valid passage IDs.
+
+Require request contexts for all new service operations; adapters resolve the local owner and accept only a validated mode. The old fixed synthetic probe remains compatible, and its CLI now passes mode explicitly. Private rejects personal-store operations before parsing or SQL. Pure input validation has no saved context or side effects. Disable persistent API/CLI container logs in addition to suppressing input/error logging; otherwise even a sanitized CLI receipt could leave durable Private activity. This sacrifices stored operational logs in the supported local setup; it does not certify third-party clients or future providers.
+
+Use the same policy-row lock for source writes and supported claim writes, with policy/source/claim revisions rechecked within the transaction. Read-only validation is advisory and cannot authorize a later unchecked write. Two real connections and barriers verify both lock orderings; concurrent claim appends cannot both consume the same expected revision. Source evidence reads are batched. Automatic reconciliation and Correct/Forget semantics remain outside S04.
+
+Self-review against AGENTS/ARCHITECTURE/EVALUATION: this establishes evidence and policy boundaries before S05 ingestion; preserves paired observations, unknown times, attribution and uncertainty; keeps authorization in one service layer; and distinguishes contract tests from semantic/model evidence. Keep the current direction based on 75 passing checks, preserved S03 state and live adapter checks, not a claimed comparison with another architecture. Next review must address import namespace/idempotency and eligibility, then real extraction entailment and full lifecycle revocation. [Commands/results](RUN.md#actual-s04-results)
+
 ## Open before later implementation or live calls
 
-1. Review/approve S04 source/claim contracts and policy boundaries as the next bounded implementation.
+1. Review/approve S05 diagnostic observation import and inspection, building on the completed S04 contracts/policy boundary.
 2. Confirm access, retention/no-training settings and a spend ceiling for the [model shortlist](ARCHITECTURE.md#models-and-repair). The user selected DeepSeek main plus a smaller proposer; the proposed NVIDIA/SiliconFlow exact endpoints have not been called or compared. No credentials belong in Git or chat.
 3. Preserve and mechanically check the final Phase One documents when supplied. The author reports them complete and held separately; the assistant has not inspected them. [Earlier source notes/drafts](docs/part-one/README.md) retain their own provenance and do not establish independent authorship.
 

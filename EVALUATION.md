@@ -1,10 +1,10 @@
 # Minimal evaluation plan for Hey Jarvis
 
-Prepared 11 September 2026. The product/model gates below remain proposed. S03 has 23 passing real PostgreSQL bootstrap tests and verified container-replacement persistence; [RUN.md](RUN.md#actual-s03-results) records the commands and limits. No live-model runs exist. Target: 12 September afternoon IST. Grounding: [DECISIONS.md](DECISIONS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and the supplied early notes project brief.
+Prepared 11 September 2026. The product/model gates below remain proposed. S03/S04 now have 75 passing isolated bootstrap/evidence/policy checks, including real PostgreSQL revision races, instrumented Private failure paths and preserved state across migration/container replacement; [RUN.md](RUN.md#actual-s04-results) records commands and limits. No live-model runs exist. Target: 12 September afternoon IST. Grounding: [DECISIONS.md](DECISIONS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and the supplied early notes project brief.
 
 ## 1. Prove one complete journey first
 
-Bring the eight existing synthetic Atlas observations and evaluation cases from the planning workspace into the first approved test-data slice: current date, historical change/reason, personalized draft, hypothetical owner, reported action, conflicting amounts, missing metadata, and unknown surname. They are not included in this documentation-only commit. Preserve exact source spans and prohibited claims in evaluator-only labels. Never ingest answer keys.
+Bring the eight existing synthetic Atlas observations and evaluation cases from the planning workspace into the first approved test-data slice: current date, historical change/reason, personalized draft, hypothetical owner, reported action, conflicting amounts, missing metadata, and unknown surname. The eight-observation import slice remains S05. S04 uses its own small synthetic contract fixtures; the deterministic proposal fixture is not source input. Preserve exact source spans and prohibited claims in evaluator-only labels. Never ingest answer keys.
 
 The project requires an ordinary-user interface connected to real persistence, retrieval, and model decisions. Frontend polish can wait; a tiny working surface cannot: import/status, Ask Jarvis, reply with Sources, Private, Correct, and Forget. Verify the same backend through both UI and evaluation; a prepared transcript or mock response does not satisfy the demonstration.
 

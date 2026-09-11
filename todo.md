@@ -4,7 +4,7 @@ Updated: 11 September 2026. Target: **12 September afternoon IST**.
 
 This is the single current-status checklist. [PLAN.md](PLAN.md) defines scope and milestone gates; [DECISIONS.md](DECISIONS.md) records decisions; [EVALUATION.md](EVALUATION.md) defines evidence. Check an item only after its acceptance condition is demonstrated.
 
-**Current work:** S03 is approved and implemented: reproducible Linux build/start, PostgreSQL/pgvector, minimal migrations, shared API/CLI services, synthetic persistence across container replacement and 23 isolated DB tests passed. See RUN.md for commands/results. Assistant commits/pushes use `dev`; the user controls merges to `main`. Next: review the bounded S04 source/claim contracts and policy boundaries. The author reports Phase One complete and held separately; repository inclusion/mechanical checks remain pending. No live Jarvis model evaluation has run.
+**Current work:** S04 is approved and implemented: typed evidence contracts, owned passages/claim revisions, backend Normal/Private gates and atomic revision checks. All 75 isolated checks pass, including S03 regressions, instrumented Private failures and real PostgreSQL races. S03 state survives migration/container replacement. See RUN.md for actual commands/results. Next: review bounded S05 diagnostic import/inspection and reimport rules. Assistant commits/pushes use `dev`; the user controls `main` merges. Phase One is reported complete and held by the author; repository inclusion/mechanical checks remain pending. No live model evaluation has run.
 
 ## Completed
 
@@ -26,6 +26,8 @@ This is the single current-status checklist. [PLAN.md](PLAN.md) defines scope an
 
 - [x] **S03 — Backend bootstrap.** User explicitly approved Python 3.12/uv, Docker, PostgreSQL with pgvector, source/job/policy migrations, shared FastAPI/Typer services and isolated tests after confirming Phase One complete in their possession. Implemented the bounded scope; all five acceptance gates passed: clean initial startup, empty/repeated migrations without drift, shared API/CLI behavior, identical synthetic source/job state after replacing both containers, and 23 real PostgreSQL tests with no warnings. Ruff lint/format passed. Actual DB outage/recovery and scoped test reset also passed. [Commands, results and limits](RUN.md#actual-s03-results). No model calls, general imports, retrieval, UI or full memory controls were implemented.
 
+- [x] **S04 — Evidence contracts and policy boundaries.** Explicitly approved and implemented. Typed observations/passages/claim revisions preserve exact variants, scope, attribution, uncertainty, units and unknown times. Backend-owned contexts gate all personal-store operations; Private validation/failure paths show zero connection/SQL/file-write attempts, no input/error logging, unchanged durable records/jobs and no backfill. Supported writes recheck revisions under the owner policy lock; separate PostgreSQL connections/barriers cover both race orderings and competing appends. The additive migration preserves original S03 fields. All 75 tests and Ruff lint/format pass; live API/CLI validation and container replacement pass. [Commands, review and limits](RUN.md#actual-s04-results). General import/models/retrieval/UI/full Correct/Forget remain later work.
+
 ## Ongoing
 
 - [ ] **S01 — Repository preservation/mechanical checks of final Phase One.** Author reports the independently authored final documents complete and held separately. Earlier source notes and AI-assisted drafts retain their distinct provenance; the assistant has not inspected the finals.
@@ -36,7 +38,6 @@ This is the single current-status checklist. [PLAN.md](PLAN.md) defines scope an
 
 | Step | Work | Evidence required before completion |
 | --- | --- | --- |
-| S04 | Implement source/claim contracts and policy boundaries. | Source references, ownership, scope, uncertainty, time and revision checks; Private gates exist before processing personal inputs. |
 | S05 | Import and inspect the eight diagnostic observations. | Paired raw/formatted text, exact source spans, missing metadata and reimports handled without invented or duplicate evidence. |
 | S06 | Produce a real source-history answer through DeepSeek. | A cited answer/draft from actual stored sources; honest unknown/failure behavior; actual provider and usage recorded where permitted. |
 | S07 | Extract selective memory and reconcile changes. | Compare smaller proposers; distinguish new fact, genuine change, extraction error, tentative claim and unresolved conflict. |
@@ -71,6 +72,6 @@ Implementation-chat handoff checks on 11 September: nine UTF-8 Markdown files an
 
 - Repository inclusion and mechanical checks of the final Phase One documents reported complete by the author; source-note preservation is already complete.
 - Important implementation scopes remain subject to the user's review rule; do not treat approval of a step as approval for every later architecture change.
-- Before S04 implementation: review its bounded source/claim and policy scope. S03 is explicitly approved and implemented; the earlier Phase One/S03 hold is superseded. Keep the existing checkout on `dev` and preserve other sessions' changes. Docker commands inside a restricted CLI subprocess require the appropriate approved execution context.
+- Before S05 implementation: review its bounded import/inspection/idempotency scope. S04 is explicitly approved and implemented; the earlier Phase One/S03 hold is superseded. Keep the existing checkout on `dev` and preserve other sessions' changes. Docker commands inside a restricted CLI subprocess require the appropriate approved execution context.
 - Before live calls: provider credentials stored locally, account access, retention/no-training settings and an agreed spend/token ceiling. No secrets in chat or Git.
 - Azure, graph services, response caching, streaming, autonomous procedural learning and rich UI polish remain optional after required gates pass.

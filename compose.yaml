@@ -45,6 +45,7 @@ services:
 
   api:
     <<: *app
+    logging: {driver: none}
     environment: *runtime-environment
     ports: ['127.0.0.1:${JARVIS_API_PORT:-8000}:8000']
     depends_on:
@@ -57,6 +58,7 @@ services:
 
   cli:
     <<: *app
+    logging: {driver: none}
     profiles: [tools]
     entrypoint: [jarvis]
     command: [ready]

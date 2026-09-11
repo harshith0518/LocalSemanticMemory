@@ -61,6 +61,14 @@ Acceptance requires all of the following:
 
 After these gates pass, update the existing tracker/run instructions, commit and push the coherent S03 implementation to `dev`, and verify the remote commit. The user reviews and merges. Routine fixes within the approved scope need no repeated permission; material changes to schema meaning, model behavior, privacy/lifecycle semantics, significant dependencies or deployment still require review.
 
+## S04 approved scope and acceptance
+
+Approved and implemented on 11 September 2026 after S03. `contracts.py`, `policy.py` and `errors.py` define typed evidence, backend context and safe failure categories. `services.py`, API and CLI share validation/policy/transaction behavior. `models.py` and migration `0002_evidence_contracts` add source provenance, passages, claim revisions and owned evidence links without rewriting S03 data. Compose disables persistent API/CLI logs. Isolated tests and synthetic fixtures establish the bounded behavior; no new dependencies were needed.
+
+Acceptance is recorded in [RUN.md](RUN.md#actual-s04-results): the S03 regression checks pass; invalid ownership/version/variant/passages and stale revisions fail; scope, tentative meaning and unknown times survive; raw/formatted variants remain one observation; Private has zero personal-store/file-write attempts and unchanged durable snapshots through success/failure paths; guarded revision races use actual PostgreSQL connections/barriers. The complete suite has 75 passing checks.
+
+General corpus import, live models, retrieval, UI, entity resolution and complete Correct/Forget remain later scopes. S05 should build the importer on these contracts and settle source namespace, eligibility and safe idempotent reimport before personal data. A valid schema/span is not an entailment verdict. An appended claim revision does not classify a correction versus a real-world change.
+
 ## Workflow cases to implement deliberately
 
 | Situation | Required response | Owning layer |

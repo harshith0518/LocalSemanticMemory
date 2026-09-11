@@ -41,6 +41,7 @@ class Source(Base):
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     owner_id: Mapped[UUID] = mapped_column(ForeignKey("jarvis.policies.owner_id"))
     source_key: Mapped[str] = mapped_column(String(255))
+    kind: Mapped[str] = mapped_column(String(24), server_default="unknown")
     revision: Mapped[int] = mapped_column(Integer, server_default="1")
     raw_text: Mapped[str] = mapped_column(Text)
     formatted_text: Mapped[str | None] = mapped_column(Text)
@@ -77,3 +78,76 @@ class Job(Base):
     attempts: Mapped[int] = mapped_column(Integer, server_default="0")
     expected_source_revision: Mapped[int] = mapped_column(Integer)
     expected_policy_revision: Mapped[int] = mapped_column(Integer)
+
+
+class Passage(Base):
+    __tablename__ = "passages"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["source_id", "owner_id", "source_revision"],
+            ["jarvis.sources.id", "jarvis.sources.owner_id", "jarvis.sources.revision"],
+            name="passage_source_owner_revision",
+        ),
+        UniqueConstraint("id", "owner_id", name="passage_owner"),
+        UniqueConstraint(
+            "source_id", "source_revision", "variant", "start", "end", name="passage_location"
+        ),
+        CheckConstraint("variant IN ('raw', 'formatted')", name="passage_variant"),
+        CheckConstraint('start >= 0 AND "end" > start', name="passage_offsets"),
+    )
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    owner_id: Mapped[UUID]
+    source_id: Mapped[UUID]
+    source_revision: Mapped[int] = mapped_column(Integer)
+    variant: Mapped[str] = mapped_column(String(16))
+    start: Mapped[int] = mapped_column(Integer)
+    end: Mapped[int] = mapped_column(Integer)
+    exact_text: Mapped[str] = mapped_column(Text)
+
+
+class ClaimRecord(Base):
+    __tablename__ = "claim_revisions"
+    __table_args__ = (
+        UniqueConstraint("id", "owner_id", name="claim_revision_owner"),
+        UniqueConstraint("claim_id", "owner_id", "revision", name="claim_identity_revision"),
+        CheckConstraint("revision > 0", name="claim_revision_positive"),
+        CheckConstraint("policy_revision >= 0", name="claim_policy_revision_nonnegative"),
+        CheckConstraint(
+            "lifecycle IN ('active', 'superseded', 'corrected', 'excluded')", name="claim_lifecycle"
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    owner_id: Mapped[UUID] = mapped_column(ForeignKey("jarvis.policies.owner_id"))
+    claim_id: Mapped[UUID]
+    revision: Mapped[int] = mapped_column(Integer)
+    policy_revision: Mapped[int] = mapped_column(Integer)
+    content: Mapped[dict] = mapped_column(JSONB)
+    lifecycle: Mapped[str] = mapped_column(String(16), server_default="active")
+    recorded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class ClaimEvidence(Base):
+    __tablename__ = "claim_evidence"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["claim_revision_id", "owner_id"],
+            ["jarvis.claim_revisions.id", "jarvis.claim_revisions.owner_id"],
+            name="evidence_claim_owner",
+        ),
+        ForeignKeyConstraint(
+            ["passage_id", "owner_id"],
+            ["jarvis.passages.id", "jarvis.passages.owner_id"],
+            name="evidence_passage_owner",
+        ),
+        UniqueConstraint("claim_revision_id", "position", name="evidence_position"),
+        CheckConstraint("position >= 0", name="evidence_position_nonnegative"),
+    )
+
+    claim_revision_id: Mapped[UUID] = mapped_column(primary_key=True)
+    passage_id: Mapped[UUID] = mapped_column(primary_key=True)
+    owner_id: Mapped[UUID]
+    position: Mapped[int] = mapped_column(Integer)
