@@ -1,0 +1,42 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python/runtime/build artifacts
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+node_modules/
+
+# Private or regenerable state; curated synthetic corpus/reports remain tracked
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3-wal
+*.sqlite3-shm
+data/private/
+data/imported/
+eval/runs/
+logs/
+.cache/
+.tmp/
+
+# Local editor/OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
