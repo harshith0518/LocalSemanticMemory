@@ -38,6 +38,12 @@ wsl -d Ubuntu-24.04 -- docker version
 
 If the engine is stopped on a later session, use `docker desktop start`, then verify that `docker version` shows both client and server. Ubuntu integration is already working on this host. Do not install a second conflicting Docker daemon inside WSL without deliberately choosing that setup.
 
+### Implementation-chat recheck
+
+On 11 September, the fresh implementation session found Docker client `28.4.0` and Compose `2.39.2-desktop.1`, but the `desktop-linux` engine pipe was unavailable. WSL listed Ubuntu-24.04, docker-desktop and Ubuntu as stopped before the distro check. Invoking Docker inside Ubuntu-24.04 then reported that the command was unavailable. Docker Desktop was not started during this audit; start it and recheck the engine and WSL integration before application/database work. This current stopped state does not invalidate the earlier successful readiness probe, and it does not establish that integration was removed.
+
+Host Python `3.14` and Node `24.11.1` are available. `uv`, `codex` and Poppler commands were not found on this session's PowerShell PATH; that is not proof they are uninstalled elsewhere. The standalone coding CLI's location and authentication remain unverified. Existing course/blueprint checks run with Node; PDF inspection used installed pypdf and PyMuPDF. No application dependency lock, container build, database test or model-provider access was validated in this audit.
+
 ## Required final commands and documentation
 
 Implementation must provide and verify the following operations through the CLI and appropriate UI. Exact executable commands will replace this checklist after they work:
