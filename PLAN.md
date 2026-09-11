@@ -115,6 +115,21 @@ Acceptance before declaring S06 complete:
 
 Keep selective extraction, worker processing, retrieval/ranking/embeddings, automatic Ultra fallback and complete Correct/Forget in S07–S10. Extend the existing browser UI in each corresponding backend milestone. This first baseline will not claim general Private conversation support with a noncompliant provider. The simpler alternative to a new call table is process-local accounting; reject that alternative because API/CLI concurrency and restarts would bypass the agreed ceiling.
 
+## S07 bounded proposal after research review
+
+The user requested a reviewable S07 plan, then research on useful memory and storage. This proposal remains pending approval for important edits. Keep the existing Windows checkout, Linux containers, shared service layer and browser-first workflow. S06 remains incomplete; reuse its proposed provider/accounting foundation if brought forward, without marking source-history answering complete or carrying its proposed live-call allowance into S07. [Research and tradeoffs](DECISIONS.md#input-to-memory-research-review)
+
+| Proposed files | Behavior and data effects |
+| --- | --- |
+| `src/jarvis/extraction.py`, `src/jarvis/providers.py`, `src/jarvis/contracts.py` | Bounded typed proposals for eligible facts/preferences/reported events, exact passages and reconciliation. Zero claims is a valid outcome. Preserve attribution, condition, uncertainty, units and unknown time. Nemotron Lightning remains a candidate; model calls never execute SQL or authorize themselves. |
+| `src/jarvis/services.py`, `src/jarvis/worker.py`, `src/jarvis/models.py`, additive Alembic migration | One DB-backed worker; lease/retry/replay handling, revision relationships and operation receipts. Reuse S06 accounting rather than creating competing budget stores. Preserve existing source/job/claim rows; model calls occur outside locks, then the whole accepted operation commits under the shared guard. Exact retries do not add evidence. Final columns/migration ordering must match the approved combined scope. |
+| `src/jarvis/api.py`, `src/jarvis/web/`, optional developer CLI, configuration/Compose | Browser processing controls, job status and source-linked memories/history through shared services. Private blocks personal processing before access or durable activity. Provider configuration stays disabled until its separate terms/budget gate is cleared. |
+| Isolated PostgreSQL/provider/browser tests; evaluator fixtures/reports; RUN/todo | Preserve existing regressions; demonstrate invalid/stale proposal rejection, atomic rollback, competing workers, retry/restart and zero-access Private failure paths. Record actual outcomes and semantic limitations. |
+
+Acceptance: retain all existing S03–S05/UI checks; cover no-memory questions/one-off instructions, scoped preferences, conditional owners, unknown times, raw/formatted conflicts, real changes versus extraction errors and duplicate NOOPs. Use separate PostgreSQL connections/barriers for races. Show evidence/history in the browser, preserve existing state through migration/restart, and keep failure receipts honest. Deterministic proposals establish backend behavior; only separately approved repeated live runs establish extraction faithfulness. Compare with stronger extraction only within an explicitly scoped budget. Downstream quality needs the S06 baseline and controlled S08 comparisons.
+
+The simpler alternative is a synchronous extractor without durable processing; it would leave retry/restart behavior and pending imports unresolved. Prefer one bounded worker over another queue service. General corpus expansion, embeddings/retrieval improvements, automatic Ultra fallback, automatic procedural learning and complete user Correct/Forget remain later work. S07 must not claim those later controls are complete. After approval and checks, commit/push to `dev`; a new `main` merge needs the user's instruction.
+
 ## Workflow cases to implement deliberately
 
 | Situation | Required response | Owning layer |

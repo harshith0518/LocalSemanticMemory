@@ -1,10 +1,10 @@
 # Delivery tracker
 
-Updated: 11 September 2026. Target: **12 September afternoon IST**.
+Updated: 12 September 2026. Target: **12 September afternoon IST**.
 
 This is the single current-status checklist. [PLAN.md](PLAN.md) defines scope and milestone gates; [DECISIONS.md](DECISIONS.md) records decisions; [EVALUATION.md](EVALUATION.md) defines evidence. Check an item only after its acceptance condition is demonstrated.
 
-**Current work:** S03–S05 are implemented and audited against the 18-page visual plan. The user brought forward the minimal browser UI so import, source inspection and Normal/Private switching do not require CLI commands. This early S10 slice uses the existing shared backend, with no schema/runtime dependency/provider change; actual checks are in [RUN.md](RUN.md#browser-workflow). Keep the CLI optional for developers. The requested audit/UI publication to `main` follows the `dev` commit and remote verification. S06's [source-history proposal](PLAN.md#s06-bounded-bootstrap-proposal) remains next; live inference is blocked pending the explicit trial-terms/budget decision. Phase One finals remain separately held and unverified here. No live model evaluation has run.
+**Current work:** S03–S05 and the early S10 browser source workspace are implemented; the reviewed UI checkpoint is `5da7c77a0eb7cb33e81cda406174916689839e00`. The user requested S07 scope and research before coding. The [research review](DECISIONS.md#input-to-memory-research-review) supports preserving sources plus selective claims in PostgreSQL; the [bounded S07 proposal](PLAN.md#s07-bounded-proposal-after-research-review) is pending approval. S06's [source-history baseline](PLAN.md#s06-bounded-bootstrap-proposal) remains incomplete and necessary for downstream comparison. Live inference still needs the explicit provider/budget decision. Phase One finals remain separately held and unverified here. No live model evaluation has run.
 
 ## Completed
 
@@ -34,6 +34,8 @@ This is the single current-status checklist. [PLAN.md](PLAN.md) defines scope an
 
 - [x] **Early S10 source-workspace UI.** Explicitly requested as the primary user workflow after the audit. Plain browser UI uses existing import/list/inspect services; no new application dependency or schema. Transient state, backend policy, fixed errors, safe text rendering, no-store/CSP headers and mode/late-response clearing preserve the bounded privacy contract. Tests and actual runtime checks are recorded in [RUN.md](RUN.md#browser-workflow) and [the evaluator record](eval/reports/ui-foundation.json). Full Ask/Correct/Forget and live-model evaluation are not complete.
 
+- [x] **Input-to-memory research review (12 September).** Reviewed current/parent planning, relevant visual-guide pages and primary memory/database sources; clarified source preservation, selective learning, storage and controlled evaluation in the existing documents. This is design evidence, not S07 implementation or measured model quality. Documentation checks are recorded in RUN.md; publish this checkpoint to `dev` only.
+
 ## Ongoing
 
 - [ ] **S01 — Repository preservation/mechanical checks of final Phase One.** Author reports the independently authored final documents complete and held separately. Earlier source notes and AI-assisted drafts retain their distinct provenance; the assistant has not inspected the finals.
@@ -47,7 +49,7 @@ This is the single current-status checklist. [PLAN.md](PLAN.md) defines scope an
 | Step | Work | Evidence required before completion |
 | --- | --- | --- |
 | S06 | Produce a real source-history answer through Kimi K3; bounded proposal prepared. | A cited answer/draft from actual stored sources; honest unknown/failure behavior; actual provider and usage recorded where permitted. |
-| S07 | Extract selective memory and reconcile changes. | Compare smaller proposers; distinguish new fact, genuine change, extraction error, tentative claim and unresolved conflict. |
+| S07 | [Pending bounded approval](PLAN.md#s07-bounded-proposal-after-research-review): extract selective memory and reconcile changes, inspectable through the browser. | Distinguish zero-memory decisions, new fact, genuine change, extraction error, tentative claim and unresolved conflict; verify worker replay/atomicity/Private; separately approved live proposer evaluation. |
 | S08 | Improve retrieval only when evidence supports it. | Controlled lexical/dense/hybrid and history/claim comparisons, with response model and evidence budgets held fixed. |
 | S09 | Complete controls and feedback repair. | Private/Correct/Forget success and failure paths, actual DB concurrency tests, no resurrection on retries/reimport; repair the demonstrated failing layer. |
 | S10 | Complete the browser interface; source-workspace foundation brought forward after S05. | Connect S06 Ask and S09 full controls to the existing UI. No CLI required for ordinary-user flows. |

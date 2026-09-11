@@ -1,6 +1,6 @@
 # Decisions and hypotheses
 
-Updated 11 September 2026. This distinguishes agreed product behavior from an implementation recommendation. "Promising" is not a measured result or blanket approval to implement every feature.
+Updated 12 September 2026. This distinguishes agreed product behavior from an implementation recommendation. "Promising" is not a measured result or blanket approval to implement every feature.
 
 ## Agreed requirements
 
@@ -84,6 +84,25 @@ The user requested an audit against the visual guide, commit/push to `main`, and
 An explicit **synthetic-only** trial exception has been proposed, not approved: only the checked-in diagnostic sources/questions; $0 paid spend; at most 32 total requests and 500,000 total input/output tokens including retries. Personal inputs and Private provider calls stay blocked. Alternative: keep all live calls disabled until a provider agreement/settings satisfy no training. Unknown usage after a timeout must consume its conservative reservation rather than disappearing from accounting. No provider request has been made and no response quality, free quota or credential validity is claimed.
 
 The PDF remains the original planning snapshot. Its DeepSeek labels and pre-bootstrap status are superseded by this decision and the tracker; the evidence, policy, staged delivery and evaluation diagrams remain applicable. Do not rewrite the historical PDF simply to imply that every depicted capability is implemented.
+
+## Input-to-memory research review
+
+On 12 September the user requested confidence in the input/storage design before S07 implementation. Reviewed the current Markdown, parent brief/research notes and the visual guide, especially pages 4–7 and 17. These agree on selective learning, original evidence, revision history and one PostgreSQL store. The following external evidence supports testing that direction; it does not establish our models' accuracy or authorize new implementation.
+
+| Primary source | Finding and implication for this project |
+| --- | --- |
+| [LongMemEval, sections 5.2–5.3](https://arxiv.org/html/2410.10813v1) | Replacing source text with summaries/facts often reduced answer quality; adding extracted facts to original-text search keys helped in the tested settings. Preserve source access and test claims as an addition. Results varied by reader and task, so this does not prove that our proposed retrieval design is optimal. |
+| [Mem0, section 2.1](https://arxiv.org/html/2504.19413v1) | Separates extraction from memory updates. Borrow that separation, with backend validation and revision history. Its user/assistant input handling and model-selected deletion are not our eligibility or Forget contract. Its reported evaluation excludes adversarial questions; it cannot establish our abstention/privacy guarantees. |
+| [PostgreSQL JSON types](https://www.postgresql.org/docs/17/datatype-json.html) and [W3C provenance](https://www.w3.org/TR/prov-dm/) | JSONB supports structured content; provenance distinguishes sources, derivations and revisions. Our recommendation is exact source strings in TEXT, validated claim content in JSONB, and relational IDs, ownership, revisions and evidence links. JSONB preserves string values but not original JSON serialization, key order or duplicate keys; do not claim byte-identical import-file archival. |
+| [pgvector](https://github.com/pgvector/pgvector) | Exact and approximate vector search can share PostgreSQL with existing state. An embedding is a derived search aid, not authoritative memory or proof of meaning. Start with the planned lexical baseline, then test exact dense search; add ANN only for a measured need. |
+
+**Recommended design:** preserve eligible Normal source history; extract only reusable facts, scoped preferences and useful reported events; retain exact supporting passages and context-complete qualifiers; reconcile under the existing policy/revision guard. One-off response instructions, questions, quotes and hypothetical examples do not automatically become lasting personal facts. A real conditional plan may be useful but must stay conditional. Save permission and memory usefulness are separate decisions: a stored observation can yield zero claims. This is a refinement of the existing product invariants, not a new retention policy.
+
+Keep canonical source, passage and claim-revision records in PostgreSQL. Use explicit lifecycle/relationship history rather than overwriting a profile summary. Raw/formatted text remains one observation, and equal text is not an identity key. Model calls propose outside DB locks; the shared service rechecks ownership and revisions, then commits the whole accepted operation and its receipt. Source fallback must obey the same exclusions as claims, including later Forget controls. These controls are required engineering properties, not findings established by the cited model benchmarks.
+
+**Alternatives and confidence:** do not introduce a separate vector/graph database, summary-only memory, unbounded automatic extraction, or a model's confidence score as a truth probability without evidence that justifies them. The implemented schema already supports the core representation. Extraction usefulness, reconciliation quality and embedding benefit remain unmeasured here. LongMemEval also tests assistant-side information, whereas our memory eligibility is user-only; external scores cannot be imported as product results. Run the [controlled comparisons](EVALUATION.md#4-compare-mechanisms-without-confounding) and retain the simpler baseline if added memory does not help. S06 remains the answer baseline; S07 may share its proposed provider/accounting foundation but cannot establish an answer-quality improvement before that baseline exists.
+
+No live calls, application changes or new runtime tests were performed for this research checkpoint. S07 files/data effects and acceptance are now collected in [the pending proposal](PLAN.md#s07-bounded-proposal-after-research-review). Provider approval remains separate.
 
 ## Open before later implementation or live calls
 

@@ -298,6 +298,19 @@ Local configuration inspection reported `KIMI_K3_API_KEY`, `NEMOTRON_30B_API_KEY
 
 Review conclusion: continue with the existing architecture and [bounded S06 proposal](PLAN.md#s06-bounded-bootstrap-proposal). The no-training conflict is a real open gate, not an infrastructure failure. Phase One final files are still held separately by the author and have not been mechanically verified here. Full product acceptance remains S12.
 
+## Input-to-memory research checkpoint
+
+On 12 September 2026, reviewed the current Markdown, parent planning/brief and relevant pages of the existing visual PDF against primary research and PostgreSQL/pgvector documentation. Updated DECISIONS, ARCHITECTURE, EVALUATION, PLAN and todo with the rationale and pending S07 proposal. No application, dependency, migration, PDF or provider configuration changed; no model calls or new runtime tests ran. The last completed runtime evidence remains 112 backend and 8 browser checks in the UI milestone.
+
+Actual documentation checks from the existing checkout:
+
+```powershell
+python .tmp/s03_check_docs.py
+git diff --check
+```
+
+The existing local audit helper passed: 10 UTF-8 Markdown files, 141 local links/anchors, unchanged Phase One notes/drafts, and no local credentials/runtime artifacts staged. Whitespace checks passed. The helper is an ignored local audit tool, not a fresh-checkout runtime dependency. Review the staged Markdown diff, rerun the staged checks and commit/push this documentation checkpoint to `dev`; verify the remote hash. S07 and live-provider approval remain open.
+
 ## Later review contract
 
 S06 is next: produce a source-history answer through Kimi K3 using the S05 stored evidence and S04 policy boundary. Connect source-history Ask to the existing browser UI as part of S06. Subsequent milestones provide processing, selective memory, retrieval and full controls in that same surface; keep CLI commands optional for developers. Provider access, retention/no-training settings and a spend ceiling must be agreed before live inference. The final acceptance still needs a clean-checkout import/UI/evaluation/reset walkthrough and exact tested release commit; S05 is not that final product gate.

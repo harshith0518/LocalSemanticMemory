@@ -19,6 +19,7 @@ These run without paid model calls. Inject controlled extraction proposals to ex
 | Attribution and source spans | Reject nonexistent source IDs/spans, wrong tenant, and invalid schema; generated replies cannot independently corroborate claims. Semantic support still needs model-live review. |
 | Observation identity | Raw/formatted variants share one observation; exact reimport is idempotent; separately authored identical text remains distinguishable. |
 | Time and uncertainty | Preserve tentative/conditional status and unknown dates; distinguish correction from world change; late import cannot automatically overwrite current state. |
+| Learning eligibility | A question does not assert its answer; a one-request formatting instruction does not become a lasting preference. Keep useful conditional plans conditional, quote attribution intact, and zero-claim decisions distinguishable from failed extraction. Model selection of these outcomes also needs live grading. |
 | Private | Instrument every personal-store read and durable-write sink. No personal-memory reads, durable private content/activity, backfill, or Normal context carryover; test success, exception, timeout, reload, and mode exit. |
 | Forget | Excluded sources and known duplicates cannot feed recall, summaries, relearning, retries, or cached contexts; original history visibility is tested separately. |
 | Tool boundaries | Imported instructions never execute; draft does not become sent; failed retrieval is not labeled absent evidence; retry cannot duplicate an external effect. |
@@ -43,10 +44,12 @@ Keep the response model, query set, eligible corpus, evidence budget, and gradin
 
 1. **History baseline:** all eligible source history if measured tokens fit the model budget, including instructions and reply reserve. Otherwise report “does not fit”; do not silently truncate.
 2. **Retrieval ablation:** lexical-only versus lexical+dense union on identical source chunks. This isolates retrieval.
-3. **Representation ablation:** add derived claims to the selected retrieval setup. This tests whether memory improves over history search.
+3. **Representation ablation:** source passages alone versus sources plus derived claims in the selected retrieval setup. Keep the total evidence token budget fixed across both; do not give the combined variant an extra budget. Include a question about a source detail deliberately omitted from the selective claims, to test source fallback. A facts-only variant is optional diagnostic evidence, not a replacement for preserved sources.
 4. **Extractor ablation:** small versus stronger extraction on identical inputs, downstream retrieval/settings fixed, isolated databases. Do not simultaneously change the answer model or prompts beyond required provider formatting.
 
 Pilot these comparisons on the eight-record corpus plus a small varied challenge set. Carry only a baseline and the best justified candidate into the full run. Report any comparison skipped for time/cost; avoid claiming small-model superiority without that comparison.
+
+The [research review](DECISIONS.md#input-to-memory-research-review) motivates these experiments without supplying application scores. Grade extraction selection separately from faithfulness: whether the input deserved a memory, whether all required qualifiers survived, and whether each claim is supported. Include eligible information missed by extraction and unnecessary memories created from questions/instructions. S06's source-history answer baseline remains necessary to assess downstream S07 benefit. External benchmarks with assistant-derived memories do not override this project's user-only learning rule.
 
 ## 5. Corpus, metrics, and proposed gates
 
