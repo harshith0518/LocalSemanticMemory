@@ -1,4 +1,4 @@
-"""Explicit, capped Ultra diagnostic. Does not change application model selection."""
+"""Explicit, capped provider diagnostic. Does not change running application selection."""
 
 import argparse
 import json
@@ -14,7 +14,7 @@ from jarvis.config import Settings
 from jarvis.db import make_engine
 from jarvis.errors import ApplicationError
 from jarvis.models import ModelBudget
-from jarvis.providers import BUDGET_KEY, MODEL, NvidiaExtractor, NvidiaResponder
+from jarvis.providers import BUDGET_KEY, MODEL, FreeChatProvider, NvidiaExtractor, NvidiaResponder
 from jarvis.services import Service
 from jarvis.worker import process_one
 
@@ -53,15 +53,26 @@ def budget_snapshot(engine):
 
 def run():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--approved-ultra-comparison", action="store_true", required=True)
-    parser.add_argument("--max-new-calls", type=int, choices=range(1, 11), default=10)
+    parser.add_argument(
+        "--approved-ultra-comparison", "--approved-comparison", action="store_true", required=True
+    )
+    parser.add_argument("--provider", choices=("ultra", "google", "openrouter"), default="ultra")
+    parser.add_argument("--max-new-calls", type=int, choices=range(1, 21), default=10)
     args = parser.parse_args()
-    key = os.environ.get("NEMOTRON_550B_API_KEY", "")
-    if os.environ.get("JARVIS_S07_SYNTHETIC_TRIAL_APPROVED") != "true" or not key:
-        emit("blocked", reason="synthetic_approval_or_ultra_key_missing", calls_made=0)
-        return 1
-    extractor = UltraExtractor(approved=True, key=key, unfamiliar=False)
-    responder = UltraResponder(approved=True, key=key, unfamiliar=False)
+    if args.provider == "ultra":
+        key = os.environ.get("NEMOTRON_550B_API_KEY", "")
+        if os.environ.get("JARVIS_S07_SYNTHETIC_TRIAL_APPROVED") != "true" or not key:
+            emit("blocked", reason="synthetic_approval_or_ultra_key_missing", calls_made=0)
+            return 1
+        extractor = UltraExtractor(approved=True, key=key, unfamiliar=False)
+        responder = UltraResponder(approved=True, key=key, unfamiliar=False)
+    else:
+        os.environ["JARVIS_INFERENCE_PROVIDER"] = args.provider
+        extractor = FreeChatProvider.from_env(role="extractor")
+        responder = FreeChatProvider.from_env(role="responder")
+        if not extractor.enabled or not extractor._key:
+            emit("blocked", reason="free_synthetic_approval_or_key_missing", calls_made=0)
+            return 1
     engine = make_engine(Settings.from_env())
     before = budget_snapshot(engine)
     ceiling = min(
@@ -74,14 +85,15 @@ def run():
         responder=RecordedProvider(responder, "responder"),
     )
     context = service.identity.context("normal")
-    namespace = "ultra-probe-" + uuid4().hex
+    namespace = args.provider + "-probe-" + uuid4().hex
     fixture = Path("data/synthetic/sample-dictations.jsonl").read_bytes()
     cases = json.loads(Path("eval/fixtures/sample-evaluation-cases.json").read_text())["cases"]
     before_ids = {call["id"] for call in service.model_call_report(context)}
     emit(
         "start",
         namespace=namespace,
-        model=ULTRA_MODEL,
+        model=extractor.model,
+        provider=args.provider,
         source_sha256=sha256(fixture).hexdigest(),
         max_new_calls=args.max_new_calls,
         effective_lifetime_request_ceiling=ceiling,
@@ -89,8 +101,8 @@ def run():
         settings={
             "temperature": 0,
             "max_output_tokens": 4096,
-            "thinking": False,
-            "timeout_seconds": 90,
+            "thinking": "low" if args.provider == "google" else False,
+            "timeout_seconds": extractor.timeout_seconds,
         },
         application_model_changed=False,
         semantic_review="pending; single-run diagnostic, not a benchmark",
@@ -101,7 +113,7 @@ def run():
         imported = service.import_observations(context, options, fixture)
         emit("import", namespace=namespace, result=imported)
         for case in cases:
-            if case["case_id"] not in {
+            if args.provider == "ultra" and case["case_id"] not in {
                 "change_with_original_source",
                 "grounded_personalized_draft",
             }:
@@ -120,7 +132,18 @@ def run():
                 )
                 emit("answer", case_id=case["case_id"], result=result)
             except ApplicationError as error:
-                emit("answer", case_id=case["case_id"], error=error.code.value)
+                emit(
+                    "answer",
+                    case_id=case["case_id"],
+                    error=error.code.value,
+                    http_status=getattr(responder, "last_http_status", None),
+                )
+                if args.provider != "ultra" and error.code.value in {
+                    "rate_limited",
+                    "provider_failed",
+                }:
+                    emit("stopped", reason="provider_unavailable_no_retry_storm")
+                    return 1
         service.request_processing(context, options)
         for index in range(8):
             if budget_snapshot(engine)["requests"] >= ceiling:
@@ -128,7 +151,7 @@ def run():
                 break
             outcome = process_one(service, context, namespace=namespace)
             emit("extraction", ordinal=index + 1, outcome=outcome)
-            if outcome is None or outcome.get("reason") == "budget_exhausted":
+            if outcome is None or outcome.get("reason") in {"budget_exhausted", "rate_limited"}:
                 break
         emit("memory_state", report=service.processing_report(context, {"namespace": namespace}))
     except ApplicationError as error:

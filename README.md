@@ -96,3 +96,7 @@ Commit `596b034` replaced the earlier repository contents with a focused plannin
 These technical documents were prepared with AI assistance, including explainer agents, source research and review. The project's **Phase One positioning and vision must be independently formed and written by the author and preserved before Part Two**. The author's supplied [source notes](docs/part-one/README.md) are preserved with provenance and counts; the author now reports the final documents complete and held separately. They have not been inspected or mechanically checked in this checkout. The author explicitly approved S03 proceeding on that basis. These technical documents do not fulfill Phase One. Do not generate replacement positioning or vision text.
 
 Azure is an optional final experiment after the local review path passes. It is not a dependency of submission. The architecture and evaluation are hypotheses to test, not claims of a best-performing memory system.
+
+### Latest provider diagnostic
+
+The [free-provider comparison](eval/reports/s12-free-provider-review.json) completed with 248 backend and 24 browser tests passing. Google Flash-Lite access works, but live conflict handling still fails; OpenRouter returned a rate limit. These results do not establish final acceptance readiness or a completed 540-record live evaluation. See [the single current tracker](todo.md) and [current runtime limitations](RUN.md#free-provider-comparison-and-current-blocker). Provider adapters are default-off; credentials and personal data are not included in the repository.

@@ -1,0 +1,124 @@
+{
+  "recorded_date": "2026-09-12",
+  "scope": "Approved 20-call public-synthetic free-provider comparison; no personal or Private requests",
+  "implementation_checks": {
+    "backend": {
+      "passed": 248,
+      "failed": 0,
+      "seconds": 181.73,
+      "live_models": false,
+      "database": "isolated real PostgreSQL"
+    },
+    "browser": {
+      "passed": 24,
+      "failed": 0,
+      "seconds": 51.9588205,
+      "report": "s12-browser-tests.txt",
+      "live_models": false
+    },
+    "ruff": "passed",
+    "typescript_vite": "passed"
+  },
+  "providers": [
+    {
+      "provider": "openrouter",
+      "model": "google/gemma-4-31b-it:free",
+      "calls": 1,
+      "completions": 0,
+      "http_status": 429,
+      "result": "rate_limited",
+      "latency_ms": 1620,
+      "report": "s12-openrouter-probe.jsonl",
+      "limit_scope": "Unknown: HTTP status alone does not identify upstream versus account quota."
+    },
+    {
+      "provider": "google",
+      "model": "gemini-3.8-flash",
+      "calls": 1,
+      "completions": 0,
+      "http_status": 503,
+      "result": "provider_failed",
+      "latency_ms": 6380,
+      "report": "s12-google-probe.jsonl"
+    },
+    {
+      "provider": "google",
+      "model": "gemini-3.5-flash-lite",
+      "calls": 18,
+      "provider_completions": 18,
+      "application_accepted_calls": 15,
+      "validation_rejections": 3,
+      "final_answers": 8,
+      "source_jobs": {
+        "succeeded": 7,
+        "failed": 1,
+        "extracted": 6,
+        "no_memory": 1
+      },
+      "model_latency_ms": {
+        "min": 895,
+        "median": 1550,
+        "max": 1933,
+        "scope": "Provider transport/completion only; excludes imposed 12.1-second request-start pacing and application/retry overhead."
+      },
+      "report": "s12-google-flash-lite-probe.jsonl",
+      "namespace": "google-probe-c5168953750d497888326d1f0ae5543e",
+      "quality_gate": "failed; do not select for demo on this evidence"
+    }
+  ],
+  "semantic_review": {
+    "method": "AI-assisted inspection against original synthetic passages; single run, not an independent semantic judge or benchmark score.",
+    "strengths": [
+      "Revised launch date superseded the original memory revision rather than leaving both current.",
+      "Mira attribution and requested three-bullet draft format were retained.",
+      "Conditional Ravi budget ownership and missing metadata/surname remained uncertain or unknown."
+    ],
+    "failures": [
+      "Conflict answer selected formatted 50,000 rupees without surfacing raw 15,000.",
+      "Conflict extraction selected raw 15,000 as reported/asserted without preserving the formatted alternative as disputed.",
+      "Useful sent-checklist/review-pending episode produced no_memory.",
+      "Change reason and next step survive original evidence but were not represented as separate memories.",
+      "Orion extraction returned prohibited offsets in both attempts; validation rejected it."
+    ]
+  },
+  "accounting": {
+    "before": {
+      "requests": 44,
+      "accounted_tokens": 334052
+    },
+    "after": {
+      "requests": 64,
+      "accounted_tokens": 405031
+    },
+    "new_requests": 20,
+    "paid_spend_authorized_usd": 0,
+    "actual_provider_bill": null,
+    "token_limit": 10000000,
+    "request_limit": 750,
+    "failed_requests_counted": true
+  },
+  "safety": {
+    "free_provider_default_off": true,
+    "automatic_paid_fallback": false,
+    "private_inference": false,
+    "personal_free_provider_inference": false,
+    "main_browser_still_older_disabled_configuration": true
+  },
+  "pending": [
+    "User approval to repair demonstrated failures, forward per-role Compose model overrides and extend Google synthetic evaluation scope beyond comparison.",
+    "Complete 540-record live evaluation, paired retrieval/answer evidence and demo quota reserve.",
+    "Deploy selected verified runtime and perform final clean-start/import/UI/persistence/reset rehearsal from release commit.",
+    "Independently authored Phase One final paths are unverified."
+  ],
+  "quota": {
+    "reported_by_user": "Approximately 15 RPM and 1,500 requests/day; user says limits not disclosed.",
+    "verified": false,
+    "guaranteed_capacity": false
+  },
+  "sources": [
+    "https://ai.google.dev/gemini-api/docs/pricing",
+    "https://ai.google.dev/gemini-api/docs/rate-limits",
+    "https://ai.google.dev/gemini-api/terms",
+    "https://openrouter.ai/docs/faq"
+  ]
+}

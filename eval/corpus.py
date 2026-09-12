@@ -212,7 +212,7 @@ def main():
                         "running", 0
                     ):
                         break
-                if result and result.get("reason") == "budget_exhausted":
+                if result and result.get("reason") in {"budget_exhausted", "rate_limited"}:
                     break
         if args.stage in {"answers", "all"}:
             selected = [
@@ -255,7 +255,7 @@ def main():
                             item.update(answer=answer, screen=screen(case, answer), timings=timings)
                         except ApplicationError as error:
                             item.update(error=error.code.value, timings=timings)
-                            exhausted = error.code.value == "budget_exhausted"
+                            exhausted = error.code.value in {"budget_exhausted", "rate_limited"}
                         attempts.append(item)
                         emit("answer", **item)
                         if exhausted:

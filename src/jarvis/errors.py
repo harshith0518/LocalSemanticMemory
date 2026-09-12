@@ -14,6 +14,7 @@ class ErrorCode(StrEnum):
     OPERATION_FAILED = "operation_failed"
     PROVIDER_DISABLED = "provider_disabled"
     PROVIDER_FAILED = "provider_failed"
+    RATE_LIMITED = "rate_limited"
     PROVIDER_RESPONSE = "provider_response_invalid"
     TRIAL_INPUT_DENIED = "trial_input_denied"
     BUDGET_EXHAUSTED = "budget_exhausted"

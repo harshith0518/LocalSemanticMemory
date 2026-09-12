@@ -50,6 +50,8 @@ class Completion:
 
 class NvidiaExtractor:
     model = MODEL
+    endpoint = ENDPOINT
+    provider_name = "nvidia"
     budget_key = BUDGET_KEY
     live = True
     timeout_seconds = 90
@@ -64,6 +66,8 @@ class NvidiaExtractor:
 
     @classmethod
     def from_env(cls):
+        if os.environ.get("JARVIS_INFERENCE_PROVIDER", "nvidia") != "nvidia":
+            return FreeChatProvider.from_env(role="extractor")
         unfamiliar = unfamiliar_approved()
         return cls(
             approved=unfamiliar or os.environ.get("JARVIS_S07_SYNTHETIC_TRIAL_APPROVED") == "true",
@@ -103,12 +107,15 @@ class NvidiaExtractor:
                 ) as client,
                 client.stream(
                     "POST",
-                    ENDPOINT,
+                    self.endpoint,
                     headers={"Authorization": f"Bearer {self._key}"},
                     json=body,
                 ) as response,
             ):
+                self.last_http_status = response.status_code
                 if response.status_code != 200:
+                    if response.status_code == 429 and self.provider_name != "nvidia":
+                        raise ApplicationError(ErrorCode.RATE_LIMITED)
                     raise ApplicationError(ErrorCode.PROVIDER_FAILED)
                 data = bytearray()
                 for chunk in response.iter_bytes():
@@ -126,7 +133,7 @@ class NvidiaExtractor:
             choice = value["choices"][0]
             content = choice["message"]["content"]
             if (
-                model != self.model
+                not self.accepts_model(model)
                 or not isinstance(content, str)
                 or choice["finish_reason"] != "stop"
             ):
@@ -140,6 +147,9 @@ class NvidiaExtractor:
             raise ApplicationError(ErrorCode.PROVIDER_RESPONSE) from None
         except Exception:
             raise ApplicationError(ErrorCode.PROVIDER_FAILED) from None
+
+    def accepts_model(self, model):
+        return model == self.model
 
 
 class NvidiaResponder(NvidiaExtractor):
@@ -160,6 +170,8 @@ class NvidiaResponder(NvidiaExtractor):
 
     @classmethod
     def from_env(cls):
+        if os.environ.get("JARVIS_INFERENCE_PROVIDER", "nvidia") != "nvidia":
+            return FreeChatProvider.from_env(role="responder")
         model = os.environ.get("JARVIS_RESPONSE_MODEL", KIMI_MODEL)
         unfamiliar = unfamiliar_approved()
         key_name = "KIMI_K3_API_KEY" if model == KIMI_MODEL else "NEMOTRON_30B_API_KEY"
@@ -194,3 +206,73 @@ class NvidiaResponder(NvidiaExtractor):
             "stream": False,
             "response_format": {"type": "json_object"},
         }, size + output_tokens + 512
+
+
+class FreeChatProvider(NvidiaExtractor):
+    """Explicit public-synthetic comparison routes; never unfamiliar/personal fallbacks."""
+
+    timeout_seconds = 45
+    routes = {
+        "google": (
+            "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+            "GOOGLE_API_KEY_FREE_TIER",
+            ("gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash-lite"),
+        ),
+        "openrouter": (
+            "https://openrouter.ai/api/v1/chat/completions",
+            "OPEN_ROUTER_API_KEY",
+            ("google/gemma-4-31b-it:free",),
+        ),
+    }
+
+    def __init__(self, *, provider, role, model=None, **kwargs):
+        if provider not in self.routes or role not in {"extractor", "responder"}:
+            raise ApplicationError(ErrorCode.INVALID_INPUT)
+        self.endpoint, _, models = self.routes[provider]
+        self.model = model or models[0]
+        if self.model not in models or kwargs.get("unfamiliar"):
+            raise ApplicationError(ErrorCode.INVALID_INPUT)
+        self.provider_name, self.role = provider, role
+        super().__init__(**kwargs)
+
+    @classmethod
+    def from_env(cls, *, role):
+        provider = os.environ.get("JARVIS_INFERENCE_PROVIDER", "")
+        if provider not in cls.routes:
+            raise ApplicationError(ErrorCode.INVALID_INPUT)
+        _, key_name, models = cls.routes[provider]
+        enabled = (
+            os.environ.get("JARVIS_FREE_SYNTHETIC_TRIAL_APPROVED") == "true"
+            and os.environ.get("JARVIS_FREE_DATA_POLICY_ACK") == "I_ACCEPT_FREE_SYNTHETIC_DATA_TERMS"
+            and not unfamiliar_approved()
+        )
+        return cls(
+            provider=provider,
+            role=role,
+            model=os.environ.get(f"JARVIS_FREE_{role.upper()}_MODEL", models[0]),
+            approved=enabled,
+            key=os.environ.get(key_name, ""),
+        )
+
+    def prepare(self, packet, *, repair=False):
+        if self.role == "extractor":
+            body, reserved = super().prepare(packet, repair=repair)
+        else:
+            reference = NvidiaResponder(model=MODEL, approved=self.enabled)
+            body, reserved = reference.prepare(packet, repair=repair)
+            body["model"] = self.model
+        body.pop("chat_template_kwargs", None)
+        if self.provider_name == "google":
+            body["reasoning_effort"] = "low"
+        else:
+            body["provider"] = {
+                "max_price": {"prompt": 0, "completion": 0, "request": 0},
+                "allow_fallbacks": False,
+                "require_parameters": True,
+                "data_collection": "deny",
+            }
+            body["transforms"] = []
+        return body, reserved
+
+    def accepts_model(self, model):
+        return model in {self.model, self.model.removesuffix(":free")}

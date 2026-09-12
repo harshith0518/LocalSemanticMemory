@@ -88,6 +88,7 @@ def create_app(service: Service | None = None) -> FastAPI:
             ErrorCode.OPERATION_FAILED: 500,
             ErrorCode.PROVIDER_DISABLED: 503,
             ErrorCode.BUDGET_EXHAUSTED: 429,
+            ErrorCode.RATE_LIMITED: 429,
             ErrorCode.TRIAL_INPUT_DENIED: 403,
         }.get(error.code, 422)
         return JSONResponse(error.response(), status_code=status)

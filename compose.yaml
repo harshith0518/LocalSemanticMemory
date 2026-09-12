@@ -16,6 +16,9 @@ x-runtime-environment: &runtime-environment
   JARVIS_UNFAMILIAR_DATA_POLICY_ACK: ${JARVIS_UNFAMILIAR_DATA_POLICY_ACK:-}
   JARVIS_MAX_REQUESTS: ${JARVIS_MAX_REQUESTS:-750}
   JARVIS_MAX_TOTAL_TOKENS: ${JARVIS_MAX_TOTAL_TOKENS:-10000000}
+  JARVIS_INFERENCE_PROVIDER: ${JARVIS_INFERENCE_PROVIDER:-nvidia}
+  JARVIS_FREE_SYNTHETIC_TRIAL_APPROVED: ${JARVIS_FREE_SYNTHETIC_TRIAL_APPROVED:-false}
+  JARVIS_FREE_DATA_POLICY_ACK: ${JARVIS_FREE_DATA_POLICY_ACK:-}
 
 services:
   db:
@@ -57,6 +60,8 @@ services:
       KIMI_K3_API_KEY: ${KIMI_K3_API_KEY:-}
       NEMOTRON_30B_API_KEY: ${NEMOTRON_30B_API_KEY:-}
       NVIDIA_API_KEY: ${NVIDIA_API_KEY:-}
+      GOOGLE_API_KEY_FREE_TIER: ${GOOGLE_API_KEY_FREE_TIER:-}
+      OPEN_ROUTER_API_KEY: ${OPEN_ROUTER_API_KEY:-}
     ports: ['127.0.0.1:${JARVIS_API_PORT:-8000}:8000']
     depends_on:
       migrate: {condition: service_completed_successfully}
@@ -78,6 +83,8 @@ services:
       KIMI_K3_API_KEY: ${KIMI_K3_API_KEY:-}
       NEMOTRON_30B_API_KEY: ${NEMOTRON_30B_API_KEY:-}
       NVIDIA_API_KEY: ${NVIDIA_API_KEY:-}
+      GOOGLE_API_KEY_FREE_TIER: ${GOOGLE_API_KEY_FREE_TIER:-}
+      OPEN_ROUTER_API_KEY: ${OPEN_ROUTER_API_KEY:-}
     depends_on:
       migrate: {condition: service_completed_successfully}
 
@@ -91,6 +98,8 @@ services:
       NEMOTRON_30B_API_KEY: ${NEMOTRON_30B_API_KEY:-}
       KIMI_K3_API_KEY: ${KIMI_K3_API_KEY:-}
       NVIDIA_API_KEY: ${NVIDIA_API_KEY:-}
+      GOOGLE_API_KEY_FREE_TIER: ${GOOGLE_API_KEY_FREE_TIER:-}
+      OPEN_ROUTER_API_KEY: ${OPEN_ROUTER_API_KEY:-}
     depends_on:
       migrate: {condition: service_completed_successfully}
 

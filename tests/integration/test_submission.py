@@ -186,3 +186,60 @@ def test_unseen_corpus_can_complete_contract_path_without_fixture_matching(engin
 def test_test_doubles_keep_their_identity():
     assert FixtureResponder().model == "deterministic-answer-double"
     assert FixtureExtractor().model == "deterministic-test-double"
+
+
+@pytest.mark.parametrize("provider", ["google", "openrouter"])
+def test_free_provider_consent_and_no_unfamiliar_inheritance(monkeypatch, provider):
+    monkeypatch.setenv("JARVIS_INFERENCE_PROVIDER", provider)
+    monkeypatch.setenv("JARVIS_S07_SYNTHETIC_TRIAL_APPROVED", "true")
+    assert not NvidiaExtractor.from_env().enabled
+    monkeypatch.setenv("JARVIS_FREE_SYNTHETIC_TRIAL_APPROVED", "true")
+    monkeypatch.setenv("JARVIS_FREE_DATA_POLICY_ACK", "I_ACCEPT_FREE_SYNTHETIC_DATA_TERMS")
+    assert NvidiaExtractor.from_env().enabled and not NvidiaExtractor.from_env().unfamiliar_mode
+    monkeypatch.setenv("JARVIS_UNFAMILIAR_INFERENCE_APPROVED", "true")
+    monkeypatch.setenv("JARVIS_UNFAMILIAR_DATA_POLICY_ACK", REVIEWER_ACK)
+    assert not NvidiaExtractor.from_env().enabled
+
+
+@pytest.mark.parametrize(
+    "provider,model", [("google", "gemini-3.8-flash"), ("openrouter", "google/gemma-4-31b-it:free")]
+)
+def test_free_transport_exact_route_accounting_and_rate_limit(monkeypatch, provider, model):
+    from jarvis.providers import FreeChatProvider
+
+    monkeypatch.setattr("jarvis.answers.answer_messages", lambda *a, **kw: [])
+    captured = []
+
+    def transport(request):
+        captured.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "model": model.removesuffix(":free"),
+                "usage": {"prompt_tokens": 12, "completion_tokens": 7},
+                "choices": [{"finish_reason": "stop", "message": {"content": "{}"}}],
+            },
+        )
+
+    proposer = FreeChatProvider(
+        provider=provider,
+        role="responder",
+        approved=True,
+        key="test-key",
+        transport=httpx.MockTransport(transport),
+    )
+    body, reservation = proposer.prepare(None)
+    answer = proposer.complete(body)
+    assert answer.input_tokens == 12 and answer.output_tokens == 7
+    assert reservation > body["max_tokens"] and "chat_template_kwargs" not in body
+    assert str(captured[0].url) == proposer.endpoint
+    if provider == "openrouter":
+        assert body["provider"]["max_price"] == {"prompt": 0, "completion": 0, "request": 0}
+        assert body["provider"]["allow_fallbacks"] is False
+        assert body["provider"]["data_collection"] == "deny"
+    proposer._transport = httpx.MockTransport(lambda r: httpx.Response(429))
+    with pytest.raises(ApplicationError, match="rate_limited"):
+        proposer.complete(body)
+    assert proposer.last_http_status == 429
+    with pytest.raises(ApplicationError, match="invalid_input"):
+        FreeChatProvider(provider=provider, role="extractor", model="paid-or-unknown")

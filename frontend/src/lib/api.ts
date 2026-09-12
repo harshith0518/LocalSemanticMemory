@@ -7,6 +7,8 @@ export const errors: Record<string, string> = {
     "This installation permits only the approved synthetic corpus and questions. Unfamiliar notes need the operator's explicit unfamiliar opt-in. Your note stays saved locally.",
   budget_exhausted:
     "The evaluation allowance is exhausted. Your saved sources and memories remain available.",
+  rate_limited:
+    "The provider's rate or daily quota limit was reached. No automatic retry was made. Your sources and memories are safe; wait for quota renewal or ask the operator to select an approved available provider.",
   context_limit:
     "This collection exceeds the processing context limit. No partial interpretation was saved.",
   import_conflict:

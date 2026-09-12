@@ -731,6 +731,7 @@ class ProcessingOperations:
                 "enabled": provider.enabled,
                 "key_configured": bool(provider._key) or not provider.live,
                 "unfamiliar_mode": provider.unfamiliar_mode,
+                "provider": getattr(provider, "provider_name", "test_double"),
             }
 
         return {
@@ -740,8 +741,11 @@ class ProcessingOperations:
             "token_ceiling": min(self.extractor.max_total_tokens, self.responder.max_total_tokens),
             "provider_contacted": False,
             "warning": (
-                "NVIDIA-hosted inference may retain/use submitted content under its terms. "
-                "Private never calls it."
+                "Hosted inference follows the selected provider's data terms. Google free "
+                "inputs/outputs may be used for product improvement and human review. "
+                "Free Google/OpenRouter routes accept only approved public synthetic data; "
+                "unfamiliar input requires explicit NVIDIA unfamiliar mode. "
+                "Private never calls any provider."
             ),
         }
 
