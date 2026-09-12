@@ -106,3 +106,9 @@ The [free-provider comparison](eval/reports/s12-free-provider-review.json) compl
 Use **RUN.md / Automated unfamiliar: replace keys and continue independently** for exact NVIDIA, Google-free and OpenRouter-free configuration, a real probe, collection import/learning/Ask/inspection, failure handling and paced evaluation. Keys are provider-specific; credentials stay outside Git. The user-facing app runs locally at `http://localhost:8000`; no hosted deployment is required.
 
 **Workflow & evidence** embeds the 12-stage source-to-memory diagram and displays source/claim storage explanations and actual synthetic reports. The machine-readable map is `docs/storage-contract.json`. Use `todo.md` for current gates; the S14 live 30-case baseline had 13 mechanical passes and four operational failures and is not concealed. A configured provider, successful import or passing deterministic tests is not proof that every input was learned correctly. Independently authored Phase One work is a separate requirement; AI-assisted technical documentation does not replace it.
+
+## Final submission entry point
+
+Start locally with RUN.md; no cloud deployment or private API key is included. The unfamiliar supplies a supported key and explicitly enables the documented inference mode. The fixed Workflow & evidence page exposes the diagram, storage explanation, query metrics and retained evaluation reports.
+
+Read `eval/reports/s14-readiness-review.json` for the final cutoff evidence and limitations, and `eval/reports/s15-semantic-review.json` before interpreting the showcase scores. A mechanical screen is not an accuracy score. todo.md remains the single progress tracker. Independently authored Phase One text still requires the author's final confirmation.

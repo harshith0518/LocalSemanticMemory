@@ -1,0 +1,50 @@
+docker :  Container jarvis-handoff-20260912-api-1  Stopping
+At line:2 char:172
++ ... ED='false'; docker compose -p jarvis-handoff-20260912 down 2>&1 | Tee-O ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( Container jarvis...api-1  Stopping:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ Container jarvis-handoff-20260912-api-1  Stopped
+ Container jarvis-handoff-20260912-api-1  Removing
+ Container jarvis-handoff-20260912-api-1  Removed
+ Container jarvis-handoff-20260912-migrate-1  Stopping
+ Container jarvis-handoff-20260912-migrate-1  Stopped
+ Container jarvis-handoff-20260912-migrate-1  Removing
+ Container jarvis-handoff-20260912-migrate-1  Removed
+ Container jarvis-handoff-20260912-db-1  Stopping
+ Container jarvis-handoff-20260912-db-1  Stopped
+ Container jarvis-handoff-20260912-db-1  Removing
+ Container jarvis-handoff-20260912-db-1  Removed
+ Network jarvis-handoff-20260912_application  Removing
+ Network jarvis-handoff-20260912_application  Removed
+docker :  Network jarvis-handoff-20260912_application  Creating
+At line:2 char:326
++ ... TEXITCODE}; docker compose -p jarvis-handoff-20260912 up -d --no-build  ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( Network jarvis-h...ation  Creating:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ Network jarvis-handoff-20260912_application  Created
+ Container jarvis-handoff-20260912-db-1  Creating
+ Container jarvis-handoff-20260912-db-1  Created
+ Container jarvis-handoff-20260912-migrate-1  Creating
+ Container jarvis-handoff-20260912-migrate-1  Created
+ Container jarvis-handoff-20260912-api-1  Creating
+ Container jarvis-handoff-20260912-api-1  Created
+ Container jarvis-handoff-20260912-db-1  Starting
+ Container jarvis-handoff-20260912-db-1  Started
+ Container jarvis-handoff-20260912-db-1  Waiting
+ Container jarvis-handoff-20260912-db-1  Healthy
+ Container jarvis-handoff-20260912-migrate-1  Starting
+ Container jarvis-handoff-20260912-migrate-1  Started
+ Container jarvis-handoff-20260912-migrate-1  Waiting
+ Container jarvis-handoff-20260912-migrate-1  Exited
+ Container jarvis-handoff-20260912-api-1  Starting
+ Container jarvis-handoff-20260912-api-1  Started
+ Container jarvis-handoff-20260912-api-1  Waiting
+ Container jarvis-handoff-20260912-db-1  Waiting
+ Container jarvis-handoff-20260912-migrate-1  Waiting
+ Container jarvis-handoff-20260912-migrate-1  Exited
+ Container jarvis-handoff-20260912-db-1  Healthy
+ Container jarvis-handoff-20260912-api-1  Healthy

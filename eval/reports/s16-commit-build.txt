@@ -1,0 +1,156 @@
+docker : #0 building with "desktop-linux" instance using docker driver
+At line:2 char:1
++ docker build --label org.opencontainers.image.revision=e78e6a4265cef3 ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (#0 building wit...g docker driver:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 2.02kB 0.0s done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/python:3.12-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254
+#2 DONE 0.1s
+
+#3 [internal] load metadata for docker.io/library/node:24-bookworm-slim@sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553
+#3 ...
+
+#4 [internal] load metadata for ghcr.io/astral-sh/uv:0.12.13@sha256:b485bd65cc2cf1c9a93b3554012c9c3778cf7b1b5fd3d3096ce9e1226c97e1e6
+#4 DONE 0.1s
+
+#3 [internal] load metadata for docker.io/library/node:24-bookworm-slim@sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553
+#3 ...
+
+#5 [auth] library/node:pull token for registry-1.docker.io
+#5 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/node:24-bookworm-slim@sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553
+#3 DONE 2.0s
+
+#6 [internal] load .dockerignore
+#6 transferring context: 500B done
+#6 DONE 0.0s
+
+#7 [internal] load build context
+#7 DONE 0.0s
+
+#8 [tooling 1/3] FROM docker.io/library/python:3.12-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254
+#8 resolve docker.io/library/python:3.12-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254 0.1s done
+#8 DONE 0.1s
+
+#9 [frontend 1/6] FROM docker.io/library/node:24-bookworm-slim@sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553
+#9 resolve docker.io/library/node:24-bookworm-slim@sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553 0.1s done
+#9 DONE 0.1s
+
+#10 [uv 1/1] FROM ghcr.io/astral-sh/uv:0.12.13@sha256:b485bd65cc2cf1c9a93b3554012c9c3778cf7b1b5fd3d3096ce9e1226c97e1e6
+#10 resolve ghcr.io/astral-sh/uv:0.12.13@sha256:b485bd65cc2cf1c9a93b3554012c9c3778cf7b1b5fd3d3096ce9e1226c97e1e6 0.1s done
+#10 DONE 0.1s
+
+#7 [internal] load build context
+#7 transferring context: 1.33MB 0.1s done
+#7 DONE 0.1s
+
+#11 [application 16/23] COPY data/synthetic/corpus-540.jsonl data/synthetic/corpus-540.jsonl
+#11 CACHED
+
+#12 [application  2/23] RUN uv sync --locked --no-install-project
+#12 CACHED
+
+#13 [tooling 2/3] COPY --from=uv /uv /uvx /bin/
+#13 CACHED
+
+#14 [tooling 3/3] WORKDIR /app
+#14 CACHED
+
+#15 [application  3/23] COPY src/ src/
+#15 CACHED
+
+#16 [application  6/23] COPY alembic.ini ./
+#16 CACHED
+
+#17 [application  9/23] COPY data/synthetic/sample-dictations.jsonl data/synthetic/sample-dictations.jsonl
+#17 CACHED
+
+#18 [application  7/23] COPY migrations/ migrations/
+#18 CACHED
+
+#19 [application 17/23] COPY eval/fixtures/corpus-cases.json eval/fixtures/corpus-cases.json
+#19 CACHED
+
+#20 [application  1/23] COPY pyproject.toml uv.lock .python-version ./
+#20 CACHED
+
+#21 [application 10/23] COPY data/synthetic/control-observations.json data/synthetic/control-observations.json
+#21 CACHED
+
+#22 [frontend 4/6] RUN npm ci --no-audit --no-fund
+#22 CACHED
+
+#23 [frontend 6/6] RUN npm run build
+#23 CACHED
+
+#24 [application 12/23] COPY eval/fixtures/s08-retrieval.json eval/fixtures/s08-retrieval.json
+#24 CACHED
+
+#25 [frontend 5/6] COPY frontend/ ./
+#25 CACHED
+
+#26 [application 13/23] COPY eval/retrieval.py eval/retrieval.py
+#26 CACHED
+
+#27 [frontend 2/6] WORKDIR /build/frontend
+#27 CACHED
+
+#28 [application  5/23] RUN uv sync --locked --no-editable --no-build-isolation
+#28 CACHED
+
+#29 [application 14/23] COPY eval/live.py eval/live.py
+#29 CACHED
+
+#30 [application 15/23] COPY eval/efficiency.py eval/efficiency.py
+#30 CACHED
+
+#31 [frontend 3/6] COPY frontend/package.json frontend/package-lock.json ./
+#31 CACHED
+
+#32 [application  4/23] COPY --from=frontend /build/src/jarvis/web/ src/jarvis/web/
+#32 CACHED
+
+#33 [application  8/23] COPY tests/ tests/
+#33 CACHED
+
+#34 [application 11/23] COPY eval/fixtures/sample-evaluation-cases.json eval/fixtures/sample-evaluation-cases.json
+#34 CACHED
+
+#35 [application 18/23] COPY eval/fixtures/corpus-manifest.json eval/fixtures/corpus-manifest.json
+#35 CACHED
+
+#36 [application 19/23] COPY eval/corpus.py eval/corpus.py
+#36 DONE 0.1s
+
+#37 [application 20/23] COPY eval/showcase.py eval/showcase.py
+#37 DONE 0.1s
+
+#38 [application 21/23] COPY eval/build_corpus.py eval/build_corpus.py
+#38 DONE 0.1s
+
+#39 [application 22/23] COPY eval/reports/*-review.json eval/reports/
+#39 DONE 0.1s
+
+#40 [application 23/23] RUN useradd --uid 10001 --create-home jarvis
+#40 DONE 0.7s
+
+#41 exporting to image
+#41 exporting layers
+#41 exporting layers 0.6s done
+#41 exporting manifest sha256:d8187a3675fc9eed63d221eda60bbfcfa7115bee92e6741891ca993152365af5 0.0s done
+#41 exporting config sha256:8bc2562a99e9bf4a11a188ed0d815256e383e5b434d957f8dcbafbb89c85e031 0.0s done
+#41 exporting attestation manifest sha256:851b818a0dad405ffe68dd1edd089bd1a9b5328484f320cb8e1635da2536e1aa 0.1s done
+#41 exporting manifest list sha256:994fd08b5df5429b8f1f225beb3a800ce21b80e0708b592ec83235d2610e5a00
+#41 exporting manifest list sha256:994fd08b5df5429b8f1f225beb3a800ce21b80e0708b592ec83235d2610e5a00 0.0s done
+#41 naming to docker.io/library/jarvis:local done
+#41 unpacking to docker.io/library/jarvis:local
+#41 unpacking to docker.io/library/jarvis:local 0.2s done
+#41 DONE 1.0s
+WARNING: current commit information was not captured by the build: failed to read current commit information with git rev-parse --is-inside-work-tree

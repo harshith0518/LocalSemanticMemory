@@ -1,0 +1,23 @@
+docker :  Container jarvis-handoff-20260912-api-1  Stopping
+At line:2 char:477
++ ... ED='false'; docker compose -p jarvis-handoff-20260912 down --volumes 2> ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( Container jarvis...api-1  Stopping:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ Container jarvis-handoff-20260912-api-1  Stopped
+ Container jarvis-handoff-20260912-api-1  Removing
+ Container jarvis-handoff-20260912-api-1  Removed
+ Container jarvis-handoff-20260912-migrate-1  Stopping
+ Container jarvis-handoff-20260912-migrate-1  Stopped
+ Container jarvis-handoff-20260912-migrate-1  Removing
+ Container jarvis-handoff-20260912-migrate-1  Removed
+ Container jarvis-handoff-20260912-db-1  Stopping
+ Container jarvis-handoff-20260912-db-1  Stopped
+ Container jarvis-handoff-20260912-db-1  Removing
+ Container jarvis-handoff-20260912-db-1  Removed
+ Network jarvis-handoff-20260912_application  Removing
+ Volume jarvis-handoff-20260912_database  Removing
+ Volume jarvis-handoff-20260912_database  Removed
+ Network jarvis-handoff-20260912_application  Removed
+{"status":"passed","removed_project":"jarvis-handoff-20260912","removed_volume":"jarvis-handoff-20260912_database","main_application_ready":true,"main_source_preserved":true}

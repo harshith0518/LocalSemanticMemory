@@ -1,0 +1,19 @@
+All checks passed!
+unformatted: File would be reformatted
+   --> tests/integration/test_acceptance.py:431:26
+    |
+430 |     with pytest.raises(ApplicationError):
+    -         NvidiaExtractor()
+431 +         NvidiaExtractor()
+    |
+
+1 file would be reformatted, 6 files already formatted
+docker : 
+At line:2 char:381
++ ... TEXITCODE}; docker compose -p jarvis-tests -f compose.test.yaml run --r ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+1 file reformatted
+7 files already formatted

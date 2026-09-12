@@ -1,0 +1,238 @@
+{
+  "status": "local_prototype_with_disclosed_evaluation_gaps",
+  "code_commit": "e78e6a4265cef3e64d5a4965ea59d84abffe2df3",
+  "brief": "Jarvis_Golden_Goose_Task_Final.pdf, previously inspected seven-page assignment",
+  "local_only": true,
+  "planned_cutoff": "2026-09-12T23:40:00+05:30",
+  "requirements": [
+    {
+      "requirement": "Ordinary-user browser workflow with real backend",
+      "status": "implemented_and_checked",
+      "evidence": [
+        "s16-browser-tests.txt",
+        "s16-live-recovered-journey.jsonl"
+      ]
+    },
+    {
+      "requirement": "Preserve raw/formatted observations and inspect storage/provenance",
+      "status": "implemented_and_checked",
+      "evidence": [
+        "../../docs/storage-contract.json",
+        "s16-persistence-check.jsonl",
+        "s15-showcase-review.json"
+      ]
+    },
+    {
+      "requirement": "Input to selective semantic memory to retrieval and answer",
+      "status": "demonstrated_with_real_retry",
+      "evidence": [
+        "s15-live-frontend-journey.jsonl",
+        "s15-live-frontend-learning.jsonl",
+        "s16-extraction-diagnostic.jsonl",
+        "s16-live-recovered-journey.jsonl"
+      ],
+      "limitation": "Initial extraction failed schema validation; a bounded shared-service retry succeeded. This is not an every-input success guarantee."
+    },
+    {
+      "requirement": "About 500 varied records with complete processing evidence",
+      "status": "incomplete_at_cutoff",
+      "evidence": [
+        "s14-corpus-extraction.jsonl",
+        "s15-google-corpus-extraction.jsonl",
+        "s16-google-corpus-extraction.jsonl",
+        "s16-google-recovery.jsonl",
+        "s16-final-accounting.jsonl"
+      ],
+      "limitation": "540 is the imported source count, not a successful processing count. 365 successful jobs include 328 extracted and 37 no_memory outcomes. 78 failures and 97 pending records remain."
+    },
+    {
+      "requirement": "25-30 detailed showcase examples",
+      "status": "30_real_cases_twice_with_failures_retained",
+      "evidence": [
+        "s14-showcase-review.json",
+        "s15-showcase-review.json",
+        "s15-semantic-review.json"
+      ],
+      "limitation": "Retest: 16 mechanical screens, 3 operational failures. Required sources retrieved/cited in 26 of 27 returned answers. Not a semantic accuracy score or frozen-state A/B result."
+    },
+    {
+      "requirement": "Unseen inputs and credentials",
+      "status": "implemented_with_explicit_nvidia_unfamiliar_opt_in",
+      "evidence": [
+        "../../RUN.md",
+        "../../.env.example"
+      ],
+      "limitation": "No API keys are distributed. Unfamiliar needs their own valid supported key. Google/OpenRouter routes remain curated-synthetic-only, not arbitrary-key unseen-unfamiliar routes."
+    },
+    {
+      "requirement": "Latency, storage growth, model usage and cost information",
+      "status": "recorded_with_unknowns_explicit",
+      "evidence": [
+        "s15-showcase-review.json",
+        "s16-google-recovery.jsonl",
+        "s16-live-recovered-journey.jsonl"
+      ],
+      "limitation": "Measured provider/browser/server timings and token reservations are retained. Provider billing is not connected; actual cost is unknown, with $0 paid authorized."
+    },
+    {
+      "requirement": "Lifecycle safety and actual database concurrency tests",
+      "status": "full_254_test_suite_passed",
+      "evidence": [
+        "s15-backend-tests.txt",
+        "s16-targeted-tests.txt",
+        "s16-full-backend-recovered.txt"
+      ]
+    },
+    {
+      "requirement": "Clean local Compose start, persistence and scoped reset",
+      "status": "verified_with_probe_assertion_caveat",
+      "evidence": [
+        "s16-commit-build.txt",
+        "s16-clean-start.txt",
+        "s16-clean-browser-journey.jsonl",
+        "s16-persistence-check.jsonl",
+        "s16-scoped-reset.txt"
+      ],
+      "limitation": "One standalone probe incorrectly expected status 'matches'; actual UI search returned status 'matched' with the exact saved B7 source. The failed probe was retained; this was not a product search failure."
+    },
+    {
+      "requirement": "Independently authored Phase One within limits",
+      "status": "author_confirmation_required",
+      "evidence": [
+        "../../docs/part-one/google-doc-snapshot.txt"
+      ],
+      "limitation": "Original snapshot preserved, not rewritten. Prior mechanical counts: positioning 96 words; vision 387 excluding additional Q&A, 711 including Q&A. Independence and final content boundary are not certified."
+    }
+  ],
+  "inference": {
+    "primary": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "bulk": "gemini-3.5-flash-lite",
+    "manual_backup": "poolside/laguna-xs-2.1",
+    "backup_warning": "Laguna produced one answer and one timeout in its two-call probe. No guaranteed or automatic provider fallback.",
+    "embeddings": "Key/catalog discovery only; no embedding generation, vector persistence or vector retrieval is claimed."
+  },
+  "retained_limitations": [
+    "The final Google batch stopped on a rate limit at 23:38 IST; no full 540-record successful processing run is claimed.",
+    "Full semantic correctness is not certified by valid citations or JSON.",
+    "Arithmetic errors, unsupported blocker labels, response-status errors and one update retrieval miss remain in the real showcase.",
+    "The 30 held-out cases were not run in the final showcase.",
+    "Ask questions and replies are temporary; Save a note explicitly persists user text. Original source rows require clicking to read the full text.",
+    "The stop-on-provider-failure summary can omit its final failure from one count; raw events and call/job records retain it.",
+    "Feedback retries can retain the original displayed browser duration.",
+    "Docker engine 500/502/EOF interruptions and their failed checks remain in the reports."
+  ],
+  "tests": {
+    "full_backend": {
+      "passed": 254,
+      "failed": 0,
+      "duration_seconds": 141.11,
+      "report": "s16-full-backend-recovered.txt"
+    },
+    "browser": {
+      "passed": 26,
+      "failed": 0,
+      "duration_seconds": 48.4933656,
+      "report": "s16-browser-tests.txt"
+    },
+    "focused_backend": {
+      "passed": 78,
+      "failed": 0,
+      "duration_seconds": 26.59,
+      "report": "s16-targeted-tests.txt",
+      "note": "Subset/repeated checks, not additional unique tests to sum with the full suite."
+    },
+    "style": {
+      "lint": "passed",
+      "format": "passed after test-file EOF normalization",
+      "report": "s16-style-checks.txt"
+    },
+    "baseline_failures_retained": true
+  },
+  "source_corpus_sha256": "6d3e35c314d55873247ffa86766320c187b1f81e822dd865a36f2dfae852c4e9",
+  "cases_sha256": "2ae99b0e2de8e6997dea32f82adb8cd2b62e1d20dbe7ae94bff6f2e6eb9bd2aa",
+  "publication": {
+    "code_commit": "e78e6a4265cef3e64d5a4965ea59d84abffe2df3",
+    "final_submission_sha": "Use git rev-parse HEAD after the final evidence commit. A report cannot embed its own commit hash.",
+    "main_merge": "explicitly authorized by the user; remote verification is reported separately after push"
+  },
+  "synthetic_browser_example": {
+    "namespace": "frontend-handoff-20260912",
+    "source_id": "4151b821-806e-4859-bead-1b7cc071a305",
+    "claim_id": "2d526ded-bb1c-40d9-80f7-0858ebb118f5",
+    "memory_revision_id": "7017d123-7361-4fbf-bef5-1cc37ea9e33e",
+    "answer": "The spare adapter for the synthetic Birch workshop is in the blue tin on the second shelf. Avoid the red tin.",
+    "answer_input_tokens": 957,
+    "answer_output_tokens": 137,
+    "answer_provider_elapsed_ms": 11288,
+    "evidence_bytes": 1504,
+    "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "private_content": false,
+    "initial_failure_retained": true
+  },
+  "generated_at": "2026-09-12T18:12:17.774288+00:00",
+  "milestone": "S16 final cutoff handoff",
+  "corpus": {
+    "namespace": "corpus-540-20260912",
+    "source_count": 540,
+    "processing_complete": false,
+    "counts": {
+      "succeeded": 365,
+      "failed": 78,
+      "pending": 97
+    },
+    "successful_decisions": {
+      "extracted": 328,
+      "no_memory": 37,
+      "duplicate": 0,
+      "needs_clarification": 0
+    },
+    "last_batch_finished_at": "2026-09-12T18:08:11.791878+00:00",
+    "last_batch_requests": 233,
+    "last_batch_elapsed_seconds": 993.516,
+    "stop_reason": "rate_limited",
+    "stop_evidence": "s16-google-recovery.jsonl: processing_attempt index 175 returned rate_limited at 2026-09-12T18:08:08.702300+00:00; the process exited 0 after exporting its summary.",
+    "note": "540 is the imported source count, not a successful processing count. 365 successful jobs include 328 extracted and 37 no_memory outcomes. 78 failures and 97 pending records remain.",
+    "source_integrity": "Final read-only database audit counted 540 sources under the exact corpus namespace.",
+    "accounting_report": "s16-final-accounting.jsonl",
+    "final_batch_storage_before": {
+      "database_bytes": 11065011,
+      "relation_bytes": {
+        "sources": 884736,
+        "claim_revisions": 376832,
+        "passages": 180224,
+        "claim_evidence": 122880,
+        "jobs": 466944,
+        "model_calls": 286720
+      },
+      "scope": "whole DB/relations including other owners, not per-corpus allocation"
+    },
+    "final_batch_storage_after": {
+      "database_bytes": 11441843,
+      "relation_bytes": {
+        "sources": 884736,
+        "claim_revisions": 540672,
+        "passages": 229376,
+        "claim_evidence": 139264,
+        "jobs": 466944,
+        "model_calls": 368640
+      },
+      "scope": "whole DB/relations including other owners, not per-corpus allocation"
+    },
+    "final_batch_peak_rss_kib": 105836,
+    "final_batch_cpu_seconds": 161.03193299999998
+  },
+  "budget": {
+    "key": "s07-synthetic-v1",
+    "requests": 720,
+    "accounted_tokens": 5857878,
+    "request_cap": 1100,
+    "batch_request_cap": 1070,
+    "token_cap": 10000000,
+    "requests_remaining": 380,
+    "demo_requests_reserved": 30,
+    "paid_spend_authorized_usd": 0,
+    "actual_cost_usd": null,
+    "note": "Persisted lifetime accounting includes retries and conservative reservations where provider usage is unknown. Remaining application allowance does not guarantee provider quota or availability."
+  },
+  "audit_caveat": "The initial read-only audit command assumed a database URL environment variable that this installation does not expose. It made no database query or provider call. The corrected audit used the application's existing Settings.from_env() and make_engine(), and succeeded."
+}

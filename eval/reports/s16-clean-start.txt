@@ -1,0 +1,32 @@
+docker :  Network jarvis-handoff-20260912_application  Creating
+At line:2 char:392
++ ... ED='false'; docker compose -p jarvis-handoff-20260912 up -d --no-build  ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( Network jarvis-h...ation  Creating:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ Network jarvis-handoff-20260912_application  Created
+ Volume "jarvis-handoff-20260912_database"  Creating
+ Volume "jarvis-handoff-20260912_database"  Created
+ Container jarvis-handoff-20260912-db-1  Creating
+ Container jarvis-handoff-20260912-db-1  Created
+ Container jarvis-handoff-20260912-migrate-1  Creating
+ Container jarvis-handoff-20260912-migrate-1  Created
+ Container jarvis-handoff-20260912-api-1  Creating
+ Container jarvis-handoff-20260912-api-1  Created
+ Container jarvis-handoff-20260912-db-1  Starting
+ Container jarvis-handoff-20260912-db-1  Started
+ Container jarvis-handoff-20260912-db-1  Waiting
+ Container jarvis-handoff-20260912-db-1  Healthy
+ Container jarvis-handoff-20260912-migrate-1  Starting
+ Container jarvis-handoff-20260912-migrate-1  Started
+ Container jarvis-handoff-20260912-migrate-1  Waiting
+ Container jarvis-handoff-20260912-migrate-1  Exited
+ Container jarvis-handoff-20260912-api-1  Starting
+ Container jarvis-handoff-20260912-api-1  Started
+ Container jarvis-handoff-20260912-migrate-1  Waiting
+ Container jarvis-handoff-20260912-api-1  Waiting
+ Container jarvis-handoff-20260912-db-1  Waiting
+ Container jarvis-handoff-20260912-migrate-1  Exited
+ Container jarvis-handoff-20260912-db-1  Healthy
+ Container jarvis-handoff-20260912-api-1  Healthy
