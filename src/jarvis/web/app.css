@@ -709,3 +709,29 @@ textarea {
 #memory-history .help {
   overflow-wrap: anywhere;
 }
+
+.usage-card {
+  grid-column: 1 / -1;
+  min-height: 0;
+  overflow-wrap: anywhere;
+}
+.usage-card table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+.usage-card th,
+.usage-card td {
+  padding: 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid var(--line, #ddd);
+}
+.usage-card caption {
+  text-align: left;
+  font-weight: 600;
+}
+.usage-card article {
+  border-top: 1px solid var(--line, #ddd);
+  padding-top: 0.6rem;
+}

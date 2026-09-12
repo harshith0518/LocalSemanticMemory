@@ -1,0 +1,767 @@
+{
+  "recorded_at": "2026-09-12T06:46:21.276414+00:00",
+  "kind": "isolated_postgresql_application_measurement_with_model_doubles",
+  "semantic_accuracy_measured": false,
+  "limitations": [
+    "Provider token counts and provider latency in doubles are fixture constants.",
+    "Wall time/CPU/RSS measure the evaluator process, not API or remote model RAM.",
+    "Peak RSS is cumulative; CPU excludes PostgreSQL and remote inference.",
+    "Physical allocation covers the isolated DB, including preexisting test state.",
+    "Payload bytes, allocated disk and resident memory are different quantities.",
+    "Stage timings include nested work and must not be summed as disjoint phases.",
+    "No labeled semantic grades, compression gains or measured billing are claimed."
+  ],
+  "source_sha256": "021ba1318952de4d5f1caf4b84fafea32c314c42c6b46bf26e30d7b5316a4cfc",
+  "implementation_sha256": {
+    "src/jarvis/__init__.py": "6e308d99fc4ed5c577efae60fe8dbf1781aeab4dc29c0dd7baf8d834425fa961",
+    "src/jarvis/answers.py": "7f66bf8c7759572985313cfe5e6c4884a6b08604d27707814c0594afe417e394",
+    "src/jarvis/api.py": "4283ee0adc245aa7214f35db3efe76877888984ba37dd2927295a81a7508477d",
+    "src/jarvis/cli.py": "f568482e809cdcfdf725a74cd99d22f031421b50d9b3f5381ac162d7a57fbda1",
+    "src/jarvis/config.py": "81614e82b28ed72c2cdcd90c6318d570c2b1a94baa095ce90a589f5e43c68ddb",
+    "src/jarvis/contracts.py": "2363919c865dd66242e1f57666afd6d491f5944c2d9e9e3b0417f804adcc9cdf",
+    "src/jarvis/controls.py": "5a101f1ab1d6fc82333bdfcbc59c56b55a5c0d05d75d8f37837e6fea94e47bf2",
+    "src/jarvis/db.py": "801fdfc4760b450f07e3e55a4f34bec6d05a53b7999f5eacd77b6c1494710630",
+    "src/jarvis/errors.py": "cb134e31aef477898a1c0f95d0a9f093c1cb25c87581b1683902096fac7c4429",
+    "src/jarvis/evaluation.py": "a293d5d351267d07039c22e7dd0de1b3dc162695b45b3482a88731b4143baaa2",
+    "src/jarvis/extraction.py": "8ab4bb21c7f20fa1181c62d0f75827d83e04c352844cc55c4dabc8d46d28d472",
+    "src/jarvis/imports.py": "a456b2472710bac354c2b5c9515ab5a0cdd8966615bf59c7378f73dec4ff9e6f",
+    "src/jarvis/metrics.py": "8c74d7d0b23605532ac2904128a32258ebe7d29e07c979f1336b1eb095244b91",
+    "src/jarvis/models.py": "e08d7a513e4a0944101579d3bb3045564f5232acdfc92440317b5a0b1a471cf6",
+    "src/jarvis/policy.py": "e0d368f919d239cac489ff4e883a4351b594f55c4b3eb6995fac8f0392f3af93",
+    "src/jarvis/processing.py": "103da38d01f3efccaefce085721afc30bff3dd6e7206c3934660821e5719fc86",
+    "src/jarvis/providers.py": "e6c9e5cef39fd9827e59bf9c9bf8acebc0ef18f5c42d4b8f52be1719909b7833",
+    "src/jarvis/retrieval.py": "2c1d71d4247817dcdeca740f3df31223bc5e1220c3265d7587c51afcf360bae6",
+    "src/jarvis/services.py": "a27810d25a27501d38d604676fa43720ca4858d2f4496d735ba19d511e3dd127",
+    "src/jarvis/web/app.css": "b90c187f47e096483aebcf5b9037a60cbc264f923dea22da1851a60ea996812f",
+    "src/jarvis/web/app.js": "f2b1d282d506d82c822411e79a4e9dcd0df8c5a4631aad5cf2e5934bd5476d64",
+    "src/jarvis/web/icon.svg": "afc5dd88f794d6229f4285fceda42376082b602a587d7147aa3ae78901523a78",
+    "src/jarvis/web/index.html": "169799f34da3e2669a63b80e1e805f79eb891966984b93842016e793d8b3996b",
+    "src/jarvis/worker.py": "e000e65d5c90308c6f1cd97e10b9bd3784d3f32b06bad79fd4bb809625815c32"
+  },
+  "owner_before": {
+    "scope": "current_owner_all_collections_including_retained_history",
+    "policy_revision": 0,
+    "storage": {
+      "source_revisions": 0,
+      "source_text_utf8_bytes": 0,
+      "claim_revisions": 0,
+      "claim_json_utf8_bytes": 0,
+      "supporting_passages": 0,
+      "passage_text_utf8_bytes": 0,
+      "claim_lifecycle": {}
+    },
+    "jobs": {},
+    "models": [],
+    "cost": {
+      "billed_usd": null,
+      "estimated_usd": null,
+      "reason": "provider_billing_and_rates_not_connected"
+    },
+    "semantic_quality": {
+      "measured": false,
+      "reason": "requires_labeled_evaluation"
+    }
+  },
+  "owner_after": {
+    "scope": "current_owner_all_collections_including_retained_history",
+    "policy_revision": 0,
+    "storage": {
+      "source_revisions": 8,
+      "source_text_utf8_bytes": 1277,
+      "claim_revisions": 12,
+      "claim_json_utf8_bytes": 4760,
+      "supporting_passages": 9,
+      "passage_text_utf8_bytes": 720,
+      "claim_lifecycle": {
+        "active": 11,
+        "superseded": 1
+      }
+    },
+    "jobs": {
+      "succeeded": 8
+    },
+    "models": [
+      {
+        "model": "deterministic-answer-double",
+        "allowance": "s07-contract-tests",
+        "role": "answer",
+        "attempts": 1,
+        "succeeded": 1,
+        "failed": 0,
+        "in_flight": 0,
+        "known_usage_calls": 1,
+        "unknown_usage_calls": 0,
+        "known_input_tokens": 100,
+        "known_output_tokens": 50,
+        "unsettled_reserved_tokens": 0,
+        "timed_calls": 1,
+        "latency_p50_ms": 1.0,
+        "latency_p95_ms": 1.0
+      },
+      {
+        "model": "deterministic-test-double",
+        "allowance": "s07-contract-tests",
+        "role": "extraction",
+        "attempts": 8,
+        "succeeded": 8,
+        "failed": 0,
+        "in_flight": 0,
+        "known_usage_calls": 8,
+        "unknown_usage_calls": 0,
+        "known_input_tokens": 800,
+        "known_output_tokens": 800,
+        "unsettled_reserved_tokens": 0,
+        "timed_calls": 8,
+        "latency_p50_ms": 1.0,
+        "latency_p95_ms": 1.0
+      }
+    ],
+    "cost": {
+      "billed_usd": null,
+      "estimated_usd": null,
+      "reason": "provider_billing_and_rates_not_connected"
+    },
+    "semantic_quality": {
+      "measured": false,
+      "reason": "requires_labeled_evaluation"
+    }
+  },
+  "physical_before": {
+    "database_bytes": 10671795,
+    "relations": [
+      {
+        "relation": "alembic_version",
+        "table_bytes": 40960,
+        "index_bytes": 16384,
+        "total_bytes": 57344
+      },
+      {
+        "relation": "claim_evidence",
+        "table_bytes": 24576,
+        "index_bytes": 57344,
+        "total_bytes": 81920
+      },
+      {
+        "relation": "claim_relations",
+        "table_bytes": 8192,
+        "index_bytes": 16384,
+        "total_bytes": 24576
+      },
+      {
+        "relation": "claim_revisions",
+        "table_bytes": 73728,
+        "index_bytes": 131072,
+        "total_bytes": 204800
+      },
+      {
+        "relation": "control_receipts",
+        "table_bytes": 16384,
+        "index_bytes": 32768,
+        "total_bytes": 49152
+      },
+      {
+        "relation": "feedback_receipts",
+        "table_bytes": 8192,
+        "index_bytes": 16384,
+        "total_bytes": 24576
+      },
+      {
+        "relation": "jobs",
+        "table_bytes": 122880,
+        "index_bytes": 221184,
+        "total_bytes": 344064
+      },
+      {
+        "relation": "model_budgets",
+        "table_bytes": 40960,
+        "index_bytes": 16384,
+        "total_bytes": 57344
+      },
+      {
+        "relation": "model_calls",
+        "table_bytes": 40960,
+        "index_bytes": 32768,
+        "total_bytes": 73728
+      },
+      {
+        "relation": "passage_exclusions",
+        "table_bytes": 8192,
+        "index_bytes": 16384,
+        "total_bytes": 24576
+      },
+      {
+        "relation": "passages",
+        "table_bytes": 32768,
+        "index_bytes": 49152,
+        "total_bytes": 81920
+      },
+      {
+        "relation": "policies",
+        "table_bytes": 24576,
+        "index_bytes": 16384,
+        "total_bytes": 40960
+      },
+      {
+        "relation": "processing_receipts",
+        "table_bytes": 40960,
+        "index_bytes": 16384,
+        "total_bytes": 57344
+      },
+      {
+        "relation": "source_exclusions",
+        "table_bytes": 8192,
+        "index_bytes": 16384,
+        "total_bytes": 24576
+      },
+      {
+        "relation": "sources",
+        "table_bytes": 122880,
+        "index_bytes": 286720,
+        "total_bytes": 409600
+      }
+    ]
+  },
+  "physical_after": {
+    "database_bytes": 10704563,
+    "relations": [
+      {
+        "relation": "alembic_version",
+        "table_bytes": 40960,
+        "index_bytes": 16384,
+        "total_bytes": 57344
+      },
+      {
+        "relation": "claim_evidence",
+        "table_bytes": 24576,
+        "index_bytes": 57344,
+        "total_bytes": 81920
+      },
+      {
+        "relation": "claim_relations",
+        "table_bytes": 8192,
+        "index_bytes": 16384,
+        "total_bytes": 24576
+      },
+      {
+        "relation": "claim_revisions",
+        "table_bytes": 73728,
+        "index_bytes": 139264,
+        "total_bytes": 212992
+      },
+      {
+        "relation": "control_receipts",
+        "table_bytes": 16384,
+        "index_bytes": 32768,
+        "total_bytes": 49152
+      },
+      {
+        "relation": "feedback_receipts",
+        "table_bytes": 8192,
+        "index_bytes": 16384,
+        "total_bytes": 24576
+      },
+      {
+        "relation": "jobs",
+        "table_bytes": 122880,
+        "index_bytes": 221184,
+        "total_bytes": 344064
+      },
+      {
+        "relation": "model_budgets",
+        "table_bytes": 40960,
+        "index_bytes": 16384,
+        "total_bytes": 57344
+      },
+      {
+        "relation": "model_calls",
+        "table_bytes": 49152,
+        "index_bytes": 32768,
+        "total_bytes": 81920
+      },
+      {
+        "relation": "passage_exclusions",
+        "table_bytes": 8192,
+        "index_bytes": 16384,
+        "total_bytes": 24576
+      },
+      {
+        "relation": "passages",
+        "table_bytes": 32768,
+        "index_bytes": 49152,
+        "total_bytes": 81920
+      },
+      {
+        "relation": "policies",
+        "table_bytes": 24576,
+        "index_bytes": 16384,
+        "total_bytes": 40960
+      },
+      {
+        "relation": "processing_receipts",
+        "table_bytes": 49152,
+        "index_bytes": 16384,
+        "total_bytes": 65536
+      },
+      {
+        "relation": "source_exclusions",
+        "table_bytes": 8192,
+        "index_bytes": 16384,
+        "total_bytes": 24576
+      },
+      {
+        "relation": "sources",
+        "table_bytes": 122880,
+        "index_bytes": 294912,
+        "total_bytes": 417792
+      }
+    ]
+  },
+  "database_growth_bytes": 32768,
+  "operations": [
+    {
+      "operation": "import_8",
+      "elapsed_ms": 96.404,
+      "process_cpu_ms": 56.179,
+      "process_rss_bytes_after": 87977984,
+      "process_peak_rss_bytes_so_far": 87793664,
+      "stages": {
+        "import": {
+          "calls": 1,
+          "elapsed_ms": 96.26183400001764
+        }
+      }
+    },
+    {
+      "operation": "queue",
+      "elapsed_ms": 38.45,
+      "process_cpu_ms": 27.568,
+      "process_rss_bytes_after": 88145920,
+      "process_peak_rss_bytes_so_far": 88055808,
+      "stages": {
+        "queue": {
+          "calls": 1,
+          "elapsed_ms": 38.33237300000292
+        }
+      }
+    },
+    {
+      "operation": "process_one",
+      "elapsed_ms": 304.017,
+      "process_cpu_ms": 234.472,
+      "process_rss_bytes_after": 89370624,
+      "process_peak_rss_bytes_so_far": 89235456,
+      "stages": {
+        "lease": {
+          "calls": 1,
+          "elapsed_ms": 73.65593600002285
+        },
+        "reserve": {
+          "calls": 1,
+          "elapsed_ms": 59.53366200000687
+        },
+        "model": {
+          "calls": 1,
+          "elapsed_ms": 0.7808690000103979
+        },
+        "accounting": {
+          "calls": 1,
+          "elapsed_ms": 24.51824799999258
+        },
+        "proposal_validation": {
+          "calls": 1,
+          "elapsed_ms": 1.2616550000075222
+        },
+        "memory_commit": {
+          "calls": 1,
+          "elapsed_ms": 114.6351890000119
+        }
+      }
+    },
+    {
+      "operation": "process_one",
+      "elapsed_ms": 259.897,
+      "process_cpu_ms": 192.286,
+      "process_rss_bytes_after": 89817088,
+      "process_peak_rss_bytes_so_far": 89628672,
+      "stages": {
+        "lease": {
+          "calls": 1,
+          "elapsed_ms": 70.99580700000274
+        },
+        "reserve": {
+          "calls": 1,
+          "elapsed_ms": 59.92041999999742
+        },
+        "model": {
+          "calls": 1,
+          "elapsed_ms": 0.7538770000223849
+        },
+        "accounting": {
+          "calls": 1,
+          "elapsed_ms": 13.277249999987362
+        },
+        "proposal_validation": {
+          "calls": 1,
+          "elapsed_ms": 0.3254419999905167
+        },
+        "memory_commit": {
+          "calls": 1,
+          "elapsed_ms": 96.66747400001441
+        }
+      }
+    },
+    {
+      "operation": "process_one",
+      "elapsed_ms": 331.82,
+      "process_cpu_ms": 249.774,
+      "process_rss_bytes_after": 90173440,
+      "process_peak_rss_bytes_so_far": 90021888,
+      "stages": {
+        "lease": {
+          "calls": 1,
+          "elapsed_ms": 83.03019999999606
+        },
+        "reserve": {
+          "calls": 1,
+          "elapsed_ms": 74.4343130000118
+        },
+        "model": {
+          "calls": 1,
+          "elapsed_ms": 1.0855759999799375
+        },
+        "accounting": {
+          "calls": 1,
+          "elapsed_ms": 18.489856999991616
+        },
+        "proposal_validation": {
+          "calls": 1,
+          "elapsed_ms": 0.42730000001256485
+        },
+        "memory_commit": {
+          "calls": 1,
+          "elapsed_ms": 139.13220799997816
+        }
+      }
+    },
+    {
+      "operation": "process_one",
+      "elapsed_ms": 477.278,
+      "process_cpu_ms": 407.556,
+      "process_rss_bytes_after": 90193920,
+      "process_peak_rss_bytes_so_far": 90021888,
+      "stages": {
+        "lease": {
+          "calls": 1,
+          "elapsed_ms": 188.47271300001012
+        },
+        "reserve": {
+          "calls": 1,
+          "elapsed_ms": 99.22082899998941
+        },
+        "model": {
+          "calls": 1,
+          "elapsed_ms": 0.8833340000080625
+        },
+        "accounting": {
+          "calls": 1,
+          "elapsed_ms": 14.003674999997884
+        },
+        "proposal_validation": {
+          "calls": 1,
+          "elapsed_ms": 0.4073719999837522
+        },
+        "memory_commit": {
+          "calls": 1,
+          "elapsed_ms": 161.3775120000014
+        }
+      }
+    },
+    {
+      "operation": "process_one",
+      "elapsed_ms": 427.248,
+      "process_cpu_ms": 363.157,
+      "process_rss_bytes_after": 90230784,
+      "process_peak_rss_bytes_so_far": 90021888,
+      "stages": {
+        "lease": {
+          "calls": 1,
+          "elapsed_ms": 123.31355099999541
+        },
+        "reserve": {
+          "calls": 1,
+          "elapsed_ms": 119.79755199999431
+        },
+        "model": {
+          "calls": 1,
+          "elapsed_ms": 1.0437580000086655
+        },
+        "accounting": {
+          "calls": 1,
+          "elapsed_ms": 13.284138999978268
+        },
+        "proposal_validation": {
+          "calls": 1,
+          "elapsed_ms": 0.7273420000046826
+        },
+        "memory_commit": {
+          "calls": 1,
+          "elapsed_ms": 151.4454710000166
+        }
+      }
+    },
+    {
+      "operation": "process_one",
+      "elapsed_ms": 389.757,
+      "process_cpu_ms": 327.494,
+      "process_rss_bytes_after": 90386432,
+      "process_peak_rss_bytes_so_far": 90021888,
+      "stages": {
+        "lease": {
+          "calls": 1,
+          "elapsed_ms": 110.9114580000039
+        },
+        "reserve": {
+          "calls": 1,
+          "elapsed_ms": 101.71801099997424
+        },
+        "model": {
+          "calls": 1,
+          "elapsed_ms": 0.9081149999872196
+        },
+        "accounting": {
+          "calls": 1,
+          "elapsed_ms": 11.629297000013139
+        },
+        "proposal_validation": {
+          "calls": 1,
+          "elapsed_ms": 0.3743849999864324
+        },
+        "memory_commit": {
+          "calls": 1,
+          "elapsed_ms": 151.66480600001364
+        }
+      }
+    },
+    {
+      "operation": "process_one",
+      "elapsed_ms": 484.157,
+      "process_cpu_ms": 410.055,
+      "process_rss_bytes_after": 90513408,
+      "process_peak_rss_bytes_so_far": 90152960,
+      "stages": {
+        "lease": {
+          "calls": 1,
+          "elapsed_ms": 128.8667270000019
+        },
+        "reserve": {
+          "calls": 1,
+          "elapsed_ms": 149.97426899998345
+        },
+        "model": {
+          "calls": 1,
+          "elapsed_ms": 1.3340819999996256
+        },
+        "accounting": {
+          "calls": 1,
+          "elapsed_ms": 12.348932000008972
+        },
+        "proposal_validation": {
+          "calls": 1,
+          "elapsed_ms": 0.6148370000005343
+        },
+        "memory_commit": {
+          "calls": 1,
+          "elapsed_ms": 178.30409599997665
+        }
+      }
+    },
+    {
+      "operation": "process_one",
+      "elapsed_ms": 477.237,
+      "process_cpu_ms": 406.329,
+      "process_rss_bytes_after": 90763264,
+      "process_peak_rss_bytes_so_far": 90284032,
+      "stages": {
+        "lease": {
+          "calls": 1,
+          "elapsed_ms": 139.84623700000043
+        },
+        "reserve": {
+          "calls": 1,
+          "elapsed_ms": 134.7612189999836
+        },
+        "model": {
+          "calls": 1,
+          "elapsed_ms": 0.9407169999917642
+        },
+        "accounting": {
+          "calls": 1,
+          "elapsed_ms": 11.136924999988196
+        },
+        "proposal_validation": {
+          "calls": 1,
+          "elapsed_ms": 0.798462000005884
+        },
+        "memory_commit": {
+          "calls": 1,
+          "elapsed_ms": 177.41602299997794
+        }
+      }
+    },
+    {
+      "operation": "search_sources",
+      "elapsed_ms": 39.012,
+      "process_cpu_ms": 28.316,
+      "process_rss_bytes_after": 90763264,
+      "process_peak_rss_bytes_so_far": 90284032,
+      "stages": {
+        "search": {
+          "calls": 1,
+          "elapsed_ms": 38.96779800001582
+        }
+      }
+    },
+    {
+      "operation": "search_sources",
+      "elapsed_ms": 24.064,
+      "process_cpu_ms": 17.377,
+      "process_rss_bytes_after": 90783744,
+      "process_peak_rss_bytes_so_far": 90415104,
+      "stages": {
+        "search": {
+          "calls": 1,
+          "elapsed_ms": 24.021782000005487
+        }
+      }
+    },
+    {
+      "operation": "search_sources",
+      "elapsed_ms": 18.933,
+      "process_cpu_ms": 13.317,
+      "process_rss_bytes_after": 90804224,
+      "process_peak_rss_bytes_so_far": 90415104,
+      "stages": {
+        "search": {
+          "calls": 1,
+          "elapsed_ms": 18.889782000002242
+        }
+      }
+    },
+    {
+      "operation": "search_sources_and_memories",
+      "elapsed_ms": 216.174,
+      "process_cpu_ms": 162.632,
+      "process_rss_bytes_after": 91103232,
+      "process_peak_rss_bytes_so_far": 90546176,
+      "stages": {
+        "search": {
+          "calls": 1,
+          "elapsed_ms": 216.11542900001268
+        }
+      }
+    },
+    {
+      "operation": "search_sources_and_memories",
+      "elapsed_ms": 186.73,
+      "process_cpu_ms": 136.925,
+      "process_rss_bytes_after": 91377664,
+      "process_peak_rss_bytes_so_far": 90939392,
+      "stages": {
+        "search": {
+          "calls": 1,
+          "elapsed_ms": 186.67583600000626
+        }
+      }
+    },
+    {
+      "operation": "search_sources_and_memories",
+      "elapsed_ms": 175.891,
+      "process_cpu_ms": 131.749,
+      "process_rss_bytes_after": 91410432,
+      "process_peak_rss_bytes_so_far": 90939392,
+      "stages": {
+        "search": {
+          "calls": 1,
+          "elapsed_ms": 175.83149400002185
+        }
+      }
+    },
+    {
+      "operation": "ask_contract_double",
+      "elapsed_ms": 94.583,
+      "process_cpu_ms": 65.159,
+      "process_rss_bytes_after": 91500544,
+      "process_peak_rss_bytes_so_far": 90939392,
+      "stages": {
+        "answer_context": {
+          "calls": 1,
+          "elapsed_ms": 23.211207000002787
+        },
+        "model": {
+          "calls": 1,
+          "elapsed_ms": 0.18996099998958016
+        },
+        "accounting": {
+          "calls": 1,
+          "elapsed_ms": 10.73639999998477
+        },
+        "answer_validation": {
+          "calls": 1,
+          "elapsed_ms": 0.2588920000050621
+        },
+        "answer_release": {
+          "calls": 1,
+          "elapsed_ms": 25.123135000001184
+        },
+        "answer": {
+          "calls": 1,
+          "elapsed_ms": 93.53417899998817
+        }
+      }
+    }
+  ],
+  "searches": [
+    {
+      "representation": "sources",
+      "matches": 5,
+      "evidence_bytes": 3229
+    },
+    {
+      "representation": "sources",
+      "matches": 5,
+      "evidence_bytes": 3229
+    },
+    {
+      "representation": "sources",
+      "matches": 5,
+      "evidence_bytes": 3229
+    },
+    {
+      "representation": "sources_and_memories",
+      "matches": 5,
+      "evidence_bytes": 9143
+    },
+    {
+      "representation": "sources_and_memories",
+      "matches": 5,
+      "evidence_bytes": 9143
+    },
+    {
+      "representation": "sources_and_memories",
+      "matches": 5,
+      "evidence_bytes": 9143
+    }
+  ],
+  "processing_decisions": [
+    "extracted",
+    "extracted",
+    "extracted",
+    "extracted",
+    "extracted",
+    "extracted",
+    "extracted",
+    "extracted"
+  ],
+  "answer_status": "answered",
+  "citation_count": 1
+}

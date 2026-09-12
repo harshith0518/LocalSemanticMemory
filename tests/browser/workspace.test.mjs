@@ -3,6 +3,7 @@ import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile, mkdir } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
+import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
 const origin = "http://127.0.0.1:8001"; // Deliberately not configurable to the application port.
@@ -713,6 +714,98 @@ test("Ask distinguishes transport failure and rejects a late reply after Private
   assert.equal(await page.locator("#ask-result").textContent(), "");
   assert.equal(await page.locator("#ask-question").inputValue(), "");
   assert.equal(await page.locator("#feedback-guidance").textContent(), "");
+});
+
+test("S10 sample import and usage show real storage without browser persistence", async (t) => {
+  const page = await pageFor(t);
+  const namespace = `s10-${randomUUID()}`;
+  await page.getByLabel("Collection name", { exact: true }).fill(namespace);
+  await page.getByRole("button", { name: "Load 8 sample dictations" }).click();
+  await eventually(async () =>
+    assert.match(await page.locator("#feedback").innerText(), /Saved 8 new/),
+  );
+  await eventually(async () =>
+    assert.equal(await page.locator("#source-list li").count(), 8),
+  );
+  await page.getByRole("button", { name: "Load 8 sample dictations" }).click();
+  await eventually(async () =>
+    assert.match(
+      await page.locator("#feedback").innerText(),
+      /Saved 0 new.*8 unchanged/,
+    ),
+  );
+  await page.getByText("Usage and performance", { exact: true }).click();
+  await page.getByRole("button", { name: "Refresh usage" }).click();
+  await eventually(async () =>
+    assert.match(
+      await page.locator("#usage-results").innerText(),
+      /Original source text/,
+    ),
+  );
+  assert.match(
+    await page.locator("#usage-results").innerText(),
+    /Cost: unmeasured/,
+  );
+  assert.match(
+    await page.locator("#operation-timing").innerText(),
+    /usage snapshot:.*ms/,
+  );
+  await mkdir(new URL("../../.tmp/s10/", import.meta.url), { recursive: true });
+  await page.locator(".usage-card").screenshot({
+    path: fileURLToPath(
+      new URL("../../.tmp/s10/usage-desktop.png", import.meta.url),
+    ),
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.equal(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+    true,
+  );
+  await page.locator(".usage-card").screenshot({
+    path: fileURLToPath(
+      new URL("../../.tmp/s10/usage-mobile.png", import.meta.url),
+    ),
+  });
+  await page.getByRole("radio", { name: "Private", exact: true }).check();
+  assert.equal(await page.locator("#usage-results").textContent(), "");
+  assert.equal(
+    await page.locator("#operation-timing").textContent(),
+    "No action measured in this view.",
+  );
+  await page.getByRole("radio", { name: "Normal", exact: true }).check();
+  assert.equal(await page.locator("#usage-results").textContent(), "");
+});
+
+test("S10 Private rejects a late usage snapshot and does not backfill", async (t) => {
+  const page = await pageFor(t);
+  let finish;
+  let entered;
+  const started = new Promise((resolve) => {
+    entered = resolve;
+  });
+  const gate = new Promise((resolve) => {
+    finish = resolve;
+  });
+  await page.route("**/usage", async (route) => {
+    const response = await route.fetch();
+    entered();
+    await gate;
+    await route.fulfill({ response }).catch(() => {});
+  });
+  await page.getByText("Usage and performance", { exact: true }).click();
+  await page.getByRole("button", { name: "Refresh usage" }).click();
+  await started;
+  await page.getByRole("radio", { name: "Private", exact: true }).check();
+  finish();
+  await page.getByRole("radio", { name: "Normal", exact: true }).check();
+  await page.waitForTimeout(100);
+  assert.equal(await page.locator("#usage-results").textContent(), "");
+  assert.equal(
+    await page.locator("#operation-timing").textContent(),
+    "No action measured in this view.",
+  );
 });
 
 test("S09 mobile correction, world change, Forget and renamed reimport use the real backend", async (t) => {

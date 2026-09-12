@@ -4,6 +4,7 @@ from threading import Event
 
 from jarvis.errors import ApplicationError, ErrorCode
 from jarvis.extraction import parse_proposal
+from jarvis.metrics import stage
 
 
 def process_one(service, context, *, namespace=None):
@@ -16,19 +17,12 @@ def process_one(service, context, *, namespace=None):
         for attempt in range(2):
             body, reservation = service.extractor.prepare(packet, repair=bool(attempt))
             call_id = service.reserve_call(context, packet, reservation)
-            try:
-                completion = service.extractor.complete(body)
-            except ApplicationError as error:
-                service.finish_call(context, call_id, error=error.code)
-                raise
-            except Exception:
-                service.finish_call(context, call_id, error=ErrorCode.PROVIDER_FAILED)
-                raise ApplicationError(ErrorCode.PROVIDER_FAILED) from None
-            service.finish_call(context, call_id, completion)
+            completion = service.complete_call(context, service.extractor, body, call_id)
             if completion.input_tokens + completion.output_tokens > reservation:
                 raise ApplicationError(ErrorCode.BUDGET_EXHAUSTED)
             try:
-                proposal = parse_proposal(completion.content, packet)
+                with stage("proposal_validation"):
+                    proposal = parse_proposal(completion.content, packet)
                 return service.commit_extraction(context, packet, proposal)
             except ApplicationError as error:
                 service.finish_call(context, call_id, error=error.code)

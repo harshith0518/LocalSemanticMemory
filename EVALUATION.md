@@ -43,7 +43,7 @@ Use **two real database connections and explicit test barriers**, not timing sle
 
 S07 adds deterministic processing/reconciliation, provider transport and browser memory checks; [actual results](RUN.md#s07-memory-processing) and the [contract evidence record](eval/reports/s07-contracts.json) remain separate from live quality. The test server uses an explicitly named fixture extractor only after checking the isolated PostgreSQL target. Its expected proposals never enter source ingestion. The production server has no fixture-extractor setting. Transport doubles cover failure/usage contracts without authenticating a provider.
 
-The new `jarvis evaluate-extraction --repeats 3` command is a **live-only**, synthetic-only pilot behind the provider gate. It creates separate collections, retains all call/job outcomes and source-linked revisions, and returns `status: ungraded` / `semantic_review: pending`. Review each repeat against the obligations before changing those labels in an evaluator report. Eight successful processing jobs do not equal eight semantically correct cases. No live pilot has run for this implementation checkpoint; S07's live gate and S06/S08 answer comparisons remain incomplete.
+The new `jarvis evaluate-extraction --repeats 3` command is a **live-only**, synthetic-only pilot behind the provider gate. It creates separate collections, retains all call/job outcomes and source-linked revisions, and returns `status: ungraded` / `semantic_review: pending`. Review each repeat against the obligations before changing those labels in an evaluator report. Eight successful processing jobs do not equal eight semantically correct cases. That S07 implementation checkpoint preceded live use. S09 subsequently ran the recorded synthetic pilot and found semantic/provider failures; S07's live gate and S06/S08 answer comparisons remain incomplete.
 
 Provider availability, exact models and known usage are checked by real public trial calls. The user approved the synthetic-only exception, with the combined allowance above; personal no-training/retention compliance remains unresolved. A locally configured key is not a successful authentication or quality result.
 
@@ -85,3 +85,20 @@ Proposed gates: all deterministic invariants pass; all eight core cases pass eve
 Freeze optional mechanisms by 12 September 10:00 IST, a proposed buffer before afternoon delivery. Stop experiments at the spend ceiling or when the baseline already meets gates without measurable improvement. Prioritize invariant fixes and the complete review path over another framework.
 
 Reserve final hours for a clean install/import/reset/evaluate/UI run using documented commands, migrations, results, `.env.example`, README, RUN.md, and the exact release commit. Preserve failures and limitations. Phase One must remain the user's independently authored, previously preserved work; this evaluation plan cannot substitute for it.
+
+## S10 measurements and S11 scenario coverage
+
+The brief's approximately 500 records are source observations, not gold test questions. Follow the [S11 500-record allocation](PLAN.md#s11-corpus-and-semantic-evaluation-handoff); the existing 500-record lexical stress diagnostic does not satisfy the varied corpus. Keep connected histories intact and labels/actions out of ingestion. Use independent and dependent scenarios, old/new facts, unknown/uncertain times, conflicting variants, selective no-memory cases, same-name people, code-switching and lifecycle sequences. Research motivates these categories but supplies no product success probability.
+
+Inspect resource use and understanding separately:
+
+| Measurement | Source and interpretation |
+| --- | --- |
+| Logical stored content | Owner-scoped source TEXT bytes, JSONB text-serialization bytes and passage TEXT bytes. Include revision counts; exclude physical/metadata/index overhead. |
+| Physical growth | Isolated evaluator before/after `pg_database_size`, per-table size, indexes and combined relation size. Record preexisting state. Combined size already includes table + indexes. |
+| RAM and CPU | Linux evaluator current RSS, cumulative process peak RSS and process CPU delta per operation. Optional named-container Docker samples are separate; neither measures NVIDIA GPU memory. |
+| Latency | Monotonic action/stage times, with failed attempts and sample counts. Inclusive stages must not be summed. Provider p50/p95 omits historical null durations and reports its actual sample count. |
+| Model use and cost | Actual known input/output tokens, unknown calls and conservative reservations by model/role/allowance. Double-provider constants are labeled. Billed/estimated cost stays null without billing/rates; cost per success is undefined without measured cost or successes. |
+| Understanding | Held-out obligation grading: selection precision/recall, supported claims, required qualifiers, multi-note evidence coverage, update reconciliation, appropriate abstention and end-task success. No score inferred from token use, memory count or citation-schema validity. |
+
+The new `python -m eval.efficiency --output <file>` runs only with validated isolated PostgreSQL settings and explicit doubles. Its 17-operation workflow covers eight real source imports/processing jobs, both retrieval representations and a cited contract answer. It is engineering measurement, not real-model accuracy or latency. `eval/live.py --stage answer-smoke --namespace <frozen-synthetic-collection> --repeats 1` checks only the first approved public question, under the existing allowance, before attempting the full matrix. See [actual S10 checks and limitations](RUN.md#s10-usage-and-performance). Do not erase earlier failures, report unknowns as zeros, or expand the live allowlist/budget implicitly.

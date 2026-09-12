@@ -237,3 +237,9 @@ def inspect_source(source_id: str, mode: str = typer.Option(...)) -> None:
             source_id,
         ).model_dump(mode="json")
     )
+
+
+@app.command("usage")
+def usage(mode: str = typer.Option(...)):
+    """Optional diagnostic; the browser exposes the same owner-scoped service."""
+    run(lambda service: service.usage_snapshot(service.identity.context(mode)))

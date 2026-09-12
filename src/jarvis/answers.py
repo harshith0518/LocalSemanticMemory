@@ -20,6 +20,7 @@ from jarvis.contracts import (
 from jarvis.controls import digest
 from jarvis.errors import ApplicationError, ErrorCode
 from jarvis.imports import Identifier, reject_constant, unique_object
+from jarvis.metrics import measured, stage
 from jarvis.models import FeedbackReceipt, ModelCall, Policy, Source
 from jarvis.retrieval import SearchPacket, SearchRequest, evidence_size
 
@@ -196,6 +197,7 @@ class AnswerOperations:
             self._trial_source(source, live=self.responder.live)
         return AnswerPacket(request=request, evidence=evidence)
 
+    @measured("answer_context")
     def prepare_answer(self, context, payload):
         self._answer_gate(context)
         request = parse_contract(AskRequest, payload)
@@ -248,6 +250,7 @@ class AnswerOperations:
             ):
                 raise ApplicationError(ErrorCode.INVALID_PASSAGE)
 
+    @measured("answer_release")
     def release_answer(self, context, packet, proposal, call_ids=(), render=None):
         self._authorize(context)
         proposal = parse_contract(AnswerProposal, proposal)
@@ -266,6 +269,7 @@ class AnswerOperations:
             }
             return render(result) if render else result
 
+    @measured("answer")
     def ask(self, context, payload, render=None, *, feedback_parent=None):
         packet = self.prepare_answer(context, payload)
         if not packet.evidence.sources:
@@ -286,11 +290,11 @@ class AnswerOperations:
             )
             calls.append(call_id)
             try:
-                completion = self.responder.complete(body)
-                self.finish_call(context, call_id, completion)
+                completion = self.complete_call(context, self.responder, body, call_id)
                 if completion.input_tokens + completion.output_tokens > reservation:
                     raise ApplicationError(ErrorCode.BUDGET_EXHAUSTED)
-                proposal = parse_answer(completion.content, packet)
+                with stage("answer_validation"):
+                    proposal = parse_answer(completion.content, packet)
                 return self.release_answer(context, packet, proposal, calls, render)
             except ApplicationError as error:
                 self.finish_call(context, call_id, error=error.code)
@@ -305,6 +309,7 @@ class AnswerOperations:
                 self.finish_call(context, call_id, error=ErrorCode.PROVIDER_FAILED)
                 raise ApplicationError(ErrorCode.PROVIDER_FAILED) from None
 
+    @measured("feedback")
     def feedback(self, context, payload, render=None):
         self._authorize(context)
         command = parse_contract(FeedbackRequest, payload)

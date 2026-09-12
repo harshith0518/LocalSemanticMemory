@@ -1,6 +1,61 @@
 # Run and verify Hey Jarvis
 
-S03–S09 infrastructure, source import, memory contracts, Search, Ask and controls are implemented in the Windows checkout using Docker Desktop Linux containers. The browser is the primary workflow. **Current local acceptance: 225 backend tests and 15 browser checks pass. Live quality is not passed:** Nemotron diagnostic outputs miss/reconcile information incorrectly and Kimi has not completed a baseline response. The user approved public synthetic inference; unattended inference remains off after these failures. Historical sections retain their original results; the S09 record below supersedes their old provider/status notes.
+S03-S10 local infrastructure, source import, memory contracts, Search, Ask/controls and usage inspection are implemented in the Windows checkout with Docker Linux containers. The browser is the primary workflow. Current acceptance: **232 backend tests and 17 browser checks pass**, followed by two passing targeted S10 checks after a display/test-wait correction. **Live quality is not passed:** Nemotron's recorded outputs lose meaning; five Kimi attempts have completed no answer. Unattended inference remains off. The S10 section supersedes historical status/usage notes below.
+
+## S10 usage and performance
+
+Open [the local application](http://127.0.0.1:8000). Choose a collection and select **Load 8 sample dictations**. This explicitly imports the eight original paired records through the same atomic service as file upload; retries preserve identity, and importing does not start model calls. Sources/Search need no provider. Processing, Ask, history and controls use the existing workflow below; live failures remain visible.
+
+Expand **Usage and performance**, then **Refresh usage**. The snapshot covers all the current owner's collections, including retained source/claim history, not just the open collection. It shows source/claim/passage payload bytes, revision/job counts and model attempts grouped by role/model/allowance. Known input/output tokens, unknown usage and conservative reservations are separate. New failed calls retain provider elapsed time; historical missing durations remain null. p50/p95 shows the number of timed attempts, including failures. Successful application checks are not semantic grades. Billed/estimated cost is unmeasured, and totals are not account-wide or per-key billing.
+
+Each Normal action also shows browser duration and fixed-name server stages via `Server-Timing`. These durations include nested work and must not be added as independent phases. Measurements have no new durable activity table or browser storage; switching collection/mode or navigating clears the display and ignores late results. Private forbids usage/source reads. RAM and physical allocation are measured separately in the evaluator report; the application has no Docker socket.
+
+Actual verification commands, from the project root in PowerShell (check native exit codes):
+
+```powershell
+docker compose -f compose.test.yaml stop web
+docker compose -f compose.test.yaml build tests
+docker compose -f compose.test.yaml run --rm tests
+docker compose -f compose.test.yaml run --rm --no-deps tests ruff check --no-cache src tests eval migrations
+docker compose -f compose.test.yaml run --rm --no-deps tests ruff format --no-cache --check src tests eval migrations
+docker compose -f compose.test.yaml run --rm --no-deps -v "${PWD}/eval/reports:/reports" tests python -m eval.efficiency --output /reports/s10-efficiency-final.json
+docker compose -f compose.test.yaml --profile browser up -d --wait --wait-timeout 120 web
+npm.cmd --prefix tests/browser test
+# Targeted display/wait regression, from tests/browser:
+# node --test --test-concurrency=1 --test-name-pattern=S10 workspace.test.mjs
+```
+
+Results: **232/232 backend tests in 134.08 s; 17/17 Chromium checks in 32.66 s; final S10 2/2 in 3.65 s**. Ruff lint and formatting pass for 45 Python files. The tests exercise owner isolation, actual Unicode UTF-8 bytes, read-only snapshots, API/CLI parity, Private zero store/write access, fixed failures, concurrent/nested timing isolation, failed usage reservations, atomic lifecycle behavior and browser storage/late-response guards. Desktop 1440x1100 and mobile 390x844 usage screenshots were visually inspected after correcting Windows-introduced separators. A targeted test initially read the source list before the post-import refresh completed; it now waits for rows. The initial formatter cache was unwritable; checks explicitly use `--no-cache`. These failures were resolved, not counted as successful runs. Final documentation/staging checks passed for 10 UTF-8 Markdown files, 178 local links/anchors, all S10 JSON/JSONL reports and staged whitespace; Phase One material is unchanged, and no local credentials/runtime artifacts are staged.
+
+The isolated evaluator performs 17 measured actions through the actual shared services using explicit model doubles: import eight records, queue, process eight sources, repeat each retrieval representation three times and produce a cited contract answer. [First measurement](eval/reports/s10-efficiency.json) and [final-source measurement](eval/reports/s10-efficiency-final.json) retain their implementation hashes and actual results. Each fresh owner has 1,277 source-text bytes, 4,760 claim-JSON bytes across 12 revisions, and 720 passage-text bytes. Final-run database allocation grew 32,768 bytes on a preexisting isolated DB; the earlier run grew 73,728 bytes. Do not treat allocation granularity or these fixture sizes as a compression ratio. Final evaluator RSS samples were 87,977,984-91,500,544 bytes; process CPU and cumulative peak RSS are in the report. OS resource counters are sampled separately and are not per-object allocation. Double-provider tokens/latency are fixture constants, not live provider measurements or semantic scores.
+
+One new live answer smoke ran against the existing public synthetic collection; no new extraction or full comparison was launched:
+
+```powershell
+docker compose run --rm --no-deps --entrypoint python -e JARVIS_S07_SYNTHETIC_TRIAL_APPROVED=true cli eval/live.py --stage answer-smoke --namespace live-279608e17b0b435fa46977d3bfe61f79 --repeats 1
+```
+
+The recorded namespace identifies this existing checkout's S09 collection; it is not present in a fresh clone until imported/processed. During implementation the updated evaluator was mounted read-only while its image rebuilt. The [raw public smoke record](eval/reports/s10-live-smoke.jsonl) retains `provider_failed`, 180,418.8 ms model stage, 147.7 ms context preparation and unknown usage. The failed call reserves 14,513 tokens. Lifetime usage is now **19 requests, 25,560 known input + 1,944 known output tokens, and 179,786 accounted tokens including unknown reservations**. Kimi has five attempts with no completed answer; this run establishes failure-path timing, not model quality. The existing 96-request / 1,500,000-token / $0-paid allowance remains unchanged, with no reset or Ultra fallback. `.env` is unchanged and unattended inference remains off.
+
+Application verification:
+
+```powershell
+docker compose build api
+docker compose run --rm migrate alembic check
+docker compose down # no --volumes
+docker compose up -d --wait --wait-timeout 120 api
+docker compose run --rm --no-deps cli ready
+Invoke-RestMethod http://127.0.0.1:8000/ready
+Invoke-RestMethod -Headers @{ 'X-Jarvis-Mode' = 'normal' } http://127.0.0.1:8000/usage
+docker stats jarvis-api-1 jarvis-db-1 --no-stream --format json
+```
+
+No new migration/dependency. Alembic detects no new operations; repeated startup migrations and API/CLI readiness agree on `0005_user_controls`, pgvector `0.8.6`. All fields in all 14 canonical application tables compare equal before/after replacement, including 33 sources/jobs, three claim/evidence records, six processing receipts, 19 calls and the budget. Before the controlled comparison, the application/test containers were observed stopped with exit 255; one snapshot failed to resolve `db`. Restoring only these project databases recovered state, and the subsequent controlled comparison passed. No application volume was reset.
+
+[Actual application counters and container sample](eval/reports/s10-runtime.json) show API 81.7 MiB and database 25.14 MiB at one post-start sample, including health checks/background activity. Docker's Linux memory value excludes inactive file cache; it is not process RSS, a per-request allocation or NVIDIA GPU memory. Cost remains null without billing/rates. [S10 acceptance record](eval/reports/s10-contracts.json) distinguishes passing local checks from open live gates.
+
+S10's measurement/UI implementation is complete; successful live demonstration remains open. Resolve provider stability and the recorded extraction meaning failures before claiming reliable semantic memory. **S11** owns the varied 500-observation corpus, connected/independent scenario split, held-out labels and repeated semantic/efficiency evaluation described in [PLAN.md](PLAN.md#s11-corpus-and-semantic-evaluation-handoff). The existing eight-record sample and 500-record templated lexical stress set are not that corpus. Expanded live use requires an explicit allowlist/budget review; a 96-call ceiling cannot process 500 records and repeated comparisons. S12 remains the final clean-checkout acceptance rehearsal.
+
 
 ## S09 controls and synthetic Ask
 

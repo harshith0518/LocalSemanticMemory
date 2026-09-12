@@ -12,6 +12,7 @@ from uuid import uuid4
 from jarvis.config import Settings
 from jarvis.db import make_engine
 from jarvis.errors import ApplicationError
+from jarvis.metrics import capture_timings
 from jarvis.providers import NvidiaExtractor, NvidiaResponder
 from jarvis.services import Service
 from jarvis.worker import process_one
@@ -59,7 +60,9 @@ class RecordedProvider:
 
 def run():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--stage", choices=("smoke", "extraction", "answers"), required=True)
+    parser.add_argument(
+        "--stage", choices=("smoke", "extraction", "answers", "answer-smoke"), required=True
+    )
     parser.add_argument("--namespace")
     parser.add_argument("--repeats", type=int, choices=(1, 2, 3), default=3)
     args = parser.parse_args()
@@ -86,7 +89,9 @@ def run():
     try:
         if args.stage in {"smoke", "extraction"}:
             service._provider_gate(context)
-            for repeat in range(1, (1 if args.stage == "smoke" else args.repeats) + 1):
+            for repeat in range(
+                1, (1 if args.stage in {"smoke", "answer-smoke"} else args.repeats) + 1
+            ):
                 collection = namespace if repeat == 1 else f"{namespace}-{repeat}"
                 page = service.list_sources(context, {"namespace": collection})
                 options = {
@@ -105,16 +110,20 @@ def run():
                     repeat=repeat,
                     report=service.processing_report(context, {"namespace": collection}),
                 )
-        if args.stage in {"smoke", "answers"}:
-            if args.stage == "answers" and not args.namespace:
+        if args.stage in {"smoke", "answers", "answer-smoke"}:
+            if args.stage in {"answers", "answer-smoke"} and not args.namespace:
                 raise ValueError("Answer comparison requires the frozen live-extraction namespace")
             work = [
                 (repeat, case, representation)
-                for repeat in range(1, (1 if args.stage == "smoke" else args.repeats) + 1)
-                for index, case in enumerate(cases[:1] if args.stage == "smoke" else cases)
+                for repeat in range(
+                    1, (1 if args.stage in {"smoke", "answer-smoke"} else args.repeats) + 1
+                )
+                for index, case in enumerate(
+                    cases[:1] if args.stage in {"smoke", "answer-smoke"} else cases
+                )
                 for representation in (
                     ["history"]
-                    if args.stage == "smoke"
+                    if args.stage in {"smoke", "answer-smoke"}
                     else (
                         ["history", "sources", "sources_and_memories"]
                         if (index + repeat) % 2
@@ -126,14 +135,15 @@ def run():
             def answer(item):
                 repeat, case, representation = item
                 try:
-                    result = service.ask(
-                        context,
-                        {
-                            "namespace": namespace,
-                            "question": case["request"],
-                            "representation": representation,
-                        },
-                    )
+                    with capture_timings() as timings:
+                        result = service.ask(
+                            context,
+                            {
+                                "namespace": namespace,
+                                "question": case["request"],
+                                "representation": representation,
+                            },
+                        )
                     emit(
                         "answer",
                         repeat=repeat,
@@ -148,6 +158,15 @@ def run():
                         case_id=case["case_id"],
                         representation=representation,
                         error=error.code.value,
+                    )
+
+                finally:
+                    emit(
+                        "answer_timings",
+                        repeat=repeat,
+                        case_id=case["case_id"],
+                        representation=representation,
+                        stages=timings,
                     )
 
             with ThreadPoolExecutor(max_workers=2 if args.stage == "answers" else 1) as pool:

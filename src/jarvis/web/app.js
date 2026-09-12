@@ -16,6 +16,7 @@ let editing = null;
 let reviewedControl = null;
 let lastAnswer = null;
 let questionIndex = 0;
+let actionTimings = null;
 
 const messages = {
   provider_disabled:
@@ -71,6 +72,8 @@ function clearEvidence() {
 }
 
 function clearSources() {
+  ui["usage-results"].replaceChildren();
+  ui["operation-timing"].textContent = "No action measured in this view.";
   clearAnswer();
   clearControl();
   ui["search-form"].reset();
@@ -96,6 +99,7 @@ function clearSources() {
 
 function cancelPending() {
   epoch += 1;
+  actionTimings = null;
   pending?.abort();
   pending = null;
   setBusy(false);
@@ -154,6 +158,16 @@ async function request(path, options, ticket, signal) {
   assertCurrent(ticket);
   const result = await response.json();
   assertCurrent(ticket);
+  if (actionTimings) {
+    for (const entry of (response.headers.get("Server-Timing") || "").split(
+      ",",
+    )) {
+      const match = entry.trim().match(/^([a-z_]+);dur=([0-9.]+)$/);
+      if (match)
+        actionTimings[match[1]] =
+          (actionTimings[match[1]] || 0) + Number(match[2]);
+    }
+  }
   if (!response.ok)
     throw new Error(
       messages[result.reason] ||
@@ -166,12 +180,16 @@ async function action(operation) {
   if (mode !== "normal" || pending) return;
   const controller = new AbortController();
   const ticket = epoch;
+  const started = performance.now();
+  actionTimings = {};
+  let outcome = "Completed";
   pending = controller;
   setBusy(true);
   feedback("Working…");
   try {
     await operation(ticket, controller.signal);
   } catch (error) {
+    outcome = "Failed";
     if (ticket === epoch && error.name !== "AbortError") {
       // Only fixed locally owned messages reach the page; never echo driver/network errors.
       const known = Object.values(messages).includes(error.message);
@@ -184,6 +202,14 @@ async function action(operation) {
     }
   } finally {
     if (ticket === epoch) {
+      const stages = Object.entries(actionTimings || {})
+        .map(
+          ([name, ms]) => `${name.replaceAll("_", " ")}: ${ms.toFixed(1)} ms`,
+        )
+        .join(" | ");
+      ui["operation-timing"].textContent =
+        `${outcome} in ${(performance.now() - started).toFixed(1)} ms in this browser.${stages ? ` Server stages: ${stages}.` : " Server timing unavailable."} Stages include nested work; do not add them together.`;
+      actionTimings = null;
       pending = null;
       setBusy(false);
     }
@@ -302,37 +328,149 @@ ui["import-form"].addEventListener("submit", (event) => {
     feedback("Choose a nonempty JSONL file no larger than 1 MB.", true);
     return;
   }
-  action(async (ticket, signal) => {
-    // Fetch the current policy via the shared service; the server rechecks it atomically.
-    const page = await loadPage(namespace, ticket, signal);
-    renderPage(page);
-    const query = new URLSearchParams({
-      namespace,
-      expected_policy_revision: String(policyRevision),
-    });
-    const result = await request(
-      `/sources/import?${query}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/x-ndjson" },
-        body: file,
-      },
-      ticket,
-      signal,
+  action((ticket, signal) => importContent(namespace, file, ticket, signal));
+});
+
+async function importContent(namespace, content, ticket, signal) {
+  // Fetch the current policy via the shared service; the server rechecks it atomically.
+  const page = await loadPage(namespace, ticket, signal);
+  renderPage(page);
+  const query = new URLSearchParams({
+    namespace,
+    expected_policy_revision: String(policyRevision),
+  });
+  const result = await request(
+    `/sources/import?${query}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/x-ndjson" },
+      body: content,
+    },
+    ticket,
+    signal,
+  );
+  ui["import-form"].reset();
+  feedback(`Saved ${result.created} new · ${result.unchanged} unchanged.`);
+  // A refresh failure must not disguise a successful committed import.
+  try {
+    renderPage(await loadPage(namespace, ticket, signal));
+  } catch (error) {
+    assertCurrent(ticket);
+    feedback(
+      `Import saved: ${result.created} new, ${result.unchanged} unchanged. Open the collection to refresh its sources.`,
     );
-    ui["import-form"].reset();
-    feedback(`Saved ${result.created} new · ${result.unchanged} unchanged.`);
-    // A refresh failure must not disguise a successful committed import.
-    try {
-      renderPage(await loadPage(namespace, ticket, signal));
-    } catch (error) {
-      assertCurrent(ticket);
-      feedback(
-        `Import saved: ${result.created} new, ${result.unchanged} unchanged. Open the collection to refresh its sources.`,
-      );
-    }
+  }
+}
+
+ui["sample-button"].addEventListener("click", () => {
+  const namespace = collection();
+  if (!namespace) return;
+  action(async (ticket, signal) => {
+    const sample = await request("/trial/sources", {}, ticket, signal);
+    await importContent(namespace, sample.jsonl, ticket, signal);
   });
 });
+
+ui["refresh-usage"].addEventListener("click", () =>
+  action(async (ticket, signal) => {
+    ui["usage-results"].replaceChildren();
+    const data = await request("/usage", {}, ticket, signal);
+    const s = data.storage;
+    const content = document.createDocumentFragment();
+    content.append(
+      paragraph(
+        "Snapshot across all your collections, including retained history. Refresh after changes.",
+        "help",
+      ),
+    );
+    const rows = [
+      [
+        "Original source text (raw + formatted)",
+        `${s.source_revisions} revisions`,
+        `${s.source_text_utf8_bytes.toLocaleString()} UTF-8 bytes`,
+      ],
+      [
+        "Structured memories",
+        `${s.claim_revisions} revisions`,
+        `${s.claim_json_utf8_bytes.toLocaleString()} UTF-8 JSON bytes`,
+      ],
+      [
+        "Exact supporting passages",
+        `${s.supporting_passages} passages`,
+        `${s.passage_text_utf8_bytes.toLocaleString()} UTF-8 bytes`,
+      ],
+    ];
+    const table = document.createElement("table");
+    const caption = document.createElement("caption");
+    caption.textContent = "Stored content sizes";
+    table.append(caption);
+    for (const row of rows) {
+      const tr = document.createElement("tr");
+      row.forEach((value, i) => {
+        const cell = document.createElement(i === 0 ? "th" : "td");
+        if (i === 0) cell.scope = "row";
+        cell.textContent = value;
+        tr.append(cell);
+      });
+      table.append(tr);
+    }
+    content.append(
+      table,
+      paragraph(
+        "These are payload sizes, not physical database allocation or compression savings. RAM and table/index allocation are measured separately in the isolated evaluator report.",
+        "help",
+      ),
+    );
+    content.append(
+      paragraph(
+        `Jobs: ${
+          Object.entries(data.jobs)
+            .map(([key, n]) => `${n} ${key}`)
+            .join(" | ") || "none"
+        }`,
+      ),
+    );
+    for (const m of data.models) {
+      const section = document.createElement("article");
+      section.append(
+        paragraph(`${m.role} | ${m.model}`),
+        paragraph(
+          `Allowance: ${m.allowance}. ${m.attempts} attempts | ${m.succeeded} passed application checks | ${m.failed} failed | ${m.in_flight} unsettled.`,
+          "help",
+        ),
+      );
+      section.append(
+        paragraph(
+          `Known tokens: ${m.known_input_tokens.toLocaleString()} input + ${m.known_output_tokens.toLocaleString()} output from ${m.known_usage_calls} calls.`,
+        ),
+      );
+      section.append(
+        paragraph(
+          `${m.unknown_usage_calls} calls have unknown usage; ${m.unsettled_reserved_tokens.toLocaleString()} tokens remain conservatively reserved. Reservations are not measured consumption.`,
+          "help",
+        ),
+      );
+      section.append(
+        paragraph(
+          m.timed_calls
+            ? `Provider latency: p50 ${m.latency_p50_ms.toFixed(1)} ms | p95 ${m.latency_p95_ms.toFixed(1)} ms (${m.timed_calls} timed attempts, including failures; small samples are not a benchmark).`
+            : "Provider latency: no timed attempts.",
+        ),
+      );
+      content.append(section);
+    }
+    if (!data.models.length)
+      content.append(paragraph("No model calls recorded for this owner."));
+    content.append(
+      paragraph(
+        "Cost: unmeasured. Provider billing and rates are not connected. This is application usage by model/role, not account-wide or per-key billing. Semantic accuracy requires a labeled evaluation; completed jobs and token totals do not establish understanding.",
+        "help",
+      ),
+    );
+    ui["usage-results"].replaceChildren(content);
+    feedback("Usage snapshot refreshed.");
+  }),
+);
 
 ui["load-more"].addEventListener("click", () => {
   if (!opened || !nextAfter) return;

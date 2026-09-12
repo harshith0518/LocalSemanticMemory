@@ -1,0 +1,102 @@
+{
+  "milestone": "S10 measurement and unfamiliar workflow",
+  "recorded_date": "2026-09-12",
+  "base_commit": "a34e5f7055e25d481c681b9252de8bb656cf785b",
+  "implementation": "complete",
+  "live_demonstration": "not_passed",
+  "backend": {
+    "passed": 232,
+    "failed": 0,
+    "seconds": 134.08,
+    "database": "isolated PostgreSQL jarvis_test"
+  },
+  "browser": {
+    "passed": 17,
+    "failed": 0,
+    "seconds": 32.659606,
+    "provider": "explicit deterministic doubles"
+  },
+  "final_targeted_browser": {
+    "passed": 2,
+    "failed": 0,
+    "seconds": 3.6494973
+  },
+  "lint": "passed",
+  "format": {
+    "passed": true,
+    "python_files": 45
+  },
+  "schema": {
+    "revision": "0005_user_controls",
+    "new_migration": false,
+    "drift": false,
+    "pgvector": "0.8.6"
+  },
+  "application_restart": {
+    "all_table_fields_equal": true,
+    "tables": {
+      "claim_evidence": 3,
+      "claim_relations": 0,
+      "claim_revisions": 3,
+      "control_receipts": 0,
+      "feedback_receipts": 0,
+      "jobs": 33,
+      "model_budgets": 1,
+      "model_calls": 19,
+      "passage_exclusions": 0,
+      "passages": 3,
+      "policies": 1,
+      "processing_receipts": 6,
+      "source_exclusions": 0,
+      "sources": 33
+    }
+  },
+  "source_fixture_sha256": "021ba1318952de4d5f1caf4b84fafea32c314c42c6b46bf26e30d7b5316a4cfc",
+  "live": {
+    "new_attempts": 1,
+    "completed_answers": 0,
+    "error": "provider_failed",
+    "provider_stage_ms": 180418.8,
+    "lifetime_requests": 19,
+    "known_input_tokens": 25560,
+    "known_output_tokens": 1944,
+    "accounted_tokens": 179786,
+    "limits_changed": false,
+    "automatic_fallback": false
+  },
+  "measurement_reports": [
+    "s10-efficiency.json",
+    "s10-efficiency-final.json",
+    "s10-runtime.json",
+    "s10-live-smoke.jsonl"
+  ],
+  "review": {
+    "desktop_and_mobile_visually_inspected": true,
+    "owner_scoping_and_private_failures_tested": true,
+    "normal_activity_or_content_table_added": false,
+    "dependencies_changed": false
+  },
+  "resolved_findings": [
+    "Formatter cache was unwritable; use --no-cache.",
+    "Windows shell encoding changed added separators to question marks; corrected display/docs and visually rechecked.",
+    "Targeted browser assertion ran before post-import refresh; now waits for source rows.",
+    "Application/test containers were observed stopped (255); initial snapshot could not resolve db. Restored project DBs, then all-field controlled restart comparison passed."
+  ],
+  "limitations": [
+    "Kimi has five failed attempts and no completed answers; the live S10 gate remains open.",
+    "Prior Nemotron semantic misses/reconciliation failures remain unresolved; backend validity is not semantic entailment.",
+    "No provider-account-wide usage, pricing/billing, remote GPU memory or quality score is measured.",
+    "RAM/allocation samples depend on process/DB scope and preexisting allocation; no compression benefit claimed.",
+    "Eight curated originals and the templated 500-record stress set are not the S11 varied acceptance corpus.",
+    "Expanded live corpus processing requires a reviewed allowlist and budget; no allowance reset."
+  ],
+  "next": "Resolve provider/extraction quality, then S11 varied corpus and held-out evaluation; user controls main merge.",
+  "documentation": {
+    "markdown_files": 10,
+    "local_links_and_anchors": 178,
+    "part_one_unchanged": true,
+    "json_evidence_valid": true,
+    "staged_whitespace": "passed",
+    "local_credential_scan": "passed"
+  }
+}

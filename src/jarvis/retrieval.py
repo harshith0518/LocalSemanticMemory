@@ -23,6 +23,7 @@ from jarvis.contracts import (
 from jarvis.controls import blocked_sources
 from jarvis.errors import ApplicationError, ErrorCode
 from jarvis.imports import Identifier
+from jarvis.metrics import measured
 from jarvis.models import (
     CLAIM_SEARCH_SQL,
     SOURCE_SEARCH_SQL,
@@ -295,12 +296,14 @@ class RetrievalOperations:
             ),
         )
 
+    @measured("retrieval")
     def prepare_search(self, context, payload):
         self._authorize(context)
         query = parse_contract(SearchRequest, payload)
         with self._session(context) as session:
             return self._select_search(session, context, query)
 
+    @measured("release_search")
     def release_search(self, context, packet, render: Callable | None = None):
         self._authorize(context)
         packet = parse_contract(SearchPacket, packet)
@@ -313,6 +316,7 @@ class RetrievalOperations:
             # recall a released result; future responders must call this after generation.
             return render(result) if render else result
 
+    @measured("search")
     def search(self, context, payload, render: Callable | None = None):
         self._authorize(context)
         query = parse_contract(SearchRequest, payload)

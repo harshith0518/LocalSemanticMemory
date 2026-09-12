@@ -1,0 +1,103 @@
+{
+  "recorded_at": "2026-09-12T06:49:58.2880433Z",
+  "kind": "normal_application_usage_and_named_container_sample",
+  "ready": {
+    "status": "ready",
+    "schema": "0005_user_controls",
+    "pgvector": "0.8.6"
+  },
+  "usage": {
+    "scope": "current_owner_all_collections_including_retained_history",
+    "policy_revision": 0,
+    "storage": {
+      "source_revisions": 33,
+      "source_text_utf8_bytes": 5213,
+      "claim_revisions": 3,
+      "claim_json_utf8_bytes": 1263,
+      "supporting_passages": 3,
+      "passage_text_utf8_bytes": 293,
+      "claim_lifecycle": {
+        "active": 3
+      }
+    },
+    "jobs": {
+      "succeeded": 6,
+      "failed": 5,
+      "pending": 22
+    },
+    "models": [
+      {
+        "model": "moonshotai/kimi-k3",
+        "allowance": "s07-synthetic-v1",
+        "role": "answer",
+        "attempts": 5,
+        "succeeded": 0,
+        "failed": 5,
+        "in_flight": 0,
+        "known_usage_calls": 0,
+        "unknown_usage_calls": 5,
+        "known_input_tokens": 0,
+        "known_output_tokens": 0,
+        "unsettled_reserved_tokens": 72565,
+        "timed_calls": 1,
+        "latency_p50_ms": 180420.0,
+        "latency_p95_ms": 180420.0
+      },
+      {
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "allowance": "s07-synthetic-v1",
+        "role": "extraction",
+        "attempts": 14,
+        "succeeded": 6,
+        "failed": 8,
+        "in_flight": 0,
+        "known_usage_calls": 9,
+        "unknown_usage_calls": 5,
+        "known_input_tokens": 25560,
+        "known_output_tokens": 1944,
+        "unsettled_reserved_tokens": 79717,
+        "timed_calls": 9,
+        "latency_p50_ms": 10782.0,
+        "latency_p95_ms": 67897.19999999998
+      }
+    ],
+    "cost": {
+      "billed_usd": null,
+      "estimated_usd": null,
+      "reason": "provider_billing_and_rates_not_connected"
+    },
+    "semantic_quality": {
+      "measured": false,
+      "reason": "requires_labeled_evaluation"
+    }
+  },
+  "container_samples": [
+    {
+      "BlockIO": "557kB / 0B",
+      "CPUPerc": "50.73%",
+      "Container": "jarvis-api-1",
+      "ID": "6ed7a4a995d9",
+      "MemPerc": "1.08%",
+      "MemUsage": "81.7MiB / 7.388GiB",
+      "Name": "jarvis-api-1",
+      "NetIO": "46.6kB / 42.3kB",
+      "PIDs": "3"
+    },
+    {
+      "BlockIO": "123kB / 225kB",
+      "CPUPerc": "4.56%",
+      "Container": "jarvis-db-1",
+      "ID": "5972e3fa9ef0",
+      "MemPerc": "0.33%",
+      "MemUsage": "25.14MiB / 7.388GiB",
+      "Name": "jarvis-db-1",
+      "NetIO": "213kB / 334kB",
+      "PIDs": "7"
+    }
+  ],
+  "notes": [
+    "One post-start sample including health checks/background activity, not per-request resource attribution or remote NVIDIA GPU memory.",
+    "Docker Linux memory display subtracts inactive file cache; distinct from process RSS.",
+    "Known usage is provider-reported. Unknown calls keep reservations. Billing is unmeasured."
+  ]
+}

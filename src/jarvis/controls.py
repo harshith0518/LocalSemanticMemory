@@ -22,6 +22,7 @@ from jarvis.contracts import (
 )
 from jarvis.errors import ApplicationError, ErrorCode
 from jarvis.imports import Identifier
+from jarvis.metrics import measured
 from jarvis.models import (
     ClaimEvidence,
     ClaimRecord,
@@ -262,12 +263,14 @@ class ControlOperations:
         preview["preview_token"] = digest(preview)
         return target, contract, affected, claims, preview
 
+    @measured("control_preview")
     def preview_control(self, context, payload):
         self._authorize(context)
         command = parse_contract(ControlRequest, payload)
         with self._session(context, write=True) as session:
             return self._control_preview(session, context, command)[-1]
 
+    @measured("control_commit")
     def apply_control(self, context, payload):
         self._authorize(context)
         command = parse_contract(ControlRequest, payload)

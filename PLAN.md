@@ -91,7 +91,7 @@ The alternative is a separate frontend framework/build/server or deleting the te
 
 ## S06 bounded bootstrap proposal
 
-The user requested the completed S03–S05 audit/publication and starting S06. This section makes the next important implementation changes reviewable under AGENTS.md. The live-call policy exception below remains unapproved; no model call has run. Scope: **source-history answering only**, using the existing Windows checkout, Linux containers and shared backend.
+The user requested the completed S03–S05 audit/publication and starting S06. This section makes the next important implementation changes reviewable under AGENTS.md. The proposal below is historical: S09 implemented it and approved the bounded synthetic exception; current live failures are recorded in RUN.md. Scope: **source-history answering only**, using the existing Windows checkout, Linux containers and shared backend.
 
 | Proposed files | Behavior and data effects |
 | --- | --- |
@@ -119,7 +119,7 @@ Keep selective extraction, worker processing, retrieval/ranking/embeddings, auto
 
 Implementation is now present; [RUN.md](RUN.md#s07-memory-processing) records the verified contract/browser behavior and open live-quality gate. The table preserves the reviewed scope; `evaluation.py` implements the synthetic live-evidence command and S04 contracts are reused.
 
-The user requested a reviewable S07 plan, then research on useful memory and storage. The user approved implementing this bounded scope on 12 September 2026 after the research review. Routine implementation and fixes are covered; the separate provider-terms/live-budget decision remains open. Keep the existing Windows checkout, Linux containers, shared service layer and browser-first workflow. S06 remains incomplete; reuse its proposed provider/accounting foundation if brought forward, without marking source-history answering complete or carrying its proposed live-call allowance into S07. [Research and tradeoffs](DECISIONS.md#input-to-memory-research-review)
+The user requested a reviewable S07 plan, then research on useful memory and storage. The user approved implementing this bounded scope on 12 September 2026 after the research review. Routine implementation and fixes are covered; S09 subsequently approved the bounded synthetic provider exception. Keep the existing Windows checkout, Linux containers, shared service layer and browser-first workflow. S06 remains incomplete; reuse its proposed provider/accounting foundation if brought forward, without marking source-history answering complete or carrying its proposed live-call allowance into S07. [Research and tradeoffs](DECISIONS.md#input-to-memory-research-review)
 
 | Proposed files | Behavior and data effects |
 | --- | --- |
@@ -142,7 +142,7 @@ Start with PostgreSQL full-text candidate retrieval over original paired observa
 
 Canonical ownership, eligibility, source/claim revisions and existing exclusions must be checked before results are released. Private refuses input/store access. Search remains available without an extraction provider. The index is a rebuildable derivative; existing records and their meaning remain unchanged. Optional dense search is deferred unless a separately approved embedder and measured benefit justify it; no simulated vectors will be called semantic evidence.
 
-Acceptance: existing regressions, empty/repeated migrations without drift, indexed search and raw/formatted pairing, source fallback, current/history/unknown-time behavior, explicit overflow versus empty/error outcomes, real PostgreSQL publication races, zero-access Private failures, browser search and late-response clearing, original-state/restart persistence, and controlled retrieval evidence with fixed limits. Record misses and skipped comparisons. S06's missing Kimi baseline and the NVIDIA synthetic-only terms/budget exception remain a separate pending decision; local retrieval metrics cannot establish answer quality or close those live gates.
+Acceptance: existing regressions, empty/repeated migrations without drift, indexed search and raw/formatted pairing, source fallback, current/history/unknown-time behavior, explicit overflow versus empty/error outcomes, real PostgreSQL publication races, zero-access Private failures, browser search and late-response clearing, original-state/restart persistence, and controlled retrieval evidence with fixed limits. Record misses and skipped comparisons. The NVIDIA synthetic-only exception was later approved in S09. The Kimi baseline still has not passed; local retrieval metrics cannot establish answer quality or close those live gates.
 
 ## Workflow cases to implement deliberately
 
@@ -177,3 +177,32 @@ Acceptance: original regressions; typed/owned/revision-checked controls; correct
 5. If embeddings or a small model do not improve measured results within the budget, retain the supported baseline and document the failed/skipped experiment.
 
 Do not cut evidence links, real model integration, Private/Correct/Forget, unfamiliar-corpus import, the minimal UI or honest evaluation. Freeze optional experiments by **12 September 10:00 IST** as a planning buffer. Reserve the final hours for reproducibility, actual defects and explaining limits. If required gates fail, report that rather than substituting mock results.
+
+## S10 measurement and unfamiliar workflow
+
+Approved on 12 September: finish the minimal browser surface, expose honest resource/use measurements, verify the brief's corpus requirement, and assign corpus expansion to the correct subsequent milestone. Files: `metrics.py`, the existing service/API/CLI/worker/answer adapters and browser, `eval/efficiency.py`, `eval/live.py`, isolated tests and these consolidated documents. No new dependency, migration, vector store, provider selection or privacy semantics. Preserve S03-S09 records.
+
+The browser can explicitly **Load 8 sample dictations** through the existing atomic import service, then use Sources, processing, Search, Ask, history, controls and feedback. A collapsed **Usage and performance** panel provides an owner-wide snapshot plus transient action/stage timing. Model-call accounting already existed; new failures also retain elapsed time in its existing nullable column. Known input/output tokens, unknown usage, conservative reservations, operation outcomes and sample counts are distinct. Neither a successful job nor a valid citation establishes semantic accuracy. The alternative of a telemetry stack or new persistent activity table is unnecessary for this prototype.
+
+Acceptance: existing PostgreSQL/concurrency/browser checks pass; byte counts handle Unicode and owner isolation; reads do not create records; failures do not become zero token usage; timings stay separate across requests; Private prevents store access and clears/ignores late metrics; the public sample import is explicit/idempotent. Produce an isolated CPU/RAM/storage-growth report with honest measurement scope, and preserve/restart application state. A separate bounded live smoke must remain honestly recorded if it fails. Successful live end-to-end behavior remains an open S10 gate until provider/semantic failures are resolved; a deterministic demonstration cannot close it.
+
+## S11 corpus and semantic evaluation handoff
+
+The original brief, pages 4-6, requires approximately **500 development transcript records** and use of a separate approximately **500-record unfamiliar corpus**. These are observations, each optionally containing raw ASR, formatted text and metadata; they are not a prescribed count of evaluation questions. The eight curated originals and two public control statements are implemented. `eval/retrieval.py` generates 500 diagnostic records including 485 templated distractors; it is not the varied acceptance corpus.
+
+Build the varied corpus in S11 after the live eight-record smoke and semantic gates are reliable. Keep one fictional user's records across several projects and personal contexts. Proposed primary buckets total 500; tags may overlap, primary counts must not:
+
+| Primary bucket | Records | Main coverage |
+| --- | ---: | --- |
+| Connected chronological histories | 200 | 20 threads of 10 observations; later facts depend on earlier context, updates, late imports and multi-note answers. |
+| Independent useful observations | 100 | Distinct domains, entities, reported events, units and same-name people. |
+| Scoped preferences and current overrides | 60 | Conditions, project/task scope, enduring versus one-request instructions. |
+| Conditional, negated and conflicting statements | 60 | Uncertainty, quotations, explicit nonfacts, unresolved variant/source conflicts. |
+| Noisy ASR, multilingual and incomplete metadata | 50 | Hindi/Hinglish, Unicode, dates absent or partial, disagreement between paired variants. |
+| Irrelevant/transient/question/instruction-shaped inputs | 30 | No-memory decisions, distractors and historical instructions that must not execute. |
+
+This allocation is an engineering proposal, not a research-proven optimum. Author coherent scenario/event outlines and review their exact passages before producing records. Keep each thread intact when assigning tuning/held-out scenario families; do not tune on the later held-out questions. Start with 16 tuning and at least 32 held-out questions/actions, three repeats each, grading multi-note support, uncertainty/time/scope, changes, contradictions, abstention and task success. Keep all questions, expected claims, labels and operation scripts under `eval/`, never in `data/synthetic/` ingestion. Correct/Forget/reimport/restart and Private are evaluation operation sequences, not saved Private transcript records. Private sequences use only ephemeral current context.
+
+Compare original-source history/search with sources plus memories under fixed model, eligible corpus and evidence allowance. Record input/output usage and the actual serialized evidence bytes; until an exact tokenizer is integrated, the 24,000-byte cap must not be represented as equal measured input tokens. Retain all failures and manually review entailment; report counts/denominators by scenario family, pipeline stage, repetition and cold/warm condition. Include ingestion/repair failures in cost and success denominators. An unfamiliar unfamiliar import must follow the general source contract, not hardcoded Atlas labels.
+
+Before live processing of the expanded corpus, review the exact additional synthetic allowlist, aggregate request/token budget and provider settings: the existing 96-request allowance cannot process 500 records and repeated comparisons. Do not reset it or remove the personal-data gate. No automatic Ultra fallback. S12 is the clean-checkout acceptance rehearsal; it cannot pass while unfamiliar inference or live quality remains unavailable.

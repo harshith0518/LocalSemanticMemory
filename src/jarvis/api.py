@@ -11,6 +11,7 @@ from jarvis.config import Settings
 from jarvis.db import make_engine
 from jarvis.errors import ApplicationError, ErrorCode
 from jarvis.imports import MAX_IMPORT_BYTES
+from jarvis.metrics import capture_timings, stage
 from jarvis.services import Service
 
 WEB_ROOT = Path(__file__).parent / "web"
@@ -39,13 +40,19 @@ def create_app(service: Service | None = None) -> FastAPI:
 
     @app.middleware("http")
     async def input_boundary(request: Request, call_next):
-        try:
-            response = await call_next(request)
-        except Exception:
-            # Consume unexpected failures here so Uvicorn cannot log private exception text.
-            response = JSONResponse(
-                ApplicationError(ErrorCode.OPERATION_FAILED).response(), status_code=500
-            )
+        with capture_timings(enabled=request.headers.get("X-Jarvis-Mode") == "normal") as timings:
+            with stage("request"):
+                try:
+                    response = await call_next(request)
+                except Exception:
+                    # Never allow Uvicorn to log private exception text.
+                    response = JSONResponse(
+                        ApplicationError(ErrorCode.OPERATION_FAILED).response(), status_code=500
+                    )
+            if timings is not None:
+                response.headers["Server-Timing"] = ", ".join(
+                    f"{name};dur={value['elapsed_ms']:.3f}" for name, value in timings.items()
+                )
         response.headers["Cache-Control"] = "no-store"
         response.headers["Pragma"] = "no-cache"
         response.headers["X-Content-Type-Options"] = "nosniff"
@@ -209,6 +216,20 @@ def create_app(service: Service | None = None) -> FastAPI:
         context = service.identity.context(request.headers.get("X-Jarvis-Mode", ""))
         context.require_saved_access()
         return await run_in_threadpool(service.apply_control, context, await current_input(request))
+
+    @app.get("/usage")
+    def usage(request: Request):
+        service = app.state.service
+        context = service.identity.context(request.headers.get("X-Jarvis-Mode", ""))
+        return service.usage_snapshot(context, JSONResponse)
+
+    @app.get("/trial/sources")
+    def sample_sources(request: Request):
+        # Check policy before touching even this public fixture on a Private request.
+        service = app.state.service
+        context = service.identity.context(request.headers.get("X-Jarvis-Mode", ""))
+        service._authorize(context)
+        return {"jsonl": Path("data/synthetic/sample-dictations.jsonl").read_text(encoding="utf-8")}
 
     @app.get("/trial/questions")
     def questions():

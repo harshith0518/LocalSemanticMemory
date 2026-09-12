@@ -39,6 +39,7 @@ from jarvis.imports import (
     same_json,
     source_key,
 )
+from jarvis.metrics import MetricsOperations, measured
 from jarvis.models import ClaimEvidence, ClaimRecord, Job, Passage, Policy, Source
 from jarvis.policy import LocalIdentity, Mode, RequestContext
 from jarvis.processing import ProcessingOperations
@@ -56,7 +57,13 @@ def content_hash(raw: str, formatted: str | None) -> str:
     return hashlib.sha256(pair.encode("utf-8")).hexdigest()
 
 
-class Service(ProcessingOperations, RetrievalOperations, AnswerOperations, ControlOperations):
+class Service(
+    ProcessingOperations,
+    RetrievalOperations,
+    AnswerOperations,
+    ControlOperations,
+    MetricsOperations,
+):
     def __init__(
         self,
         engine: Engine,
@@ -274,6 +281,7 @@ class Service(ProcessingOperations, RetrievalOperations, AnswerOperations, Contr
     def _job_contract(job: Job) -> JobState:
         return JobState.model_validate({name: getattr(job, name) for name in JobState.model_fields})
 
+    @measured("import")
     def import_observations(
         self, context: RequestContext, options: object, payload: str | bytes
     ) -> ImportReceipt:
@@ -337,6 +345,7 @@ class Service(ProcessingOperations, RetrievalOperations, AnswerOperations, Contr
                 ),
             )
 
+    @measured("sources")
     def list_sources(self, context: RequestContext, payload: object) -> SourcePage:
         self._authorize(context)
         query = parse_contract(SourceQuery, payload)
@@ -372,6 +381,7 @@ class Service(ProcessingOperations, RetrievalOperations, AnswerOperations, Contr
                 else None,
             )
 
+    @measured("inspect")
     def inspect_source(self, context: RequestContext, source_id: UUID | str) -> SourceInspection:
         self._authorize(context)
         source_id = parse_contract(SourceLookup, {"source_id": source_id}).source_id

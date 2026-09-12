@@ -4,6 +4,7 @@ import json
 from datetime import timedelta
 from functools import cache
 from pathlib import Path
+from time import perf_counter
 from uuid import UUID, uuid4
 
 from sqlalchemy import func, or_, select
@@ -24,6 +25,7 @@ from jarvis.extraction import (
     parse_proposal,
 )
 from jarvis.imports import parse_dictations, same_json
+from jarvis.metrics import measured, stage
 from jarvis.models import (
     ClaimEvidence,
     ClaimRecord,
@@ -76,6 +78,7 @@ class ProcessingOperations:
             Source.source_key.startswith(f"import:{namespace}:", autoescape=True),
         )
 
+    @measured("queue")
     def request_processing(self, context, payload):
         self._provider_gate(context)  # Before parsing, source reads, or queue writes.
         command = parse_contract(ProcessingRequest, payload)
@@ -194,6 +197,7 @@ class ProcessingOperations:
             memories=claims,
         )
 
+    @measured("lease")
     def lease_next(self, context, *, namespace=None):
         self._provider_gate(context)
         if namespace is not None:
@@ -322,6 +326,7 @@ class ProcessingOperations:
                 ),
             )
 
+    @measured("memory_commit")
     def commit_extraction(self, context, packet, payload):
         self._authorize(context)
         proposal = parse_proposal(payload)
@@ -456,6 +461,7 @@ class ProcessingOperations:
                 job.lease_until = None
                 job.finished_at = session.scalar(select(func.clock_timestamp()))
 
+    @measured("reserve")
     def reserve_call(self, context, packet, reserved_tokens):
         self._provider_gate(context)
         if type(reserved_tokens) is not int or reserved_tokens <= 0:
@@ -497,7 +503,26 @@ class ProcessingOperations:
         session.flush()
         return call.id
 
-    def finish_call(self, context, call_id, completion=None, error=None):
+    def complete_call(self, context, provider, body, call_id):
+        self._authorize(context)
+        started = perf_counter()
+        try:
+            with stage("model"):
+                completion = provider.complete(body)
+        except Exception as error:
+            code = error.code if isinstance(error, ApplicationError) else ErrorCode.PROVIDER_FAILED
+            self.finish_call(
+                context,
+                call_id,
+                error=code,
+                elapsed_ms=max(0, round((perf_counter() - started) * 1000)),
+            )
+            raise ApplicationError(code) from None
+        self.finish_call(context, call_id, completion)
+        return completion
+
+    @measured("accounting")
+    def finish_call(self, context, call_id, completion=None, error=None, *, elapsed_ms=None):
         self._authorize(context)
         with self._session(context, write=True) as session:
             key = session.scalar(
@@ -545,6 +570,8 @@ class ProcessingOperations:
                     budget.requests = MAX_REQUESTS
                     call.status = "failed"
                     call.error_code = ErrorCode.BUDGET_EXHAUSTED.value
+            elif elapsed_ms is not None:
+                call.elapsed_ms = elapsed_ms
             # Unknown/failed requests keep their full reservation, including across restarts.
 
     def list_memories(self, context, payload):

@@ -126,6 +126,18 @@
               explicit correction.
             </p>
           </form>
+          <button
+            id="sample-button"
+            type="button"
+            class="secondary wide"
+            data-normal
+          >
+            Load 8 sample dictations
+          </button>
+          <p class="help">
+            Synthetic examples only. Saves the originals into this collection;
+            processing is a separate action.
+          </p>
           <details class="format-help">
             <summary>What should my file contain?</summary>
             <p>
@@ -470,6 +482,23 @@
           >
             Confirm this change
           </button>
+        </section>
+        <section class="card usage-card" aria-label="Usage and performance">
+          <details>
+            <summary>Usage and performance</summary>
+            <p id="operation-timing" class="help" role="status">
+              No action measured in this view.
+            </p>
+            <button
+              id="refresh-usage"
+              type="button"
+              class="secondary"
+              data-normal
+            >
+              Refresh usage
+            </button>
+            <div id="usage-results"></div>
+          </details>
         </section>
       </div>
       <p
