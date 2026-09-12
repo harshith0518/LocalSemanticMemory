@@ -1,0 +1,119 @@
+{
+  "recorded_at_utc": "2026-09-12T16:00:18.960386+00:00",
+  "scope": "User-requested fresh NVIDIA Lightning check and retention as a manually selected backup; no automatic provider/model fallback or runtime activation.",
+  "source_commit": "920ef828308841f6025680b9ebfd04008f334324",
+  "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+  "endpoint": "https://integrate.api.nvidia.com/v1/chat/completions",
+  "key_variable": "NEMOTRON_30B_API_KEY",
+  "secret_stored_in_report": false,
+  "raw_report": "s12-lightning-backup-smoke.jsonl",
+  "namespace": "lightning-backup-b5ccab3d85194f898fdd42d7dfc9863f",
+  "input": {
+    "fixture": "data/synthetic/sample-dictations.jsonl",
+    "sha256": "021ba1318952de4d5f1caf4b84fafea32c314c42c6b46bf26e30d7b5316a4cfc",
+    "extraction_records": 1,
+    "retrieval_records": 8,
+    "evaluation_labels_ingested": false
+  },
+  "results": {
+    "provider_calls": 3,
+    "provider_completions": 3,
+    "application_accepted_calls": 2,
+    "validation_rejections": 1,
+    "processing": {
+      "counts": {
+        "pending": 7,
+        "succeeded": 1
+      },
+      "provider_enabled": true,
+      "failures": [],
+      "decisions": {
+        "extracted": 1,
+        "no_memory": 0,
+        "duplicate": 0,
+        "needs_clarification": 0
+      }
+    },
+    "stored_claims": 1,
+    "answer": {
+      "question": "What is the latest recorded Atlas launch date?",
+      "text": "The latest recorded Atlas launch date is 21 September 2026.",
+      "citations": [
+        {
+          "source_id": "c8e96193-f1b2-4908-a158-84bc663c84a3",
+          "source_revision": 1,
+          "variant": "formatted",
+          "start": 0,
+          "end": 103,
+          "exact_text": "The Atlas launch has moved from 18 September to 21 September 2026 because legal review needs more time."
+        }
+      ],
+      "model_latency_ms": 2995,
+      "answer_end_to_end_ms": 3364.0006400000857,
+      "retrieval_context_ms": 177.3573030004627,
+      "representation": "sources_and_memories",
+      "evidence_bytes": 4220
+    },
+    "pipeline_end_to_end_ms": 20333
+  },
+  "interpretation": {
+    "access": "Working in this fresh three-call smoke.",
+    "semantic_review": "The final stored memory preserves the original planned date with null event/effective times. The answer correctly cites the later revised date despite the older stored memory. AI-assisted inspection, not an independent benchmark.",
+    "initial_rejection": "The first extraction repeated the planned date in an invalid event-time object. Validation rejected it; the existing single repair produced an accepted proposal.",
+    "limits": [
+      "One extraction and one question, not the full 540-record run or a general reliability guarantee.",
+      "Seven remaining sources were imported for retrieval but not requested for processing; memory reconciliation for those sources was not evaluated.",
+      "Existing Lightning conflict, formatting and coverage weaknesses from earlier reports are not cleared by this smoke.",
+      "No paid/free service can be declared rate-limit-proof from this sample."
+    ]
+  },
+  "accounting": {
+    "before": {
+      "requests": 64,
+      "accounted_tokens": 405031
+    },
+    "after": {
+      "requests": 67,
+      "accounted_tokens": 412543
+    },
+    "max_new_calls": 4,
+    "new_calls": 3,
+    "input_tokens": 6771,
+    "output_tokens": 741,
+    "lifetime_request_limit": 750,
+    "lifetime_token_limit": 10000000,
+    "paid_spend_authorized_usd": 0,
+    "actual_provider_bill": null
+  },
+  "running_browser": {
+    "configuration": {
+      "extractor": {
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "enabled": false,
+        "key_present": false,
+        "unfamiliar_mode": "not_supported_in_running_image"
+      },
+      "responder": {
+        "model": "moonshotai/kimi-k3",
+        "enabled": false,
+        "key_present": true,
+        "unfamiliar_mode": "not_supported_in_running_image"
+      }
+    },
+    "diagnostic_history": [
+      "GET /inference did not provide configuration in the running legacy API.",
+      "The first container diagnostic failed because unfamiliar_mode is absent in that image.",
+      "A version-compatible read-only diagnostic returned the recorded flags without exposing keys."
+    ],
+    "updated_or_activated": false
+  },
+  "backup": {
+    "status": "Documented and already supported by the current code's explicit NVIDIA selection, not active in the legacy browser container.",
+    "automatic_fallback": false,
+    "private_inference": false,
+    "synthetic_only_without_separate_unfamiliar_consent": true,
+    "key_duplicated": false,
+    "budget_reset": false,
+    "runbook": "RUN.md#lightning-manual-backup-checkpoint"
+  }
+}

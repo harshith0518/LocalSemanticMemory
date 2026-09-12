@@ -656,6 +656,28 @@ Ordinary users use Sources to import, request processing and inspect progress; C
 
 Still required: full live corpus/representation evaluation, semantic failure repair, deployed live UI demonstration, final clean Compose/import/process/UI/restart/scoped-reset rehearsal, independently authored Phase One finals and the exact tested release commit. The earlier test reset left the browser-profile container running when `down` omitted that profile; do not label it a clean final rehearsal. For the final isolated reset, explicitly include `--profile browser` and target only the intended test project/volume.
 
+## Lightning manual backup checkpoint
+
+A fresh user-requested smoke on 12 September at approximately 21:30 IST confirmed access to `nvidia/nemotron-3.5-lightning-30b-a3b` through the real guarded pipeline. Three requests completed at the provider: the initial extraction failed validation, its one existing repair committed a source-backed memory, and retrieval plus Ask correctly cited the revised 21 September launch date. Answer latency was 2,995 ms at the model and 3,364 ms end to end; the full smoke took 20,333 ms. The first extraction attempt, all timings and accounting remain in [the raw report](eval/reports/s12-lightning-backup-smoke.jsonl) and [the review](eval/reports/s12-lightning-backup-review.json). This is not a full-corpus or general semantic-quality pass. The other seven sample sources were imported for retrieval but not requested for processing.
+
+Retain Lightning as an explicit manual backup using the already supported selector. Keep the existing key only in the ignored local `.env`; it was neither duplicated nor committed. For the approved synthetic-only mode, the non-secret operator settings are:
+
+```dotenv
+JARVIS_INFERENCE_PROVIDER=nvidia
+JARVIS_RESPONSE_MODEL=nvidia/nemotron-3.5-lightning-30b-a3b
+JARVIS_S07_SYNTHETIC_TRIAL_APPROVED=true
+JARVIS_UNFAMILIAR_INFERENCE_APPROVED=false
+JARVIS_FREE_SYNTHETIC_TRIAL_APPROVED=false
+JARVIS_MAX_REQUESTS=750
+JARVIS_MAX_TOTAL_TOKENS=10000000
+```
+
+The key variable is `NEMOTRON_30B_API_KEY`. Preserve all existing database credentials when changing these non-secret settings. After an explicit operator switch, rebuild/recreate the API with `docker compose up -d --build api`; changing a local file alone does not change a running container. Do not start an unscoped worker against the retained database's older pending probe jobs. Scope evaluation processing to its selected collection and reserve at least 30 requests outside its run ceiling for demo use.
+
+**These instructions were documented, not applied to the running browser in this checkpoint.** A read-only check found an older API image: Lightning extractor disabled with no key forwarded, Kimi responder disabled with its key present. That explains why browser inference can remain unavailable even though this fresh isolated CLI/service probe used the valid Lightning key successfully. The initial configuration inspection encountered a legacy missing-field error; a version-compatible inspection completed without printing credentials.
+
+There is no automatic provider/model fallback, no budget reset and no paid fallback. The existing one validation-repair attempt is not a provider switch and counts toward the same allowance. Private provider calls remain blocked; unfamiliar Normal-mode data still requires the separately documented NVIDIA unfamiliar consent. Previous failures of other models are historical diagnostics, not fresh retests in this checkpoint.
+
 ## Free-provider comparison and current blocker
 
 Current evidence is in `eval/reports/s12-free-provider-review.json`. The approved 20-call comparison has finished. Google Flash-Lite can generate, but its conflict-handling quality gate failed; no free provider has been activated for the ordinary browser demo. OpenRouter returned a generation rate limit, and Google Flash returned a service-availability error. Catalog/key authentication is not a generation or quota guarantee.
