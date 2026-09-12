@@ -1,0 +1,12 @@
+docker :  Container jarvis-tests-test-db-1  Running
+At line:2 char:1
++ docker compose -p jarvis-tests -f compose.test.yaml run --rm tests 2>&1 ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( Container jarvis-tests-test-db-1  Running:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+........................................................................ [ 28%]
+........................................................................ [ 57%]
+........................................................................ [ 86%]
+...................................                                      [100%]
+251 passed in 215.33s (0:03:35)

@@ -1,0 +1,167 @@
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.17kB done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 2.02kB 0.0s done
+#2 DONE 0.1s
+
+#3 [internal] load metadata for docker.io/library/python:3.12-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254
+#3 DONE 0.1s
+
+#4 [internal] load metadata for docker.io/library/node:24-bookworm-slim@sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553
+#4 ...
+
+#5 [internal] load metadata for ghcr.io/astral-sh/uv:0.12.13@sha256:b485bd65cc2cf1c9a93b3554012c9c3778cf7b1b5fd3d3096ce9e1226c97e1e6
+#5 DONE 0.1s
+
+#4 [internal] load metadata for docker.io/library/node:24-bookworm-slim@sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553
+#4 ...
+
+#6 [auth] library/node:pull token for registry-1.docker.io
+#6 DONE 0.0s
+
+#4 [internal] load metadata for docker.io/library/node:24-bookworm-slim@sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553
+#4 DONE 1.7s
+
+#7 [internal] load .dockerignore
+#7 transferring context: 500B done
+#7 DONE 0.0s
+
+#8 [internal] load build context
+#8 DONE 0.0s
+
+#9 [frontend 1/6] FROM docker.io/library/node:24-bookworm-slim@sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553
+#9 resolve docker.io/library/node:24-bookworm-slim@sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553 0.1s done
+#9 DONE 0.1s
+
+#10 [uv 1/1] FROM ghcr.io/astral-sh/uv:0.12.13@sha256:b485bd65cc2cf1c9a93b3554012c9c3778cf7b1b5fd3d3096ce9e1226c97e1e6
+#10 resolve ghcr.io/astral-sh/uv:0.12.13@sha256:b485bd65cc2cf1c9a93b3554012c9c3778cf7b1b5fd3d3096ce9e1226c97e1e6 0.1s done
+#10 DONE 0.1s
+
+#11 [tooling 1/3] FROM docker.io/library/python:3.12-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254
+#11 resolve docker.io/library/python:3.12-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254 0.1s done
+#11 DONE 0.1s
+
+#8 [internal] load build context
+#8 transferring context: 982.24kB 0.1s done
+#8 DONE 0.1s
+
+#12 [tooling 2/3] COPY --from=uv /uv /uvx /bin/
+#12 CACHED
+
+#13 [tooling 3/3] WORKDIR /app
+#13 CACHED
+
+#14 [application  1/23] COPY pyproject.toml uv.lock .python-version ./
+#14 CACHED
+
+#15 [application  2/23] RUN uv sync --locked --no-install-project
+#15 CACHED
+
+#16 [frontend 4/6] RUN npm ci --no-audit --no-fund
+#16 CACHED
+
+#17 [frontend 5/6] COPY frontend/ ./
+#17 CACHED
+
+#18 [frontend 2/6] WORKDIR /build/frontend
+#18 CACHED
+
+#19 [frontend 3/6] COPY frontend/package.json frontend/package-lock.json ./
+#19 CACHED
+
+#20 [frontend 6/6] RUN npm run build
+#20 CACHED
+
+#21 [application  3/23] COPY src/ src/
+#21 DONE 0.1s
+
+#22 [application  4/23] COPY --from=frontend /build/src/jarvis/web/ src/jarvis/web/
+#22 DONE 0.1s
+
+#23 [application  5/23] RUN uv sync --locked --no-editable --no-build-isolation
+#23 1.432 Resolved 40 packages in 83ms
+#23 1.521    Building jarvis @ file:///app
+#23 2.534       Built jarvis @ file:///app
+#23 2.594 Prepared 1 package in 1.09s
+#23 2.642 Installed 1 package in 47ms
+#23 2.645  + jarvis==0.1.0 (from file:///app)
+#23 DONE 2.7s
+
+#24 [application  6/23] COPY alembic.ini ./
+#24 DONE 0.1s
+
+#25 [application  7/23] COPY migrations/ migrations/
+#25 DONE 0.1s
+
+#26 [application  8/23] COPY tests/ tests/
+#26 DONE 0.1s
+
+#27 [application  9/23] COPY data/synthetic/sample-dictations.jsonl data/synthetic/sample-dictations.jsonl
+#27 DONE 0.1s
+
+#28 [application 10/23] COPY data/synthetic/control-observations.json data/synthetic/control-observations.json
+#28 DONE 0.1s
+
+#29 [application 11/23] COPY eval/fixtures/sample-evaluation-cases.json eval/fixtures/sample-evaluation-cases.json
+#29 DONE 0.1s
+
+#30 [application 12/23] COPY eval/fixtures/s08-retrieval.json eval/fixtures/s08-retrieval.json
+#30 DONE 0.1s
+
+#31 [application 13/23] COPY eval/retrieval.py eval/retrieval.py
+#31 DONE 0.1s
+
+#32 [application 14/23] COPY eval/live.py eval/live.py
+#32 DONE 0.1s
+
+#33 [application 15/23] COPY eval/efficiency.py eval/efficiency.py
+#33 DONE 0.1s
+
+#34 [application 16/23] COPY data/synthetic/corpus-540.jsonl data/synthetic/corpus-540.jsonl
+#34 DONE 0.1s
+
+#35 [application 17/23] COPY eval/fixtures/corpus-cases.json eval/fixtures/corpus-cases.json
+#35 DONE 0.1s
+
+#36 [application 18/23] COPY eval/fixtures/corpus-manifest.json eval/fixtures/corpus-manifest.json
+#36 DONE 0.1s
+
+#37 [application 19/23] COPY eval/corpus.py eval/corpus.py
+#37 DONE 0.1s
+
+#38 [application 20/23] COPY eval/showcase.py eval/showcase.py
+#38 DONE 0.1s
+
+#39 [application 21/23] COPY eval/build_corpus.py eval/build_corpus.py
+#39 DONE 0.1s
+
+#40 [application 22/23] COPY eval/reports/*-review.json eval/reports/
+#40 DONE 0.1s
+
+#41 [application 23/23] RUN useradd --uid 10001 --create-home jarvis
+#41 DONE 0.5s
+
+#42 exporting to image
+#42 exporting layers
+#42 exporting layers 1.8s done
+#42 exporting manifest sha256:0ceb323328dd80b292da63752baa2bf6b4559eb3708b6204c517e7329c9333b9 0.0s done
+#42 exporting config sha256:4329a7414bba41a27f4b216e4681dad0cb5cdc8e0415cc5abc447620932e845d 0.0s done
+#42 exporting attestation manifest sha256:42c4cc47fe7a6f82f4a98b0613e47994cd7c06859737ec5e7a1cd8626683654d 0.0s done
+#42 exporting manifest list sha256:503afdab913f8169fde55e68a848b42c75ce5536151067bfe01fdcfd8b78af47
+#42 exporting manifest list sha256:503afdab913f8169fde55e68a848b42c75ce5536151067bfe01fdcfd8b78af47 0.0s done
+#42 naming to docker.io/library/jarvis:local done
+#42 unpacking to docker.io/library/jarvis:local
+#42 unpacking to docker.io/library/jarvis:local 0.8s done
+#42 DONE 2.9s
+
+#43 resolving provenance for metadata file
+#43 DONE 0.0s
+docker :  jarvis:local  Built
+At line:2 char:1
++ docker compose build api 2>&1 | Tee-Object -FilePath eval/reports/s16 ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( jarvis:local  Built:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

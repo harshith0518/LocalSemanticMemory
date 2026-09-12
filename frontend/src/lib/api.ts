@@ -79,7 +79,7 @@ export class ApiSession {
         signal: AbortSignal.any([
           controller.signal,
           AbortSignal.timeout(
-            path === "/ask" || path === "/feedback" ? 390000 : 15000,
+            path === "/ask" || path === "/feedback" || path.startsWith("/processing/step?") ? 390000 : 15000,
           ),
         ]),
       });

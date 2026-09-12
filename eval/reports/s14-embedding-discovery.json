@@ -1,0 +1,16 @@
+{
+    "at":  "2026-09-12T16:52:40.8324061Z",
+    "purpose":  "Embedding endpoint discovery only",
+    "key_configured":  true,
+    "endpoint":  "https://integrate.api.nvidia.com/v1/models",
+    "method":  "GET",
+    "generation_tested":  false,
+    "embedding_vectors_stored":  false,
+    "model_requests":  0,
+    "warning":  "Catalog access is not proof of embedding execution, quota or key authentication; embeddings are not chat/tool calls.",
+    "http_status":  200,
+    "matching_catalog_models":  [
+                                    "nvidia/llama-nemotron-embed-vl-1b-v2",
+                                    "nvidia/nemotron-3-embed-1b"
+                                ]
+}

@@ -28,12 +28,15 @@ import { Conversation } from "./components/conversation";
 import { Sources } from "./components/sources";
 import { Memories } from "./components/memories";
 import { Usage } from "./components/usage";
+import { Workflow } from "./components/workflow";
+import "./workflow.css";
 
 const pages = [
   { id: "conversation", label: "Conversation", icon: MessageCircle },
   { id: "sources", label: "Sources", icon: BookOpen },
   { id: "memories", label: "Memory", icon: Brain },
   { id: "usage", label: "Usage", icon: ActivityIcon },
+  { id: "workflow", label: "Workflow & evidence", icon: ShieldCheck },
 ] as const;
 function Normal({
   session,
@@ -94,6 +97,9 @@ function Normal({
         </Tooltip>
       </div>
       <div className="page-content" key={w.namespace}>
+        <nav className="guided-steps" aria-label="Submission walkthrough">
+          {([['sources', '1. Import'], ['memories', '2. Learn'], ['conversation', '3. Ask'], ['workflow', '4. Inspect flow'], ['usage', '5. Measure']] as const).map(([id, label]) => <button key={id} aria-current={page === id ? "step" : undefined} onClick={() => navigate(id)}>{label}</button>)}
+        </nav>
         <div
           id="feedback"
           className={`notice ${w.notice.error ? "notice-error" : ""}`}
@@ -121,6 +127,9 @@ function Normal({
         </div>
         <div hidden={page !== "usage"}>
           <Usage workspace={w} />
+        </div>
+        <div hidden={page !== "workflow"}>
+          <Workflow key={w.contentVersion} workspace={w} />
         </div>
       </div>
       <SourceDialog

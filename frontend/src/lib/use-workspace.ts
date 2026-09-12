@@ -34,6 +34,12 @@ export function useWorkspace(session: ApiSession) {
   const active = useRef(true);
   const running = useRef(false);
   const epoch = useRef(0);
+  const processingPaused = useRef(false);
+  const [learning, setLearning] = useState(false);
+  useEffect(() => {
+    processingPaused.current = true;
+    setLearning(false);
+  }, [namespace]);
   useEffect(
     () => () => {
       active.current = false;
@@ -179,6 +185,8 @@ export function useWorkspace(session: ApiSession) {
       async () => {
         if (!sources)
           return setNotice({ text: "Open a collection first.", error: true });
+        const ticket = epoch.current;
+        processingPaused.current = false;
         const receipt = await session.post<{ requested: number }>(
           "/processing",
           {
@@ -187,15 +195,40 @@ export function useWorkspace(session: ApiSession) {
             retry_failed: retry,
           },
         );
-        setNotice({
-          text: `Queued ${receipt.requested} sources. Processing continues in the background; refresh to inspect the result.`,
-          error: false,
-        });
-        await loadMemories();
+        setLearning(true);
+        let completed = 0;
+        const current = () => active.current && ticket === epoch.current;
+        try {
+          while (current() && !processingPaused.current) {
+            const step = await session.post<{
+              result: { status?: string; reason?: string; decision?: string } | null;
+              pause_ms: number;
+            }>(`/processing/step?namespace=${encodeURIComponent(namespace)}`, {});
+            if (!current()) break;
+            await loadMemories();
+            if (!step.result) {
+              setNotice({ text: `Queued ${receipt.requested}; completed ${completed} here. No job is available now. Another worker may hold the lease; Refresh shows the authoritative status.`, error: false });
+              break;
+            }
+            if (step.result.status === "failed") {
+              setNotice({ text: `Learning stopped: ${step.result.reason ?? "operation_failed"}. Originals are preserved. Inspect the trace before an explicit retry.`, error: true });
+              break;
+            }
+            completed += 1;
+            setNotice({ text: `Learned ${completed} source(s) in this run. Latest decision: ${step.result.decision ?? "recorded"}.`, error: false });
+            if (step.pause_ms) await new Promise((resolve) => setTimeout(resolve, step.pause_ms));
+          }
+          if (current() && processingPaused.current)
+            setNotice({ text: `Paused after ${completed} source(s). No further steps will be submitted by this page. An already submitted Normal request can still finish.`, error: false });
+        } finally {
+          if (current()) setLearning(false);
+        }
       },
     );
   const ask = (request: AnswerRequest) =>
     run("Reading evidence and checking the answer", async () => {
+      const started = performance.now();
+      const measured = (outcome: Timing["outcome"]): Timing => ({ elapsed_ms: performance.now() - started, stages: session.timings.join(", "), outcome });
       const turn: Turn = {
         id: crypto.randomUUID(),
         question: request.question,
@@ -206,7 +239,7 @@ export function useWorkspace(session: ApiSession) {
         const answer = await session.post<Answer>("/ask", request);
         setTurns((previous) =>
           previous.map((item) =>
-            item.id === turn.id ? { ...item, answer } : item,
+            item.id === turn.id ? { ...item, answer, timing: measured("completed") } : item,
           ),
         );
       } catch (error) {
@@ -214,7 +247,7 @@ export function useWorkspace(session: ApiSession) {
           setTurns((previous) =>
             previous.map((item) =>
               item.id === turn.id
-                ? { ...item, error: messageFor(error) }
+                ? { ...item, error: messageFor(error), timing: measured("failed") }
                 : item,
             ),
           );
@@ -299,6 +332,8 @@ export function useWorkspace(session: ApiSession) {
     inspect,
     showHistory,
     process,
+    learning,
+    stopProcessing: () => { processingPaused.current = true; },
     ask,
     feedback,
     preview,

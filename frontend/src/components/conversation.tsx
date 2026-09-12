@@ -65,6 +65,17 @@ function Reply({ turn, workspace }: { turn: Turn; workspace: Workspace }) {
             </span>
           </div>
           <p className="reply-text">{answer.text}</p>
+          <details className="query-metrics">
+            <summary>Query metrics and model calls</summary>
+            <p>{answer.sources.length} evidence sources; {answer.citations.length} citations; {answer.evidence_bytes.toLocaleString()} evidence bytes. Context: {answer.representation}.</p>
+            <p>{turn.timing ? `Browser round trip: ${turn.timing.elapsed_ms.toFixed(1)} ms. ${turn.timing.stages || "Server timing unavailable."}` : "Browser timing unavailable for this response."}</p>
+            <p>Model: {answer.model ?? "No model call"}. {answer.metrics?.calls.length ?? answer.call_ids.length} recorded attempt(s), including validation repairs.</p>
+            {answer.metrics?.calls.map((call) => <article key={call.id} className="call-metric">
+              <code>{call.id}</code><p>{call.status}{call.error_code ? `: ${call.error_code}` : ""}; {call.elapsed_ms ?? "unknown"} ms; input {call.input_tokens ?? "unknown"} / output {call.output_tokens ?? "unknown"} tokens.</p>
+              {(call.input_tokens === null || call.output_tokens === null) && <p>Conservative reservation: {call.reserved_tokens} tokens, not measured usage.</p>}
+            </article>)}
+            <p className="meta">Provider billing is unmeasured. Timings include nested work; do not add them together. Valid citations are not proof of semantic correctness.</p>
+          </details>
           <div className="citations">
             {answer.citations.map((passage, index) => (
               <details key={`${passage.source_id}-${index}`}>
@@ -411,6 +422,7 @@ export function Conversation({
                   <BookOpen aria-hidden="true" />
                   <span className="sr-only">Answer evidence</span>
                   <select
+                    aria-label="Answer evidence"
                     value={representation}
                     onChange={(e) =>
                       setRepresentation(e.target.value as Representation)

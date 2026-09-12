@@ -1,4 +1,4 @@
-export type Page = "conversation" | "sources" | "memories" | "usage";
+export type Page = "conversation" | "sources" | "memories" | "usage" | "workflow";
 export type Representation = "sources" | "sources_and_memories" | "history";
 export type SourceSummary = {
   id: string;
@@ -100,6 +100,20 @@ export type Answer = {
   call_ids: string[];
   evidence_bytes: number;
   model: string | null;
+  metrics?: {
+    calls: {
+      id: string;
+      model: string;
+      input_tokens: number | null;
+      output_tokens: number | null;
+      reserved_tokens: number;
+      elapsed_ms: number | null;
+      status: string;
+      error_code: string | null;
+    }[];
+    actual_cost_usd: number | null;
+    semantic_entailment_certified: boolean;
+  };
 };
 export type Turn = {
   id: string;
@@ -107,6 +121,7 @@ export type Turn = {
   request: AnswerRequest;
   answer?: Answer;
   error?: string;
+  timing?: Timing;
 };
 export type ImportReceipt = {
   created: number;

@@ -100,3 +100,9 @@ Azure is an optional final experiment after the local review path passes. It is 
 ### Latest provider diagnostic
 
 The [free-provider comparison](eval/reports/s12-free-provider-review.json) completed with 248 backend and 24 browser tests passing. Google Flash-Lite access works, but live conflict handling still fails; OpenRouter returned a rate limit. These results do not establish final acceptance readiness or a completed 540-record live evaluation. See [the single current tracker](todo.md) and [current runtime limitations](RUN.md#free-provider-comparison-and-current-blocker). Provider adapters are default-off; credentials and personal data are not included in the repository.
+
+## Automated unfamiliar and local submission
+
+Use **RUN.md / Automated unfamiliar: replace keys and continue independently** for exact NVIDIA, Google-free and OpenRouter-free configuration, a real probe, collection import/learning/Ask/inspection, failure handling and paced evaluation. Keys are provider-specific; credentials stay outside Git. The user-facing app runs locally at `http://localhost:8000`; no hosted deployment is required.
+
+**Workflow & evidence** embeds the 12-stage source-to-memory diagram and displays source/claim storage explanations and actual synthetic reports. The machine-readable map is `docs/storage-contract.json`. Use `todo.md` for current gates; the S14 live 30-case baseline had 13 mechanical passes and four operational failures and is not concealed. A configured provider, successful import or passing deterministic tests is not proof that every input was learned correctly. Independently authored Phase One work is a separate requirement; AI-assisted technical documentation does not replace it.

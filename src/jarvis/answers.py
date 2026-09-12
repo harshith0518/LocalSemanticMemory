@@ -165,6 +165,7 @@ class AnswerOperations:
             if request.representation == "sources_and_memories"
             else "sources",
             history=True,
+            limit=12,
             max_bytes=EVIDENCE_ALLOWANCE,
         )
         if request.representation != "history":
@@ -273,6 +274,30 @@ class AnswerOperations:
                 "prompt_version": ANSWER_VERSION,
                 "call_ids": [str(UUID(str(i))) for i in call_ids],
                 "evidence_bytes": packet.evidence.evidence_bytes,
+                "metrics": {
+                    "calls": [
+                        {
+                            "id": str(call.id),
+                            "model": call.returned_model or call.configured_model,
+                            "input_tokens": call.input_tokens,
+                            "output_tokens": call.output_tokens,
+                            "reserved_tokens": call.reserved_tokens,
+                            "elapsed_ms": call.elapsed_ms,
+                            "status": call.status,
+                            "error_code": call.error_code,
+                        }
+                        for call in session.scalars(
+                            select(ModelCall)
+                            .where(
+                                ModelCall.owner_id == context.owner_id,
+                                ModelCall.id.in_([UUID(str(i)) for i in call_ids]),
+                            )
+                            .order_by(ModelCall.recorded_at)
+                        )
+                    ],
+                    "actual_cost_usd": None,
+                    "semantic_entailment_certified": False,
+                },
             }
             return render(result) if render else result
 

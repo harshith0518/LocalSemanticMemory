@@ -1,0 +1,22 @@
+node : node:internal/modules/run_main:107
+At line:24 char:6
++ '@ | node --input-type=module - 2>&1 | Tee-Object -FilePath ../../eva ...
++      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (node:internal/modules/run_main:107:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+    triggerUncaughtException(
+    ^
+
+page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:8000/
+Call log:
+[2m  - navigating to "http://localhost:8000/", waiting until "networkidle"[22m
+
+    at C:\Users\ASUS\Desktop\my_files\Competitions\Jarvis-Assignment\ProjectSemanticMemoryJarvis\tests\browser\[eval1]:5:13 {
+  log: [
+    '  - navigating to "http://localhost:8000/", waiting until "networkidle"'
+  ],
+  name: 'Error'
+}
+
+Node.js v24.11.1

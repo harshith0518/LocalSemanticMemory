@@ -374,7 +374,7 @@ export function Memories({ workspace: w }: { workspace: Workspace }) {
             <h2>From words to useful context</h2>
             <Badge variant="secondary">You choose when</Badge>
           </div>
-          <p>Saving a source does not make every sentence a lasting fact.</p>
+          <p>Saving a source does not make every sentence a lasting fact. Process this collection here, one guarded job at a time. Pause stops future steps, not an already submitted Normal request.</p>
           <div id="processing-state" className="meta" role="status">
             {w.processing ? (
               <>
@@ -408,6 +408,7 @@ export function Memories({ workspace: w }: { workspace: Workspace }) {
           </div>
         </div>
         <div className="button-stack">
+          {w.learning && <Button variant="outline" onClick={w.stopProcessing}>Pause learning</Button>}
           <Button
             disabled={!!w.busy || !w.sources}
             onClick={() => void w.process()}

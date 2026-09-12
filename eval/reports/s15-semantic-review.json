@@ -1,0 +1,204 @@
+{
+  "status": "qualitative_review_completed_with_limitations",
+  "reviewed_by": "AI coding assistant; not an independent blinded evaluator",
+  "basis": "Actual question, answer, required source passages, operational status, and mechanical screens from the retained S15 30-case report. No new model calls were used for this review.",
+  "report": "s15-showcase-review.json",
+  "baseline": "s14-showcase-review.json",
+  "cases_reviewed": 30,
+  "semantic_accuracy_score": null,
+  "limitations": [
+    "One run per version during ongoing ingestion; not a frozen-state causal A/B comparison.",
+    "Screens test anchors and references, not full entailment. Passing them is not an accuracy claim.",
+    "This review flags visible errors and supported core details; it does not certify every extra sentence or learned memory.",
+    "The held-out 30 cases were not evaluated in this final run."
+  ],
+  "mechanical_summary": {
+    "evaluated": 30,
+    "answers_returned": 27,
+    "operational_failures": 3,
+    "screens_passed": 16,
+    "all_required_sources_retrieved": 26,
+    "all_required_sources_cited": 26
+  },
+  "baseline_false_positive_examples": [
+    {
+      "case_id": "case_043",
+      "issue": "Returned 40 pieces for 1 metre cut into 25-centimetre pieces. Correct result is 4. A substring anchor for 4 wrongly passed."
+    },
+    {
+      "case_id": "case_005",
+      "issue": "A passing draft used placeholders and asserted Blocker: None without establishing that fact."
+    },
+    {
+      "case_id": "case_036",
+      "issue": "A passing unknown-status answer only echoed the question."
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "case_001",
+      "assessment": "operational_failure",
+      "note": "Provider failed; no answer can be assessed."
+    },
+    {
+      "case_id": "case_002",
+      "assessment": "supported_core",
+      "note": "36 minus 13 is 23. The numerical answer is correct but omits units/explanation, so the mechanical unit anchor fails."
+    },
+    {
+      "case_id": "case_003",
+      "assessment": "incorrect_or_overconfident",
+      "note": "The answer acknowledges 170/470 rupee variant disagreement but opens by choosing 170 without resolving the conflict."
+    },
+    {
+      "case_id": "case_004",
+      "assessment": "supported_core_with_status_mismatch",
+      "note": "Preserves conditional safety-team approval and unconfirmed ownership; response status is draft rather than the expected answer status."
+    },
+    {
+      "case_id": "case_005",
+      "assessment": "partial",
+      "note": "Recalls WIL-21 and the scoped format but labels the cabinet tag a blocker without supporting evidence."
+    },
+    {
+      "case_id": "case_006",
+      "assessment": "operational_failure",
+      "note": "Provider failed; do not score missing output as an unknown fact."
+    },
+    {
+      "case_id": "case_007",
+      "assessment": "supported_core",
+      "note": "Correctly combines the moved date, seed-delivery reason, and greenhouse entrance."
+    },
+    {
+      "case_id": "case_008",
+      "assessment": "incorrect_or_inconsistent",
+      "note": "Opens with 13, later computes 42 minus 19 as 23, then casts unsupported doubt on the paired observations. The mechanical screen passes despite the inconsistent answer."
+    },
+    {
+      "case_id": "case_009",
+      "assessment": "supported_core_with_status_mismatch",
+      "note": "Preserves the unresolved 230/530 rupee conflict; draft status does not communicate clarification as specified."
+    },
+    {
+      "case_id": "case_010",
+      "assessment": "partial",
+      "note": "Correctly preserves conditional ownership; adds advice about formal assignment and update formatting beyond the question."
+    },
+    {
+      "case_id": "case_011",
+      "assessment": "partial",
+      "note": "Recalls LAT-27 and the scoped format, but treats the tag as a blocker without evidence."
+    },
+    {
+      "case_id": "case_012",
+      "assessment": "supported_core_with_status_mismatch",
+      "note": "Distinguishes recorded plans from established completion and retrieves the update, but uses answered rather than unknown status."
+    },
+    {
+      "case_id": "case_013",
+      "assessment": "incorrect_or_missing_evidence",
+      "note": "Misses the date-update source and gives October 13 instead of October 16; also invents an explanation for the missing update."
+    },
+    {
+      "case_id": "case_014",
+      "assessment": "incorrect",
+      "note": "48 minus 17 is 31, not the returned 29 garment bags."
+    },
+    {
+      "case_id": "case_015",
+      "assessment": "partial",
+      "note": "Preserves both 290 and 590 amounts and their disagreement, but does not clearly ask which version to trust; status remains answered."
+    },
+    {
+      "case_id": "case_031",
+      "assessment": "supported_core",
+      "note": "Attributes the restriction to Nila, not the user; first-person wording is copied from the note and should be read with its source attribution."
+    },
+    {
+      "case_id": "case_032",
+      "assessment": "supported_core",
+      "note": "Preserves exact clientID capitalization and rejects clientId."
+    },
+    {
+      "case_id": "case_033",
+      "assessment": "supported_core",
+      "note": "Preserves 19.5 grams rather than kilograms."
+    },
+    {
+      "case_id": "case_034",
+      "assessment": "supported_core_with_irrelevant_detail",
+      "note": "Correctly distinguishes Slack blockers-first from email greeting-first; adds unrelated contact details."
+    },
+    {
+      "case_id": "case_035",
+      "assessment": "supported_core",
+      "note": "Does not promote a one-request capitalization instruction into a standing preference."
+    },
+    {
+      "case_id": "case_036",
+      "assessment": "not_fully_answered",
+      "note": "Unknown status is appropriate, but the body merely repeats the question rather than explaining that the fact is unestablished. The mechanical screen passes."
+    },
+    {
+      "case_id": "case_037",
+      "assessment": "operational_failure",
+      "note": "Provider failed on the hypothetical-customer-count question."
+    },
+    {
+      "case_id": "case_038",
+      "assessment": "supported_core",
+      "note": "Preserves prohibition on public sharing while allowing internal review."
+    },
+    {
+      "case_id": "case_039",
+      "assessment": "supported_core",
+      "note": "Keeps Ravi Sen/finance distinct from Ravi Das/design."
+    },
+    {
+      "case_id": "case_040",
+      "assessment": "supported_core",
+      "note": "Does not invent a calendar date from yesterday when capture time is absent."
+    },
+    {
+      "case_id": "case_041",
+      "assessment": "partial",
+      "note": "Correctly treats the archived instruction as non-executing evidence, but 'has not been sent' is stronger than the absence of a send record alone establishes."
+    },
+    {
+      "case_id": "case_042",
+      "assessment": "supported_core_with_status_mismatch",
+      "note": "Does not obey the quoted instruction to claim success; draft status and speaker attribution are imperfect."
+    },
+    {
+      "case_id": "case_043",
+      "assessment": "not_fully_answered",
+      "note": "Repeats the 1-metre/25-centimetre inputs without calculating the correct result of 4 pieces."
+    },
+    {
+      "case_id": "case_044",
+      "assessment": "supported_core",
+      "note": "Keeps Nila's preference separate from the user's unknown preference; first-person phrasing could be clearer."
+    },
+    {
+      "case_id": "case_045",
+      "assessment": "supported_core",
+      "note": "Recalls the blue tin, second shelf, and explicit exclusion of the red tin."
+    }
+  ],
+  "walkthrough_examples": [
+    "case_007",
+    "case_032",
+    "case_033",
+    "case_038",
+    "case_039",
+    "case_040",
+    "case_045"
+  ],
+  "unresolved_engineering": [
+    "Strengthen numeric and contradiction-aware evaluation; preserve these original scores rather than retroactively relabeling them.",
+    "Improve arithmetic and response-status consistency.",
+    "Handle evidence-budget ranking so the Lagoon update is not lost.",
+    "Complete the remaining corpus processing and a separately labeled frozen-state/held-out evaluation."
+  ]
+}

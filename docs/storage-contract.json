@@ -1,0 +1,22 @@
+﻿{
+  "version": "s14-local-workflow",
+  "authority": ["src/jarvis/models.py", "migrations/", "ARCHITECTURE.md"],
+  "deployment": "Local browser, FastAPI and PostgreSQL. Approved model inference is external, not offline.",
+  "observation_identity": ["backend-owned owner", "import namespace", "original record ID"],
+  "pipeline": ["explicit input", "backend mode/identity gate", "whole-batch validation", "atomic source + pending job", "explicit processing request", "owner-serialized lease and bounded relevant context", "persisted call reservation", "model proposal", "typed/exact-evidence validation", "reconciliation", "policy/lease/evidence recheck and atomic commit", "inspectable memory and history"],
+  "stores": {
+    "sources": {"contents": ["raw and formatted text as one observation", "original metadata", "capture time or unknown", "actual import time", "source revision and identity"], "retry": "Same identity and content is idempotent. Changed content under that identity rejects the import batch."},
+    "jobs": {"contents": ["source reference", "requested status", "lease and attempts", "terminal outcome or fixed failure category"], "learning": "Saving a source is not successful extraction."},
+    "claim_revisions": {"contents": ["subject", "predicate", "typed value and units", "scope", "attribution", "evidence status", "modality", "negation", "condition", "event/valid times or unknown", "revision and lifecycle"]},
+    "passages_and_claim_evidence": {"tables": ["passages", "claim_evidence"], "contents": ["source ID and revision", "raw/formatted variant", "exact excerpt", "Unicode code-point start/end interval", "claim support link"], "limit": "Valid references do not establish semantic entailment."},
+    "lifecycle_and_receipts": {"contents": ["validated support/correct/supersede/conflict relationships", "idempotent processing receipts", "owner policy revision", "exclusions and known duplicate protections"], "schema_names": "See the authoritative ORM and migrations; this is a logical grouping."},
+    "model_calls_and_budget": {"contents": ["shared lifetime allowance", "reservation before network call", "configured and returned model", "known input/output tokens", "unknown usage reservations", "latency", "status and fixed failure code"], "credentials": "Environment only; never returned by UI or committed.", "billing": "Actual provider bill is not measured."}
+  },
+  "retrieval": {"implemented": "PostgreSQL lexical candidates plus permitted structured-memory context and source provenance", "modes": ["relevant original notes", "notes plus saved memories", "bounded whole collection baseline"], "publication": "Recheck revocation and source permissions before releasing an answer.", "not_implemented": ["dense vector retrieval", "automatic tool execution", "automatic provider fallback"]},
+  "private": {"saved_reads": false, "saved_writes": false, "provider_calls": false, "jobs_or_retries": false, "browser_persistence": false, "backfill": false},
+  "normal_inference": {"default": "approved checked-in synthetic fixtures only", "unfamiliar": "Unfamiliar Normal input requires operator opt-in plus the NVIDIA data-policy acknowledgement and a configured key.", "warning": "Selected text leaves the machine for NVIDIA inference and trial retention/training terms may apply."},
+  "controls": {"correct": "Fix a wrong interpretation", "world_change": "Record a later real-world state", "forget": "Block future use/relearning from excluded support and known duplicates; retained originals are not physically erased"},
+  "frontend_routes": {"process": "POST /processing then POST /processing/step?namespace=...", "trace": "GET /processing/report?namespace=... (synthetic-only export)", "originals": "GET /sources and /sources/{id}", "memories": "GET /memories and /memories/{claim_id}", "query": "POST /ask", "usage": "GET /usage", "curated_reports": "GET /evaluation/reports/{allowlisted_id}"},
+  "evaluation": {"sources": "data/synthetic/corpus-540.jsonl", "questions_and_labels_never_ingested": "eval/fixtures/corpus-cases.json", "showcase": 30, "held_out": 30, "development": 24, "report_directory": "eval/reports/", "status_authority": "todo.md", "interpretation": "Mechanical screens are not semantic certification. Failed and unassessed cases must remain in denominators."},
+  "security": {"historical_instructions": "Evidence, not executable authority", "generated_replies": "Not corroboration or learning evidence", "local_service": "Loopback-only prototype, not multi-user production authentication"}
+}

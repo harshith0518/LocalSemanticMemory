@@ -1,0 +1,159 @@
+
+> test
+> node --test --test-concurrency=1 workspace.test.mjs
+
+✖ React shell has local assets, accessible navigation, no personal startup reads or microphone (2886.6768ms)
+✔ typed note preserves whitespace, Unicode and raw/formatted pairing, without capture-time invention (1299.9628ms)
+✔ a committed typed-note response lost in transit can be retried without duplicate observation (829.0787ms)
+✔ imports and reimports exact paired evidence through isolated PostgreSQL (1398.6715ms)
+✔ invalid and conflicting imports fail atomically without echoing driver/input errors (1012.1645ms)
+✔ source markup remains literal text with no executable element or outside request (853.8098ms)
+✔ large file is rejected before reads; pagination reaches every original (1333.7986ms)
+✖ search keeps conflicting variants and distinguishes undated, absent evidence and outage (1546.2273ms)
+✔ learned memories retain conditional meaning, unknown times and superseded history (5700.2233ms)
+✔ Ask cites original evidence, diagnoses feedback and permits only one explicit retry (2700.9694ms)
+✔ Ask failure is not an unknown answer, and retry is explicit (617.9821ms)
+✔ Private unmounts all content, file state and scratchpad without reads or backfill (1317.3929ms)
+✔ Private cancels pending source, ignores the late result and prevents follow-up reads (1198.8177ms)
+✔ Private cancels pending search, ignores the late result and prevents follow-up reads (1385.8159ms)
+✔ Private cancels pending memory, ignores the late result and prevents follow-up reads (1225.7243ms)
+✔ Private cancels pending ask, ignores the late result and prevents follow-up reads (1497.3125ms)
+✔ Private cancels pending usage, ignores the late result and prevents follow-up reads (1108.26ms)
+✔ unknown backend errors stay bounded; loading a collection is not mistaken for empty on failure (489.956ms)
+✖ sample import is idempotent; usage reports measured payloads, timings and unknown billing (1331.7002ms)
+✖ mobile keyboard, dialog focus and back navigation do not restore personal text (946.4939ms)
+✔ Private scratchpad is cleared before browser-history restoration (692.1484ms)
+✔ greeting explains capabilities locally and evidence choices are explained and collapsed (647.3068ms)
+✖ 540-note import, setup information and 30 preselected showcase questions use real APIs (2265.1889ms)
+✖ mobile Correct, world change and Forget review effects and clear revoked cached results (6905.2505ms)
+✖ workflow diagram is navigable and Private clears its loaded evidence (706.8141ms)
+✔ query exposes evidence selection and actual model-call metrics (1597.8673ms)
+ℹ tests 26
+ℹ suites 0
+ℹ pass 19
+ℹ fail 7
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 44622.0271
+
+✖ failing tests:
+
+test at workspace.test.mjs:177:1
+✖ React shell has local assets, accessible navigation, no personal startup reads or microphone (2886.6768ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///C:/Users/ASUS/Desktop/my_files/Competitions/Jarvis-Assignment/ProjectSemanticMemoryJarvis/tests/browser/workspace.test.mjs:195:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at workspace.test.mjs:367:1
+✖ search keeps conflicting variants and distinguishes undated, absent evidence and outage (1546.2273ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///C:/Users/ASUS/Desktop/my_files/Competitions/Jarvis-Assignment/ProjectSemanticMemoryJarvis/tests/browser/workspace.test.mjs:407:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at workspace.test.mjs:645:1
+✖ sample import is idempotent; usage reports measured payloads, timings and unknown billing (1331.7002ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///C:/Users/ASUS/Desktop/my_files/Competitions/Jarvis-Assignment/ProjectSemanticMemoryJarvis/tests/browser/workspace.test.mjs:672:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at workspace.test.mjs:681:1
+✖ mobile keyboard, dialog focus and back navigation do not restore personal text (946.4939ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///C:/Users/ASUS/Desktop/my_files/Competitions/Jarvis-Assignment/ProjectSemanticMemoryJarvis/tests/browser/workspace.test.mjs:697:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at workspace.test.mjs:771:1
+✖ 540-note import, setup information and 30 preselected showcase questions use real APIs (2265.1889ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///C:/Users/ASUS/Desktop/my_files/Competitions/Jarvis-Assignment/ProjectSemanticMemoryJarvis/tests/browser/workspace.test.mjs:802:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at workspace.test.mjs:812:1
+✖ mobile Correct, world change and Forget review effects and clear revoked cached results (6905.2505ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///C:/Users/ASUS/Desktop/my_files/Competitions/Jarvis-Assignment/ProjectSemanticMemoryJarvis/tests/browser/workspace.test.mjs:870:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at workspace.test.mjs:906:1
+✖ workflow diagram is navigable and Private clears its loaded evidence (706.8141ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///C:/Users/ASUS/Desktop/my_files/Competitions/Jarvis-Assignment/ProjectSemanticMemoryJarvis/tests/browser/workspace.test.mjs:915:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

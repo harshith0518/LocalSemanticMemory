@@ -1,0 +1,43 @@
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 100; transform: translateY(-180%); padding: 10px 16px; background: #fffdf6; color: #253c2d; border: 1px solid #769176; border-radius: 8px; }
+.skip-link:focus { transform: translateY(0); }
+.guided-steps { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+.guided-steps button { padding: 8px 13px; border: 1px solid #d9dfd1; border-radius: 999px; font-size: 12px; color: #4f604c; background: #fbfcf7; }
+.guided-steps button[aria-current] { color: #fff; background: #355b40; border-color: #355b40; }
+.workflow-page { --flow-ink: #263d2d; --flow-line: #cdd9c5; --flow-paper: #f7f9ee; color: var(--flow-ink); }
+.workflow-legend { display: flex; flex-wrap: wrap; gap: 12px; margin: 18px 0; font-size: 12px; }
+.workflow-legend span { padding: 7px 12px; border-radius: 999px; background: #eaf0df; }
+.flow-atlas { padding: 24px; border: 1px solid var(--flow-line); border-radius: 24px; background: radial-gradient(ellipse at top left, #eef4d8, transparent 70%), repeating-linear-gradient(0deg, transparent, transparent 23px, #dce6d522 24px), #fcfdf8; margin-bottom: 28px; }
+.flow-nodes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; list-style: none; padding: 0; margin: 0; }
+.flow-nodes button { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; text-align: left; min-height: 142px; width: 100%; border: 1px solid var(--flow-line); background: #ffffffcc; padding: 16px; border-radius: 14px; }
+.flow-nodes button[aria-pressed=true] { color: #fff; background: #34533d; border-color: #34533d; box-shadow: 0 9px 24px #34533d22; }
+.flow-number { font-size: 11px; letter-spacing: .14em; opacity: .7; }
+.flow-nodes strong { font-size: 17px; }
+.flow-nodes small { font-size: 12px; line-height: 1.5; padding-right: 10px; }
+.flow-nodes svg { position: absolute; width: 14px; right: 9px; bottom: 14px; }
+.flow-detail { padding: 25px 4px 4px; max-width: 800px; }
+.flow-detail h2 { margin: 8px 0 12px; }
+.flow-detail p, .workflow-page .panel p { line-height: 1.75; }
+.flow-detail code { display: block; font-size: 12px; margin-top: 16px; overflow-wrap: anywhere; }
+.workflow-page .section-title h2 { display: flex; align-items: center; gap: 10px; }
+.flow-sentence { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; font-weight: 600; padding: 18px 0; }
+.flow-sentence svg { width: 16px; }
+.storage-map { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 20px 0; }
+.storage-map article { padding: 16px; border-radius: 12px; background: var(--flow-paper); border: 1px solid #e2e7d8; }
+.storage-map code { font-size: 12px; color: #426a45; overflow-wrap: anywhere; }
+.storage-map p { margin-top: 7px; font-size: 13px; }
+.evidence-json { max-height: 560px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: #f3f5ef; padding: 18px; margin-top: 12px; font-size: 11px; line-height: 1.6; border-radius: 12px; }
+.report-actions { display: flex; flex-wrap: wrap; gap: 9px; margin: 18px 0; }
+.walkthrough-note { padding: 28px; border-left: 3px solid #719267; background: #eef2e5; margin: 24px 0; }
+.walkthrough-note p { font-size: 18px; line-height: 1.65; margin-top: 12px; }
+.query-metrics { border: 1px solid #dce4d6; border-radius: 12px; padding: 12px 16px; font-size: 12px; line-height: 1.7; margin-bottom: 20px; overflow-wrap: anywhere; }
+.query-metrics summary { cursor: pointer; font-weight: 600; }
+.query-metrics p { margin: 9px 0; }
+.call-metric { border-top: 1px solid #e1e7dc; padding-top: 8px; }
+@media (max-width: 760px) {
+  .app-shell .sidebar nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; }
+  .app-shell .sidebar nav button { min-width: 0; justify-content: center; padding: 9px 6px; }
+  .app-shell .sidebar nav button span { overflow-wrap: anywhere; }
+  .app-shell .sidebar nav button:last-child { grid-column: span 2; }
+}
+@media (max-width: 1100px) { .flow-nodes { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 680px) { .flow-atlas { padding: 14px; border-radius: 16px; } .flow-nodes { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .flow-nodes button { min-height: 136px; padding: 12px; } .storage-map { grid-template-columns: 1fr; } .guided-steps { gap: 6px; } .guided-steps button { font-size: 11px; padding: 7px 10px; } .workflow-page .section-title { flex-wrap: wrap; gap: 12px; } .walkthrough-note { padding: 20px; } }

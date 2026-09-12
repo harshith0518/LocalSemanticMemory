@@ -7,7 +7,7 @@ from collections import Counter
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
-from time import perf_counter
+from time import perf_counter, sleep
 
 from sqlalchemy import select, text
 
@@ -122,7 +122,7 @@ def main():
     )
     parser.add_argument("--namespace", default="corpus-evaluation")
     parser.add_argument("--max-jobs", type=int, default=540)
-    parser.add_argument("--max-new-calls", type=int, default=750)
+    parser.add_argument("--max-new-calls", type=int, default=MAX_REQUESTS)
     parser.add_argument("--case-limit", type=int, default=60)
     parser.add_argument(
         "--split", choices=("showcase", "held_out", "development", "review"), default="review"
@@ -132,8 +132,22 @@ def main():
         "--representations", choices=("sources", "sources_and_memories", "both"), default="both"
     )
     parser.add_argument("--retry-failed", action="store_true")
+    parser.add_argument("--min-call-interval", type=float, default=0)
+    parser.add_argument("--deadline-seconds", type=int, default=3600)
+    parser.add_argument("--timeout-seconds", type=int, default=45)
+    parser.add_argument("--stop-on-provider-failure", action="store_true")
     args = parser.parse_args()
-    if not 0 <= args.max_jobs <= 540 or not 1 <= args.max_new_calls <= 750 or args.case_limit < 0:
+    if (
+        not 0 <= args.min_call_interval <= 60
+        or not 1 <= args.deadline_seconds <= 7200
+        or not 1 <= args.timeout_seconds <= 180
+    ):
+        parser.error("Invalid pacing or timebox")
+    if (
+        not 0 <= args.max_jobs <= 540
+        or not 1 <= args.max_new_calls <= MAX_REQUESTS
+        or args.case_limit < 0
+    ):
         parser.error("Invalid bounded work allowance")
     payload, records, manifest, cases = validate()
     emit(
@@ -156,9 +170,27 @@ def main():
             connection.scalar(select(ModelBudget.requests).where(ModelBudget.key == BUDGET_KEY))
             or 0
         )
-    ceiling = min(MAX_REQUESTS, used + args.max_new_calls)
+    ceiling = min(
+        MAX_REQUESTS,
+        service.extractor.max_requests,
+        service.responder.max_requests,
+        used + args.max_new_calls,
+    )
     service.extractor.max_requests = min(service.extractor.max_requests, ceiling)
     service.responder.max_requests = min(service.responder.max_requests, ceiling)
+    last_call = [0.0]
+
+    def paced(complete):
+        def run(body):
+            sleep(max(0, args.min_call_interval - (perf_counter() - last_call[0])))
+            last_call[0] = perf_counter()
+            return complete(body)
+
+        return run
+
+    for provider in (service.extractor, service.responder):
+        provider.complete = paced(provider.complete)
+        provider.timeout_seconds = args.timeout_seconds
     before_storage = storage(engine)
     emit(
         "run_start",
@@ -173,6 +205,9 @@ def main():
         evidence_bytes=24000,
         paid_spend_authorized_usd=0,
         actual_provider_bill=None,
+        min_call_interval_seconds=args.min_call_interval,
+        deadline_seconds=args.deadline_seconds,
+        provider_timeout_seconds=args.timeout_seconds,
         limits="Synthetic templates; authored screening labels, no independent semantic judge.",
     )
     attempts, outcomes = [], Counter()
@@ -190,10 +225,30 @@ def main():
                 context, {**options, "retry_failed": args.retry_failed}
             )
             emit("queue", result=queued)
-            for index in range(args.max_jobs):
+            index = -1
+            while index + 1 < args.max_jobs:
+                if perf_counter() - started >= args.deadline_seconds:
+                    emit("deadline_stop", reason="Stop new work and preserve handoff time")
+                    break
                 with capture_timings() as timings:
                     result = process_one(service, context, namespace=args.namespace)
+                if result is None:
+                    status = service.processing_status(context, {"namespace": args.namespace})
+                    if status["counts"].get("pending", 0) or status["counts"].get("running", 0):
+                        sleep(2)  # A different worker or an interrupted lease still owns the guard.
+                        continue
+                index += 1
                 emit("processing_attempt", index=index + 1, result=result, timings=timings)
+                if (
+                    args.stop_on_provider_failure
+                    and result
+                    and result.get("reason") == "provider_failed"
+                ):
+                    emit(
+                        "provider_stop",
+                        reason="No retry storm after an operational provider failure",
+                    )
+                    break
                 if result:
                     outcomes[result.get("decision", result.get("reason", "failed"))] += 1
                 if (
@@ -301,6 +356,9 @@ def main():
         emit("memory_state", report=report)
         old_ids = {c["id"] for c in before_calls}
         calls = [c for c in service.model_call_report(context) if c["id"] not in old_ids]
+        if args.stage == "extract":
+            scoped_jobs = {job.id for job in jobs.values()}
+            calls = [call for call in calls if call["job_id"] in scoped_jobs]
         known = [
             c for c in calls if c["input_tokens"] is not None and c["output_tokens"] is not None
         ]

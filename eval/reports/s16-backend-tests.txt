@@ -1,0 +1,10 @@
+docker :  Container jarvis-tests-test-db-1  Starting
+At line:2 char:128
++ ... EXITCODE }; docker compose -p jarvis-tests -f compose.test.yaml run --r ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( Container jarvis...-db-1  Starting:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ Container jarvis-tests-test-db-1  Started
+unable to get image 'jarvis:local': request returned 502 Bad Gateway for API route and version 
+http://%2F%2F.%2Fpipe%2FdockerDesktopLinuxEngine/v1.51/images/jarvis:local/json, check if the server supports the requested API version

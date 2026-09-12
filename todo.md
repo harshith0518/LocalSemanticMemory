@@ -112,3 +112,30 @@ Implementation-chat handoff checks on 11 September: nine UTF-8 Markdown files an
 - Before important S06 code edits: review the concrete bounded proposal; settle the explicit trial-terms exception or compliant provider settings before live calls. S03–S05 are approved and implemented; the earlier Phase One/S03 hold is superseded. Keep routine implementation on `dev` in the existing checkout and preserve other sessions' changes. S05's requested merge/push to `main` is authorized. Docker commands inside a restricted CLI subprocess require the appropriate approved execution context.
 - Before live calls: provider credentials stored locally, account access, retention/no-training settings and an agreed spend/token ceiling. No secrets in chat or Git.
 - Azure, graph services, response caching, streaming, autonomous procedural learning and rich UI polish remain optional after required gates pass.
+
+## S14 current checkpoint: local workflow finalization (ongoing)
+
+- Approved: shared lifetime 750 requests / 10M accounted tokens / $0 paid; final 30 requests reserved for demo. Old 96-call paragraph reconciled. Database and consumption preserved.
+- Implemented, checks running: in-app 12-stage Workflow & evidence guide, selected-collection processing steps/pause, per-answer actual call metrics, curated synthetic report viewer, machine-readable storage contract and explicit Laguna reasoning backup selection.
+- Live: all 540 originals imported into `corpus-540-20260912`; extraction running with failures retained. Import success is not completion of learning. No full-corpus success claim.
+- Pending: complete permitted extraction window, 30 real showcase cases with actual traces, fresh backend/browser regressions and local desktop/mobile journey, final clean local handoff and exact dev push.
+- User approved unfamiliar Normal dummy-data inference after the NVIDIA warning. Unfamiliar mode is now enabled locally; no Private/lifecycle/budget guards were removed. The 12 `my-notes` records remain saved; active bulk learning can hold the shared owner lease.
+- Phase One originals remain preserved; independent-writing compliance and the Q&A submission boundary are unresolved, as recorded in the prior checkpoint.
+- Next action: finish current build/checks, record backup diagnostic outcomes, then expose tested UI on localhost:8000 and complete the bounded live showcase evaluation.
+
+- Fresh checks: 251 backend tests passed in 215.33s. Browser suite: 19/26 passed; seven failures are the same mobile overflow assertion caused by the added navigation item. Responsive-navigation and stale Pause-state fixes are awaiting the requested approval; no assertion was weakened.
+- Live showcase is running. Early cases expose a real retrieval weakness: generic query terms can rank other projects above a requested project's later update. This is not a model-availability issue and requires separate general retrieval work, not fabricated positive evaluation feedback.
+
+## S15 final-check checkpoint (12 September 2026, 23:04 IST)
+
+Completed: 253 backend tests passed (194.57 s), all 26 browser journeys passed (60.14 s), edited Python files passed Ruff lint/format checks, and TypeScript/Vite built successfully. Real desktop/mobile inspection found no script errors or horizontal overflow (1440/1440 and 390/390 pixels). The Workflow & evidence page, storage map, collection-scoped processing, per-answer model-call metrics and supported-provider setup instructions are implemented.
+
+Live evidence: the original 30-case S14 run is retained (13 mechanical screens; 4 operational failures). The S15 retest completed all 30 cases (16 mechanical screens; 3 operational failures; required sources retrieved and cited in 26 of 27 returned answers). These are not semantic accuracy scores. `eval/reports/s15-semantic-review.json` reviews all 30 outputs and identifies arithmetic errors, unsupported blocker labels, echo-only answers, status mismatches and the remaining Lagoon retrieval miss. No held-out/frozen-state quality claim is made.
+
+Partial corpus gate: all 540 originals are stored, but full live processing is NOT complete. When the paced Google continuation was stopped to unblock interactive learning, the collection had 209 succeeded jobs (206 extracted, 3 no-memory), 46 failed, 284 pending and 1 interrupted lease. The 231 Google requests, failures, original-source states, storage snapshots and conservative unknown-usage reservation are retained. Do not claim 540 successfully processed records.
+
+Current frontend diagnosis: `my-notes` contains 13 saved source records, but all 13 are pending learning. Source rows display record IDs; click a row to inspect its text. Ask questions are temporary requests, not silently saved observations. A fresh explicitly synthetic Birch note was saved through the actual browser and produced a correct source-cited live answer; its memory-learning check is awaiting the stopped bulk lease. Proposed source previews and an explicit save-question button await approval.
+
+Known reporting limitations awaiting approval: the evaluator's stop-on-provider-failure branch can omit that last failure from one attempt summary; individual events/job states/call accounting still preserve it. A feedback-retry turn can retain the original duration display. Numeric substring screens are not a semantic judge and can accept 40 for 4; the qualitative review flags this baseline false positive.
+
+Next: finish the live saved-note learning check, clean isolated Compose/persistence/reset rehearsal, package the final evidence, commit/push dev, then merge/push main under the user's explicit authorization. Phase One independence and the boundary between the 387-word vision and its additional Q&A still need author confirmation; do not rewrite the author's text or call this complete compliance.

@@ -243,3 +243,189 @@ def test_free_transport_exact_route_accounting_and_rate_limit(monkeypatch, provi
     assert proposer.last_http_status == 429
     with pytest.raises(ApplicationError, match="invalid_input"):
         FreeChatProvider(provider=provider, role="extractor", model="paid-or-unknown")
+
+
+def test_collection_step_uses_backend_scope_and_private_gate(engine):
+    service = Service(engine, extractor=FixtureExtractor(), responder=FixtureResponder())
+    context = service.identity.context("normal")
+    payload = Path("data/synthetic/sample-dictations.jsonl").read_bytes()
+    for namespace in ("step-selected", "step-other"):
+        options = {"namespace": namespace, "expected_policy_revision": 0}
+        service.import_observations(context, options, payload)
+        service.request_processing(context, options)
+    app = create_app(service)
+
+    async def journey():
+        async with app.router.lifespan_context(app):
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                denied = await client.post(
+                    "/processing/step?namespace=step-selected",
+                    headers={"X-Jarvis-Mode": "private"},
+                    content=b"must not be read",
+                )
+                assert denied.status_code == 403
+                assert (
+                    service.processing_status(context, {"namespace": "step-selected"})["counts"][
+                        "pending"
+                    ]
+                    == 8
+                )
+                response = await client.post(
+                    "/processing/step?namespace=step-selected", headers={"X-Jarvis-Mode": "normal"}
+                )
+                assert response.status_code == 200
+                assert response.json()["result"]["decision"] == "extracted"
+                assert response.json()["pause_ms"] == 0
+                assert (
+                    service.processing_status(context, {"namespace": "step-other"})["counts"][
+                        "pending"
+                    ]
+                    == 8
+                )
+                report = await client.get(
+                    "/processing/report?namespace=step-selected", headers={"X-Jarvis-Mode": "normal"}
+                )
+                assert report.status_code == 200 and len(report.json()["calls"]) == 1
+                assert (
+                    await client.get(
+                        "/processing/report?namespace=step-selected",
+                        headers={"X-Jarvis-Mode": "private"},
+                    )
+                ).status_code == 403
+                assert (
+                    await client.get(
+                        "/evaluation/reports/lightning", headers={"X-Jarvis-Mode": "private"}
+                    )
+                ).status_code == 403
+                assert (
+                    await client.get(
+                        "/evaluation/reports/not-allowlisted", headers={"X-Jarvis-Mode": "normal"}
+                    )
+                ).status_code == 404
+
+    asyncio.run(journey())
+
+
+def test_answer_metrics_are_scoped_to_actual_answer_calls(engine):
+    service = Service(engine, extractor=FixtureExtractor(), responder=FixtureResponder())
+    context = service.identity.context("normal")
+    service.import_observations(
+        context,
+        {"namespace": "answer-metrics", "expected_policy_revision": 0},
+        Path("data/synthetic/sample-dictations.jsonl").read_bytes(),
+    )
+    answer = service.ask(
+        context,
+        {
+            "namespace": "answer-metrics",
+            "question": "What is the latest recorded Atlas launch date?",
+            "representation": "sources_and_memories",
+        },
+    )
+    calls = answer["metrics"]["calls"]
+    assert [call["id"] for call in calls] == answer["call_ids"]
+    assert calls and all(call["model"] == service.responder.model for call in calls)
+    assert all(call["input_tokens"] is not None for call in calls)
+    assert answer["metrics"]["actual_cost_usd"] is None
+    assert answer["metrics"]["semantic_entailment_certified"] is False
+
+
+def test_laguna_backup_is_explicit_and_keeps_trial_accounting(monkeypatch):
+    from jarvis.providers import BUDGET_KEY, LAGUNA_MODEL
+
+    monkeypatch.setenv("JARVIS_RESPONSE_MODEL", LAGUNA_MODEL)
+    monkeypatch.setenv("JARVIS_INFERENCE_PROVIDER", "nvidia")
+    monkeypatch.setenv("JARVIS_S07_SYNTHETIC_TRIAL_APPROVED", "true")
+    monkeypatch.setenv("POOLSIDE_LAGUNA_XS_2P1", "synthetic-laguna-key")
+    monkeypatch.setattr("jarvis.answers.answer_messages", lambda *a, **kw: [])
+    responder = NvidiaResponder.from_env()
+    assert responder.model == LAGUNA_MODEL
+    assert responder._key == "synthetic-laguna-key"
+    assert responder.budget_key == BUDGET_KEY
+    assert NvidiaExtractor.from_env().model == MODEL
+    body, reserved = responder.prepare(None)
+    assert body["model"] == LAGUNA_MODEL and reserved > body["max_tokens"]
+    assert body["chat_template_kwargs"]["enable_thinking"] is False
+
+
+def test_specific_project_evidence_survives_generic_query_distractors(engine):
+    service = Service(engine, extractor=FixtureExtractor(), responder=FixtureResponder())
+    context = service.identity.context("normal")
+    rows = [
+        {
+            "record_id": "old",
+            "raw_transcript": "The Larch event is planned for 2026-10-01.",
+            "formatted_text": None,
+            "metadata": None,
+        },
+        {
+            "record_id": "update",
+            "raw_transcript": "Larch moved to 2026-10-04 because of roadworks.",
+            "formatted_text": None,
+            "metadata": None,
+        },
+        {
+            "record_id": "access",
+            "raw_transcript": "For Larch use the courtyard entrance, not the main door.",
+            "formatted_text": None,
+            "metadata": None,
+        },
+    ]
+    rows += [
+        {
+            "record_id": f"distractor-{i}",
+            "raw_transcript": (
+                f"Project Other{i} has a current planned date and a changed entrance to use."
+            ),
+            "formatted_text": None,
+            "metadata": None,
+        }
+        for i in range(40)
+    ]
+    service.import_observations(
+        context,
+        {"namespace": "specificity", "expected_policy_revision": 0},
+        "\n".join(json.dumps(row) for row in rows),
+    )
+    packet = service.prepare_answer(
+        context,
+        {
+            "namespace": "specificity",
+            "question": (
+                "What is Larch's current planned date, why did it change, "
+                "and which entrance should I use?"
+            ),
+            "representation": "sources",
+        },
+    )
+    ids = {source.source_key.split(":")[-1] for source in packet.evidence.sources}
+    assert {"old", "update", "access"} <= ids
+    assert packet.evidence.request.limit == 12
+    assert packet.evidence.evidence_bytes <= 24000
+    assert packet.evidence.search_version == "s14-lexical-specificity-v3"
+
+
+def test_blank_free_model_overrides_use_supported_provider_defaults(monkeypatch):
+    from jarvis.providers import FreeChatProvider
+
+    monkeypatch.setenv("JARVIS_INFERENCE_PROVIDER", "openrouter")
+    monkeypatch.setenv("JARVIS_FREE_EXTRACTOR_MODEL", "")
+    monkeypatch.setenv("JARVIS_FREE_RESPONDER_MODEL", "")
+    for role in ("extractor", "responder"):
+        assert FreeChatProvider.from_env(role=role).model == "google/gemma-4-31b-it:free"
+
+
+def test_final_approved_request_extension_keeps_token_and_budget_identity(monkeypatch):
+    from jarvis.providers import BUDGET_KEY, MAX_REQUESTS, MAX_TOTAL_TOKENS
+
+    monkeypatch.setenv("JARVIS_MAX_REQUESTS", "1100")
+    monkeypatch.setenv("JARVIS_MAX_TOTAL_TOKENS", "10000000")
+    provider = NvidiaExtractor()
+    assert provider.max_requests == MAX_REQUESTS == 1100
+    assert provider.max_total_tokens == MAX_TOTAL_TOKENS == 10000000
+    assert provider.budget_key == BUDGET_KEY == "s07-synthetic-v1"
+    monkeypatch.setenv("JARVIS_MAX_REQUESTS", "1101")
+    with pytest.raises(ApplicationError):
+        NvidiaExtractor()

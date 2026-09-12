@@ -13,12 +13,13 @@ from jarvis.extraction import ExtractionPacket, messages
 MODEL = "nvidia/nemotron-3.5-lightning-30b-a3b"
 ENDPOINT = "https://integrate.api.nvidia.com/v1/chat/completions"
 BUDGET_KEY = "s07-synthetic-v1"
-MAX_REQUESTS = 750
+MAX_REQUESTS = 1100
 MAX_TOTAL_TOKENS = 10_000_000
 MAX_OUTPUT_TOKENS = 4096
 MAX_INPUT_BYTES = 60_000
 MAX_RESPONSE_BYTES = 262_144
 KIMI_MODEL = "moonshotai/kimi-k3"
+LAGUNA_MODEL = "poolside/laguna-xs-2.1"
 REVIEWER_ACK = "I_ACCEPT_NVIDIA_DATA_TERMS"
 
 
@@ -162,11 +163,11 @@ class NvidiaResponder(NvidiaExtractor):
 
     def __init__(self, *, model=None, **kwargs):
         model = self.model if model is None else model
-        if self.live and model not in {KIMI_MODEL, MODEL}:
+        if self.live and model not in {KIMI_MODEL, MODEL, LAGUNA_MODEL}:
             raise ApplicationError(ErrorCode.INVALID_INPUT)
         super().__init__(**kwargs)
         self.model = model
-        self.timeout_seconds = 90 if model == MODEL else 180
+        self.timeout_seconds = 180 if model == KIMI_MODEL else 90
 
     @classmethod
     def from_env(cls):
@@ -175,6 +176,8 @@ class NvidiaResponder(NvidiaExtractor):
         model = os.environ.get("JARVIS_RESPONSE_MODEL", KIMI_MODEL)
         unfamiliar = unfamiliar_approved()
         key_name = "KIMI_K3_API_KEY" if model == KIMI_MODEL else "NEMOTRON_30B_API_KEY"
+        if model == LAGUNA_MODEL:
+            key_name = "POOLSIDE_LAGUNA_XS_2P1"
         return cls(
             model=model,
             approved=unfamiliar or os.environ.get("JARVIS_S07_SYNTHETIC_TRIAL_APPROVED") == "true",
@@ -191,10 +194,10 @@ class NvidiaResponder(NvidiaExtractor):
         size = len(json.dumps(conversation, ensure_ascii=False).encode("utf-8"))
         if size > MAX_INPUT_BYTES:
             raise ApplicationError(ErrorCode.CONTEXT_LIMIT)
-        output_tokens = MAX_OUTPUT_TOKENS if self.model == MODEL else 8192
+        output_tokens = 8192 if self.model == KIMI_MODEL else MAX_OUTPUT_TOKENS
         settings = (
             {"chat_template_kwargs": {"enable_thinking": False}}
-            if self.model == MODEL
+            if self.model != KIMI_MODEL
             else {"seed": 0, "reasoning_effort": "low"}
         )
         return {
@@ -249,7 +252,7 @@ class FreeChatProvider(NvidiaExtractor):
         return cls(
             provider=provider,
             role=role,
-            model=os.environ.get(f"JARVIS_FREE_{role.upper()}_MODEL", models[0]),
+            model=os.environ.get(f"JARVIS_FREE_{role.upper()}_MODEL") or models[0],
             approved=enabled,
             key=os.environ.get(key_name, ""),
         )

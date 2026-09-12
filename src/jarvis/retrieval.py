@@ -1,7 +1,7 @@
 """PostgreSQL retrieval with whole evidence, transient queries and guarded release."""
 
 import json
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Callable
 from typing import Annotated, Literal, Self
 from uuid import UUID
@@ -34,8 +34,9 @@ from jarvis.models import (
     Source,
 )
 
-SEARCH_VERSION = "s08-lexical-v2"
+SEARCH_VERSION = "s14-lexical-specificity-v3"
 CANDIDATES = 100
+MAX_RANKED_SOURCES = 10000
 
 
 class SearchRequest(Contract):
@@ -165,7 +166,7 @@ class RetrievalOperations:
         return statement
 
     @staticmethod
-    def _search_query(session, query):
+    def _search_terms(session, query):
         # Plain language uses OR recall, never treats a user's negation as a search command.
         # English stemming handles inflections; the simple fallback keeps stopword-only names.
         terms = session.scalar(
@@ -183,6 +184,11 @@ class RetrievalOperations:
                     )
                 )
             )
+        return terms
+
+    @staticmethod
+    def _search_query(session, query):
+        terms = RetrievalOperations._search_terms(session, query)
         escaped = ["'" + term.replace("\\", "\\\\").replace("'", "''") + "'" for term in terms]
         return func.to_tsquery(literal_column("'simple'::regconfig"), " | ".join(escaped))
 
@@ -204,12 +210,35 @@ class RetrievalOperations:
 
         # Maximum variant rank avoids counting a raw/formatted pair as two observations.
         rank = func.greatest(variant_score(Source.raw_text), variant_score(Source.formatted_text))
-        lexical = session.scalars(
-            select(Source.id)
+        lexical_rows = session.execute(
+            select(
+                Source.id,
+                Source.source_key,
+                func.tsvector_to_array(vector).label("lexemes"),
+                rank.label("score"),
+            )
             .where(Source.id.in_(eligible), vector.op("@@")(tsquery))
-            .order_by(rank.desc(), Source.source_key, Source.id)
-            .limit(CANDIDATES)
+            .limit(MAX_RANKED_SOURCES + 1)
         ).all()
+        if len(lexical_rows) > MAX_RANKED_SOURCES:
+            raise ApplicationError(ErrorCode.CONTEXT_LIMIT)
+        # Collection-local document frequency prioritizes specific query terms over
+        # common words such as "planned". No names, fixture IDs or evaluation labels
+        # are hard-coded, and paired variants count as one observation for ranking.
+        terms = set(self._search_terms(session, query.query))
+        matching = {row.id: terms.intersection(row.lexemes) for row in lexical_rows}
+        frequency = Counter(term for matches in matching.values() for term in matches)
+        specificity = {
+            source_id: sum(1 / frequency[term] for term in matches)
+            for source_id, matches in matching.items()
+        }
+        lexical = [
+            row.id
+            for row in sorted(
+                lexical_rows,
+                key=lambda row: (-specificity[row.id], -row.score, row.source_key, str(row.id)),
+            )[:CANDIDATES]
+        ]
         memories = []
         if query.representation == "sources_and_memories":
             claim_vector = literal_column(f"({CLAIM_SEARCH_SQL})", type_=TSVECTOR())
@@ -248,7 +277,10 @@ class RetrievalOperations:
             select(Source).where(Source.id.in_(scores), Source.owner_id == context.owner_id)
         ).all()
         sources = {s.id: self._source_contract(s) for s in source_rows}
-        ordered = sorted(scores, key=lambda i: (-scores[i], sources[i].source_key, str(i)))
+        ordered = sorted(
+            scores,
+            key=lambda i: (-specificity.get(i, 0), -scores[i], sources[i].source_key, str(i)),
+        )
         if lexical:
             # Preserve the strongest original source: matching both branches must not
             # erase unextracted context (e.g. a note distinguishing two same-name people).

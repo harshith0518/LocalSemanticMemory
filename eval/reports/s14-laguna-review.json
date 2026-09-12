@@ -1,0 +1,22 @@
+{
+  "status": "limited_probe_completed",
+  "model": "poolside/laguna-xs-2.1",
+  "endpoint": "NVIDIA API trial",
+  "evidence": "s14-laguna-probe.jsonl",
+  "requests": 2,
+  "application_answers": 1,
+  "operational_failures": 1,
+  "first_answer_ms": 5722.028076999777,
+  "first_model_ms": 5088,
+  "known_input_tokens": 1563,
+  "known_output_tokens": 269,
+  "unknown_reserved_tokens": 10272,
+  "second_call_ms": 45260,
+  "second_call_error": "provider_failed",
+  "second_call_note": "HTTP 200 headers did not establish a complete response; request timed out.",
+  "primary_changed": false,
+  "automatic_fallback": false,
+  "assessment": "One supported changed-date answer; insufficient reliability evidence for automatic fallback or extraction use.",
+  "paid_authorized_usd": 0,
+  "actual_bill_usd": null
+}

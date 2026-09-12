@@ -902,3 +902,35 @@ test("mobile Correct, world change and Forget review effects and clear revoked c
     /dict_0001|dict_0003/,
   );
 });
+
+test("workflow diagram is navigable and Private clears its loaded evidence", async (t) => {
+  const page = await pageFor(t, { width: 390, height: 844 });
+  await nav(page, "Workflow & evidence");
+  assert.equal(await page.locator('.flow-nodes button').count(), 12);
+  await page.locator('.flow-nodes button').nth(3).click();
+  assert.match(await page.locator('.flow-detail').innerText(), /Keep the original first/);
+  await button(page, "Lightning smoke").click();
+  await idle(page);
+  assert.ok(await page.locator('.evidence-json').innerText());
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  await privateMode(page);
+  assert.equal(await page.locator('.evidence-json').count(), 0);
+  await normal(page);
+  await nav(page, "Workflow & evidence");
+  assert.equal(await page.locator('.evidence-json').count(), 0);
+});
+
+test("query exposes evidence selection and actual model-call metrics", async (t) => {
+  const page = await pageFor(t);
+  await importFile(page, `metrics-${randomUUID()}`);
+  await nav(page, "Conversation");
+  await page.locator('.context-options > summary').click();
+  await page.getByLabel("Answer evidence", { exact: true }).selectOption("sources_and_memories");
+  await page.getByLabel("Ask a question", { exact: true }).fill("What is the latest recorded Atlas launch date?");
+  await button(page, "Ask").click();
+  await idle(page);
+  await page.locator('.query-metrics > summary').click();
+  assert.match(await page.locator('.query-metrics').innerText(), /Browser round trip:/);
+  assert.match(await page.locator('.query-metrics').innerText(), /tokens/);
+  assert.ok(await page.locator('.call-metric').count());
+});

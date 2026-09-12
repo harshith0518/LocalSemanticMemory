@@ -1,0 +1,38 @@
+
+> test
+> node --test --test-concurrency=1 workspace.test.mjs
+
+✔ React shell has local assets, accessible navigation, no personal startup reads or microphone (4133.9421ms)
+✔ typed note preserves whitespace, Unicode and raw/formatted pairing, without capture-time invention (1726.2891ms)
+✔ a committed typed-note response lost in transit can be retried without duplicate observation (1248.3054ms)
+✔ imports and reimports exact paired evidence through isolated PostgreSQL (1917.8504ms)
+✔ invalid and conflicting imports fail atomically without echoing driver/input errors (1456.7231ms)
+✔ source markup remains literal text with no executable element or outside request (1254.72ms)
+✔ large file is rejected before reads; pagination reaches every original (1958.4335ms)
+✔ search keeps conflicting variants and distinguishes undated, absent evidence and outage (2250.2423ms)
+✔ learned memories retain conditional meaning, unknown times and superseded history (7723.502ms)
+✔ Ask cites original evidence, diagnoses feedback and permits only one explicit retry (3141.4206ms)
+✔ Ask failure is not an unknown answer, and retry is explicit (741.8088ms)
+✔ Private unmounts all content, file state and scratchpad without reads or backfill (1319.5027ms)
+✔ Private cancels pending source, ignores the late result and prevents follow-up reads (1340.8739ms)
+✔ Private cancels pending search, ignores the late result and prevents follow-up reads (1384.6494ms)
+✔ Private cancels pending memory, ignores the late result and prevents follow-up reads (1547.3868ms)
+✔ Private cancels pending ask, ignores the late result and prevents follow-up reads (1950.3243ms)
+✔ Private cancels pending usage, ignores the late result and prevents follow-up reads (1374.8937ms)
+✔ unknown backend errors stay bounded; loading a collection is not mistaken for empty on failure (696.5943ms)
+✔ sample import is idempotent; usage reports measured payloads, timings and unknown billing (2058.9197ms)
+✔ mobile keyboard, dialog focus and back navigation do not restore personal text (1480.6561ms)
+✔ Private scratchpad is cleared before browser-history restoration (854.3651ms)
+✔ greeting explains capabilities locally and evidence choices are explained and collapsed (733.7601ms)
+✔ 540-note import, setup information and 30 preselected showcase questions use real APIs (2711.4161ms)
+✔ mobile Correct, world change and Forget review effects and clear revoked cached results (10822.0122ms)
+✔ workflow diagram is navigable and Private clears its loaded evidence (937.4081ms)
+✔ query exposes evidence selection and actual model-call metrics (2146.5403ms)
+ℹ tests 26
+ℹ suites 0
+ℹ pass 26
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 60140.4535
