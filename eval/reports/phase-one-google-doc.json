@@ -1,0 +1,27 @@
+{
+    "retrieved_at_utc":  "2026-09-12T15:48:52.7298903Z",
+    "source_url":  "https://docs.google.com/document/d/1HvpNaWZOQLfiot2T1BGN8mLT_hJobyCErL1dfpOr12U/edit",
+    "original_modified":  false,
+    "snapshot":  "docs/part-one/google-doc-snapshot.txt",
+    "snapshot_sha256":  "3ba589d91dff11b82b0dbc999a7fa78be0a6f7ee5ed7aca1a497ad6710a73ba5",
+    "snapshot_bytes":  8697,
+    "count_convention":  "Whitespace-separated tokens; headings excluded, hyphenated terms count as one, standalone punctuation counts as a token.",
+    "positioning":  {
+                        "path":  "docs/part-one/positioning-user-supplied.txt",
+                        "words":  96,
+                        "maximum_words":  100,
+                        "within_limit":  true,
+                        "sha256":  "21257b335c4d1c8a9623ee1995483332de0d87134d380a98d6543e537946086b"
+                    },
+    "vision":  {
+                   "path":  "docs/part-one/vision-user-supplied.txt",
+                   "words":  387,
+                   "maximum_words":  600,
+                   "within_limit":  true,
+                   "sha256":  "f0ea85a750777628ed44e6a58858d72116ba0c4bb51513fa19f0c1587ba5baa6"
+               },
+    "extraction":  "Verbatim section bodies with only surrounding whitespace removed. The vision excerpt ends before the following numbered Q\u0026A. Full glossary, notes, Q\u0026A and Part Two marker remain in the snapshot.",
+    "vision_with_following_qa_words":  711,
+    "authorship":  "User reports writing this Google Doc. Substantial wording overlaps earlier assistant-written drafts preserved in docs/part-one/README.md. Independent authorship is not certified; do not relabel the supplied material as independently verified author work.",
+    "final_submission_status":  "Mechanical preservation complete; independent-writing requirement and intended treatment of following Q\u0026A remain unresolved."
+}
