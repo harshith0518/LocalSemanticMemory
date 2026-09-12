@@ -8,6 +8,8 @@ This is the single current-status checklist. [PLAN.md](PLAN.md) defines scope an
 
 ## Completed
 
+- [x] **HTML progress and walkthrough guide (12 September).** Created the requested [local interactive guide](docs/project-progress.html) from the current tracker, design documents, code references and recorded evidence at application baseline `1756069`. Includes all 12 milestone statuses, a complete 12-stage input-to-memory diagram, storage/evidence mapping, four worked source examples with actual live failures, Ask/controls, pending work and 12 walkthrough questions. Static structure, JavaScript syntax and all 81 guide links/anchors passed; [actual checks and limits](eval/reports/project-progress-guide.json). This is a dated documentation view, not a second maintained checklist or a completed live-model gate. No application/database/provider change or live call. Next implementation action remains provider/extraction reliability, then S11.
+
 - [x] Establish the focused implementation plan, architecture, evaluation strategy, review contract and contribution rules.
 - [x] Replace the previous repository contents and push the planning baseline to `main`, preserving earlier Git history. Commit: [`596b034`](https://github.com/harshith0518/ProjectSemanticMemoryJarvis/commit/596b034940ea3a6adabeb3940dd6d793bc2c8b1e).
 - [x] Verify that baseline's nine-file remote tree, clean local/remote agreement, Markdown links and staged whitespace. These are documentation checks, not application tests.

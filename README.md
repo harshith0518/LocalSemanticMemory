@@ -11,6 +11,7 @@ The proposed demonstration imports a person's dictations, answers questions or p
 | Document | Purpose |
 | --- | --- |
 | [todo.md](todo.md) | Completed, ongoing and pending work; current blocker and the next action. |
+| [Interactive progress and walkthrough guide](docs/project-progress.html) | Local HTML snapshot: milestone status, the complete input-to-memory diagram, storage, worked examples, answer/control flows and walkthrough practice. |
 | [Visual memory guide](output/pdf/jarvis-memory-visual-guide.pdf) | 18 diagram pages with colors, shapes, labeled arrows, page/node IDs and clickable navigation. |
 | [Phase One source notes](docs/part-one/README.md) | Preserved user-supplied notes, earlier-chat provenance and mechanical word counts; finals are held by the author and reported complete, with repository inclusion/mechanical checks pending. |
 | [PLAN.md](PLAN.md) | Build order, time allocation, milestone gates and scope cuts. |
@@ -33,6 +34,12 @@ Suggested discussion-chat starting message:
 Suggested CLI handoff, after scope approval:
 
 > Read AGENTS.md and the planning documents linked by README.md. Check the actual Git state, approved scope and CLI/Docker access. Implement only the approved milestone through shared services. Run relevant checks, update todo.md, commit, push and verify the remote result. Ask before material changes outside the approved scope. Do not treat an AI-assisted Phase One draft, environment probe or mock model as completed submission or product evidence.
+
+## Project progress and walkthrough guide
+
+Open [docs/project-progress.html](docs/project-progress.html) in a browser. It works as a local file without Docker, installation or model credentials. It includes a clickable 12-stage learning diagram, the actual PostgreSQL storage map, four source-based teaching examples, retrieval and lifecycle explanations, and 12 expandable walkthrough questions. The print action includes the examples and walkthrough answers.
+
+This is a dated reading view of [todo.md](todo.md), based on application commit `1756069`, not a live status monitor or a substitute for the application. It separates recorded contract acceptance from unresolved live quality, marks teaching examples as intended behavior, and links to the actual failure reports. The HTML is AI-assisted technical preparation, not an independently authored Phase One submission. [Static checks and limitations](RUN.md#html-progress-and-walkthrough-guide)
 
 ## Using the visual guide
 
