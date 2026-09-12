@@ -1,0 +1,170 @@
+{
+  "recorded_at_utc": "2026-09-12 16:21:29 UTC",
+  "source_commit": "b0736d14a3f93ae48ad2e86bb36c2d53ddd7b765",
+  "scope": "Local-only current-image restart, browser inspection and early notes handoff gap tally. No cloud hosting or public deployment.",
+  "brief": {
+    "path": "../reference/Jarvis_Golden_Goose_Task_Final.pdf",
+    "basis": "Requirements from the previously inspected supplied brief, compared with current implementation and retained evidence; no new PDF extraction is claimed."
+  },
+  "runtime": {
+    "url": "http://localhost:8000",
+    "api": "healthy",
+    "database": "healthy",
+    "image_digest": "sha256:e4b0dc5cffe3a2602433d264c42254d6294cffdc207166bec9a9a6354ff5990e",
+    "extractor": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "responder": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "both_enabled": true,
+    "both_keys_configured": true,
+    "unfamiliar_opt_in": false,
+    "free_provider_enabled": false,
+    "private_model_calls": false,
+    "worker_started": false,
+    "database_reset": false,
+    "settings_persisted_to_local_env": false,
+    "hosting": "Application and database local; approved inference requests use the external NVIDIA API."
+  },
+  "budget": {
+    "full_corpus_command_started": false,
+    "new_model_calls_in_this_checkpoint": 0,
+    "last_observed_lifetime": {
+      "requests": 67,
+      "accounted_tokens": 412543,
+      "source": "s12-lightning-backup-review.json"
+    },
+    "requested_ceiling": {
+      "requests": 750,
+      "tokens": 10000000,
+      "paid_usd": 0,
+      "reserved_demo_requests": 30
+    },
+    "current_local_api_ceiling": {
+      "requests": 96,
+      "tokens": 1500000
+    },
+    "blocker": "Auto-review rejected the 653-new-call full corpus command because the trusted working-agreement pilot remains 96 requests/1,500,000 tokens. Earlier expanded approval exists in the conversation; explicit reconciliation/reconfirmation is requested. No workaround run was started."
+  },
+  "checks": {
+    "desktop": {
+      "url": "http://127.0.0.1:8000/",
+      "viewport_width": 1440,
+      "setup_display": "Lightning configured; metadata check only",
+      "screenshot": "s13-local-desktop.png",
+      "visually_inspected": true
+    },
+    "mobile": {
+      "viewport_width": 390,
+      "document_scroll_width": 390,
+      "screenshot": "s13-local-mobile.png",
+      "visually_inspected": true,
+      "horizontal_overflow": false
+    },
+    "visual_issue": "Skip-to-workspace link remained visibly displaced in captured layouts; accessibility/style refinement is pending.",
+    "live_browser_question": {
+      "status": "failed_before_model_request",
+      "reason": "Playwright getByLabel('Answer evidence', exact=true) did not resolve the current control before its 30-second timeout.",
+      "model_calls": 0,
+      "question": "What is the latest recorded Atlas launch date?",
+      "collection": "lightning-backup-b5ccab3d85194f898fdd42d7dfc9863f",
+      "test_not_weakened_or_reported_as_passed": true
+    },
+    "regression_baseline": {
+      "backend_passed": 248,
+      "browser_passed": 24,
+      "rerun_in_this_checkpoint": false,
+      "evidence": "s12-free-provider-review.json"
+    }
+  },
+  "requirements": [
+    {
+      "requirement": "Ordinary-user interface with real backend, persistence, retrieval and model decisions",
+      "status": "implemented_contract_tested",
+      "evidence": "Local current UI now runs; backend/browser baseline and separate real Lightning smoke exist. The fresh full browser Ask journey is not yet complete."
+    },
+    {
+      "requirement": "About 500 varied paired raw/formatted records with separate evaluation questions",
+      "status": "prepared",
+      "evidence": "540 frozen synthetic records; 84 non-ingested cases with 30 preselected showcase and 30 held-out cases."
+    },
+    {
+      "requirement": "Complete large-corpus live processing and evaluation",
+      "status": "blocked_not_run",
+      "evidence": "Budget review blocked this checkpoint's full-corpus command before execution. No 540-record live result is claimed."
+    },
+    {
+      "requirement": "Per-result original input, created/retrieved/changed/rejected memory, provenance and decision outcomes",
+      "status": "partial",
+      "evidence": "Existing Sources, Memory history, Ask citations and synthetic reports expose evidence, but a unified per-query browser trace and recorded reasons view remain to be connected. Do not fabricate uncaptured model reasoning."
+    },
+    {
+      "requirement": "Latency, storage growth, model usage and cost metrics",
+      "status": "partial",
+      "evidence": "Server/browser timings, payload bytes and aggregate model usage exist. Evaluators record physical growth; inline per-query token/call metrics and an in-browser evaluation report view remain pending. Actual provider billing is unmeasured."
+    },
+    {
+      "requirement": "Unseen unfamiliar corpus and new questions",
+      "status": "contract_tested_default_off",
+      "evidence": "Separate NVIDIA unfamiliar opt-in is implemented and tested with deterministic doubles; current synthetic mode correctly blocks unfamiliar input. No live unseen personal-data test was performed."
+    },
+    {
+      "requirement": "Privacy and memory lifecycle controls",
+      "status": "contract_tested",
+      "evidence": "Normal/Private, Correct/world change/Forget and guarded database concurrency are covered by the existing real PostgreSQL/browser baseline; preserve these semantics in any UI enhancement."
+    },
+    {
+      "requirement": "Complete local reproducible handoff and final exact-commit clean verification",
+      "status": "pending",
+      "evidence": "Current API restart uses retained DB and transient non-secret environment overrides. It is not a clean Compose/import/persistence/reset rehearsal from a final release commit."
+    },
+    {
+      "requirement": "Independent Phase One positioning and vision within maximum word counts",
+      "status": "unresolved",
+      "evidence": "Preserved supplied excerpts are 96 and 387 words; vision plus Q&A is 711. Substantial overlap with earlier AI-assisted drafts leaves independent-writing compliance unresolved."
+    },
+    {
+      "requirement": "Repository source, schema/migrations, fixtures, AI-use disclosure and honest results",
+      "status": "present_final_packaging_pending",
+      "evidence": "Existing repository contains these artifacts on dev. Final audit, exact handoff commit and any user-controlled merge into main remain pending."
+    }
+  ],
+  "proposed_local_scope": {
+    "files": [
+      "frontend/src/App.tsx",
+      "frontend/src/components/conversation.tsx",
+      "frontend/src/components/memories.tsx",
+      "frontend/src/components/usage.tsx",
+      "frontend/src/lib/use-workspace.ts",
+      "frontend/src/lib/types.ts",
+      "frontend/src/lib/api.ts",
+      "frontend/src/styles.css",
+      "src/jarvis/api.py",
+      "src/jarvis/answers.py",
+      "tests/integration/test_acceptance.py",
+      "tests/browser/workspace.test.mjs",
+      ".env (non-secret local settings only; never committed)",
+      "AGENTS.md (budget line only, after explicit reconciliation approval)",
+      "todo.md",
+      "RUN.md",
+      "DECISIONS.md"
+    ],
+    "behavior": [
+      "Guided Import -> Learn -> Ask -> Inspect -> Metrics navigation without replacing the existing application.",
+      "Explicit collection-scoped processing so the normal browser workflow does not rely on starting an unscoped worker against historical pending jobs.",
+      "Guarded existing per-call usage/citation/outcome data and curated synthetic reports shown in the browser; unavailable costs or decision reasons remain labeled unknown.",
+      "Preserve Private unmounting/no persistence, backend authorization, source preservation and lifecycle fencing."
+    ],
+    "alternatives": "Keep the current tested UI and existing aggregate metrics without the new guided processing/trace flow; full-corpus budget remains blocked.",
+    "acceptance": [
+      "Relevant real PostgreSQL and all browser regressions.",
+      "Desktop/mobile visual and accessibility checks plus a real cited local browser answer.",
+      "Complete permitted corpus evaluation with every failure and unassessed record retained.",
+      "Final clean local Compose/import/UI/persistence/scoped-reset handoff from the documented commit."
+    ],
+    "no_new_dependencies": true,
+    "no_schema_changes": true,
+    "no_cloud_hosting": true,
+    "no_automatic_provider_fallback": true,
+    "no_google_scope_expansion": true,
+    "implementation_approval": "requested; not yet received"
+  },
+  "acceptance_ready": false
+}

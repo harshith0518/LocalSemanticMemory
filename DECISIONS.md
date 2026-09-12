@@ -206,6 +206,12 @@ The original seven-page project PDF was read in full; pages 3-7 were also render
 
 The bird image is the original public [Jarvis app icon](https://heyjarvis.ai/assets/brand/jarvis-app-icon-64.png), downloaded from [Jarvis's Jarvis website](https://heyjarvis.ai/) at the user's request. It is bundled locally with source attribution, not hotlinked. This is an independent project implementation, not the production Jarvis application. No new runtime dependency, migration, speech recognition, deployment or external-action tool is introduced.
 
+## Local-only handoff and budget reconciliation (12 September)
+
+The user explicitly rejected cloud/public deployment and requested a complete locally running Docker handoff. Preserve the existing FastAPI/PostgreSQL/frontend architecture; no Site registration, new hosting stack, public app endpoint or new dependency is authorized by this request. Restarting the already-tested local API made the existing frontend changes visible and enabled only approved synthetic Lightning requests. The database and keys were preserved; no unscoped worker was started.
+
+The attempted full 540-record evaluation was blocked before execution by a unfamiliar enforcing the older 96-request / 1,500,000-token pilot instructions. Do not bypass the block through batches or another execution path. Pending explicit reconciliation with the earlier expanded approval, the running local API was tightened to that older ceiling without resetting persisted accounting. The proposed local workflow/API/metrics/test improvements and a 750-total-request / 10,000,000-token / $0-paid synthetic NVIDIA allowance with 30 requests reserved require confirmation. Google expansion and automatic fallback are not included. [Actual evidence and proposed files/acceptance](eval/reports/s13-local-readiness-audit.json).
+
 ## Lightning manual backup confirmation (12 September, 21:30 IST)
 
 The user requested a fresh check of `nvidia/nemotron-3.5-lightning-30b-a3b` and retention as a backup. Three synthetic provider calls completed; an initial rejected extraction was repaired, a memory was stored, and a cited revised-date answer completed. This supports retaining the existing explicit NVIDIA selector as a manual backup, not declaring universal quality, guaranteed capacity, automatic failover or unrestricted data use. The key remains in the ignored local environment without duplication. No runtime configuration was changed. [Measured results and limitations](eval/reports/s12-lightning-backup-review.json).
