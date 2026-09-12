@@ -1,6 +1,66 @@
 # Run and verify Hey Jarvis
 
-S03–S05, S07 memory-processing contracts and S08 evidence search are implemented in the existing Windows checkout using Docker Desktop Linux containers. The browser is the primary workflow. Search needs no model key and works on unprocessed original records. Live extraction/answer evaluation remains disabled pending the explicit provider decision. Historical results below retain their original counts and limits; S06 answers, live S07/S08 quality gates and full S09 controls remain incomplete.
+S03–S09 infrastructure, source import, memory contracts, Search, Ask and controls are implemented in the Windows checkout using Docker Desktop Linux containers. The browser is the primary workflow. **Current local acceptance: 225 backend tests and 15 browser checks pass. Live quality is not passed:** Nemotron diagnostic outputs miss/reconcile information incorrectly and Kimi has not completed a baseline response. The user approved public synthetic inference; unattended inference remains off after these failures. Historical sections retain their original results; the S09 record below supersedes their old provider/status notes.
+
+## S09 controls and synthetic Ask
+
+The user approved S09 and a synthetic-only exception to the NVIDIA training/retention restriction on 12 September. Personal and Private inference remain blocked. The live ceiling is **96 requests / 1,500,000 total tokens including failures and retries / $0 paid** under the existing persisted budget key. No budget reset or Ultra fallback was applied. A later proposed increase was not applied.
+
+Ordinary-user workflow:
+
+1. Open the application, import the bundled `data/synthetic/sample-dictations.jsonl`, then inspect Sources or Search. These actions need no model. **Process pending** requests bounded extraction when an approved worker is running; refresh and inspect failures as well as memories. Source preservation does not depend on extraction succeeding.
+2. In **Ask Jarvis**, **Try a sample question** cycles through the eight permitted public questions. **Evidence options** selects original-source search (default), sources plus memories, or all permitted history. The backend validates citations and rechecks current evidence before release. Ask needs Kimi availability; current live attempts failed. Questions, replies and generated drafts do not become memories or jobs. Drafts are never sent.
+3. On a memory, select **Correct** for an interpretation error or **Record a change** for a real-world update. Supply your statement and replacement value; review the expandable scope, subject, attribution, uncertainty, units and time fields. Blank times stay unknown. Preview the exact affected notes, then confirm. Any edit invalidates the preview. History shows `corrected` versus `superseded` predecessors. Later evidence carries the amendment even if the original is reimported under another collection name.
+4. **Forget** previews all affected notes. Confirmation excludes the selected memory family's support, dependent claims and known copies/reimports from future retrieval and learning. Originals remain visible in Sources/history. Exclusion conservatively covers whole affected observations; unrelated details in those notes can become unavailable. New paraphrases are not detected. Forget is owner-wide, including copies in other collections; renaming a collection does not undo it.
+5. Below an answer, **Review feedback** asks which layer failed. Vague, memory, world-change, style and operational feedback gives targeted guidance without silently changing memory. Generation/retrieval diagnoses permit one persisted rerun. It can fail and consume allowance; repeated feedback cannot create an unlimited retry chain.
+6. Switch to **Private** to clear source, search, answer, control editor and feedback state. Saved reads/writes and provider calls are denied before body parsing/store access. Late responses and browser back navigation cannot restore old content. No private context is backfilled on returning to Normal.
+
+For the exact public control demo, use `The Atlas launch plan is 2026-09-23.` and then `The Atlas launch plan is 2026-09-25.` with the full canonical content in [control-observations.json](data/synthetic/control-observations.json). These are public user-confirmed statements, not model accuracy fixtures. Arbitrary local corrections are allowed, but their personal content cannot enter this hosted trial. The full raw statement and confirmed typed interpretation must match the allowlist.
+
+Actual commands run in this checkout (native command failures must be checked):
+
+```powershell
+docker compose -f compose.test.yaml --profile browser stop web
+docker compose -f compose.test.yaml run --rm --build tests
+docker compose -f compose.test.yaml run --rm tests python eval/retrieval.py
+docker compose -f compose.test.yaml --profile browser up -d --wait --wait-timeout 120 web
+npm.cmd --prefix tests/browser test
+```
+
+Tests are isolated from `jarvis_database`; do not reset their DB while browser checks run. The final suite passed **225 tests in 130.25 s** and **15 Chromium checks in 24.89 s**. The browser server uses explicit deterministic extraction/answer doubles with no provider keys. Desktop 1440×1100 and mobile 390×844 screenshots were visually checked; browser storage/external-request instrumentation passed. A fresh isolated database was created during this milestone; empty/repeated migrations and metadata drift pass. New tests cover exact excerpts, typed controls, cross-owner/stale previews, duplicate arrivals, reimports, both real PostgreSQL control/worker and control/reply lock orderings, feedback retry persistence, and all Private failure paths.
+
+The actual 500-record retrieval regression retained all required passages in **45/45 answerable attempts per representation**, three runs of 17 cases, with source-only remaining the default. This is authored diagnostic coverage with deterministic claims, not live answer quality or the project's unfamiliar-corpus evaluation. [Measured retrieval results](eval/reports/s09-retrieval.json)
+
+Application upgrade and persistence commands:
+
+```powershell
+docker compose run --rm migrate
+docker compose down # no --volumes: keep the application database
+docker compose up -d --wait --wait-timeout 120 api
+docker compose run --rm migrate alembic check
+docker compose run --rm --no-deps cli ready
+Invoke-RestMethod http://127.0.0.1:8000/ready
+```
+
+Before/after snapshots compared every canonical table field, not just counts. Migration `0005_user_controls` preserved the original 17 sources/jobs and four prior call records. After live attempts, replacement of the actual API/DB containers preserved all 33 sources/jobs, three claim/evidence records, six processing receipts, 18 call records and the budget. API/CLI readiness agrees on `0005_user_controls`, pgvector `0.8.6`; Alembic reports no drift. Isolated DB/web container replacement preserved all 14 tables, including three control receipts, one feedback receipt, 26 claims, four passage exclusions and 26 source exclusions. No application volume was reset.
+
+The explicitly approved live diagnostic used one-off flags (the ignored `.env` flag remains false):
+
+```powershell
+docker compose stop worker
+docker compose run --rm --no-deps -e JARVIS_S07_SYNTHETIC_TRIAL_APPROVED=true worker python eval/live.py --stage smoke --repeats 1
+docker compose run --rm --no-deps -e JARVIS_S07_SYNTHETIC_TRIAL_APPROVED=true worker python eval/live.py --stage extraction --namespace live-279608e17b0b435fa46977d3bfe61f79 --repeats 1
+```
+
+The namespace above identifies this recorded diagnostic; do not reuse it to pretend to run an independent repeat. New smoke runs create fresh namespaces. The evaluator supports `--stage answers --namespace <frozen-collection> --repeats 3` for a future approved comparison, but **that full matrix was not run** because the Kimi smoke baseline failed. Trials share the same lifetime allowance across collections and restarts. Explicit public JSON output was retained in evaluator reports; application logs contain neither prompts nor completions.
+
+Actual live result: **18 requests; 25,560 known input tokens + 1,944 known output tokens; 165,273 accounted tokens including full reservations for unknown usage.** Nemotron: six successful contract outcomes, three schema failures and five provider failures across initial and revised attempts. One full eight-source attempt produced three memories, three `no_memory` outcomes and two operational failures. Semantic review found missed information, capture/planned times placed into event time, and a new date added without superseding the old date. Kimi: four attempts, zero completed answers. Transport diagnostics observed ReadTimeout and ConnectError; the last attempt still failed after increasing the responder wait from 90 to 180 seconds. The extractor stays at 90 seconds; both use connect=10 seconds. The UI allows 390 seconds for an answer and its one possible schema repair. This is a bounded engineering choice after observed failures, not a latency guarantee from [NVIDIA's Kimi documentation](https://docs.api.nvidia.com/nim/reference/moonshotai-kimi-k3).
+
+[Raw public attempts](eval/reports/s09-live-attempts.json), [review of every diagnostic observation](eval/reports/s09-live-review.json), and [local acceptance record](eval/reports/s09-contracts.json) distinguish structural success, semantic failure and operational failure. No paid billing API was queried; the approved free-trial endpoint was used, with zero paid spend authorized. Unattended worker inference stays off; the application is ready for source/Search/control inspection, not a reliable live answer demo yet.
+
+Resolved review findings: JSONB control receipts needed copied result dictionaries to persist replacement IDs; amendment ordering now uses policy revisions; exact copies carry amendments; known corrected interpretations cannot be re-added from their prior observation; failed live offset/schema outputs motivated exact unique excerpts with backend offset resolution. An old migration regression incorrectly dropped new head tables while testing index removal; it now checks the actual index migration alone. Browser selectors were narrowed for the added control buttons and cards. One attempted selector edit failed Windows default-codepage decoding and did not change files; it was rerun explicitly as UTF-8. Final review also rejected overlapping excerpt matches and malformed source IDs as validation errors. After that small parser fix, 56 targeted answer/processing checks passed in 22.33 s; the preceding full suite was 225/225 and browser suite 15/15. Ruff lint/format passed for 42 Python files; 10 UTF-8 Markdown files and 167 local links/anchors passed, with unchanged Phase One material, valid JSON evidence, clean staged whitespace and no local credentials in the staged diff. Initial failures remain documented. No dependency upgrade, dense retrieval, arbitrary provider fallback or hidden model-quality claim was introduced.
+
+Next work is to stabilize the hosted response path and improve/re-evaluate extraction meaning before closing S06/S07/S08 live gates or expanding to S11's separate development/unfamiliar corpora. S09 implementation and local lifecycle acceptance are complete; S10 browser wiring is connected, while a successful live end-to-end demonstration remains open.
 
 ## Start from a checkout
 
@@ -24,7 +84,7 @@ Invoke-RestMethod http://127.0.0.1:8000/health
 Invoke-RestMethod http://127.0.0.1:8000/ready
 ```
 
-Check `$LASTEXITCODE` after Docker/CLI commands; nonzero means failure. PowerShell does not automatically stop on native command failures. `/health` and `jarvis health` report process liveness without querying personal data or the database. `/ready` and `jarvis ready` call the same service to verify the DB connection, Alembic revision and pgvector extension. Expected readiness is `{"status":"ready","schema":"0004_lexical_retrieval","pgvector":"0.8.6"}`. Readiness failures return HTTP 503 / CLI exit 1 with a short category, without raw database errors or credentials.
+Check `$LASTEXITCODE` after Docker/CLI commands; nonzero means failure. PowerShell does not automatically stop on native command failures. `/health` and `jarvis health` report process liveness without querying personal data or the database. `/ready` and `jarvis ready` call the same service to verify the DB connection, Alembic revision and pgvector extension. Expected readiness is `{"status":"ready","schema":"0005_user_controls","pgvector":"0.8.6"}`. Readiness failures return HTTP 503 / CLI exit 1 with a short category, without raw database errors or credentials.
 
 The API is published only on `127.0.0.1`; PostgreSQL has no published host port. The server owns the fixed local identity; no endpoint accepts an owner selector. S04 validation endpoints return a receipt without echoing input. S05 import writes eligible dictations only in Normal mode, and inspection returns owned saved evidence. JSON responses explicitly declare UTF-8 so Windows PowerShell 5 decodes multilingual text correctly. Application containers run as UID 10001. Source is copied into the image, so rebuild after code changes. uv and the build backend use the checked-in lock; development checks are included in the same image.
 
@@ -36,7 +96,7 @@ After the setup above, open **[http://127.0.0.1:8000/](http://127.0.0.1:8000/)**
 2. Choose a **Collection name**. Use `diagnostic-v1` with the bundled synthetic sample; keep the name stable on reimport. Select **Open** to browse an existing collection, or select `data/synthetic/sample-dictations.jsonl` under **Add dictations** and choose **Import to collection**. The UI handles policy revisions; the backend rechecks them atomically.
 3. Read the saved/unchanged receipt. Exact retries preserve IDs and job state. Invalid or conflicting batches show a bounded error; fix the source of a conflict instead of renaming old records. Use **Load more sources** for larger collections.
 4. Select a source. Original and formatted text belong to one observation. `dict_0008` retains the ₹15,000/₹50,000 disagreement; `dict_0007` has no capture time even though its content mentions a date. **Source details** exposes original metadata and processing status. Pending means memory extraction has not run.
-5. Switch to **Private**. The displayed collection/evidence and selected file are cleared; import/browsing are unavailable. Switching back does not restore them or import anything. Private conversation, Ask, Correct and Forget are not yet available; the UI makes no fabricated model/action claims.
+5. Switch to **Private**. The displayed collection/evidence and selected file are cleared; import/browsing are unavailable. Switching back does not restore them or import anything. Private remains temporary local context with no model call or saved reads. Ask and Correct/world-change/Forget are available in Normal; the UI distinguishes drafts, unknowns and operational failures.
 
 The supported page keeps no local/session storage, cookies, IndexedDB, service worker or analytics and loads no third-party assets. Saved data loads only after an explicit Normal action. Mode changes abort pending requests and reject late responses; page hide/restoration clears context. A Normal import accepted before the switch may still commit. Cancellation cannot undo that write; safely reopen/reimport the same collection/file if the result was interrupted. Browser extensions, OS memory and explicit user screenshots are outside this application's storage guarantee.
 
@@ -65,9 +125,9 @@ Final results on 11 September: **112 isolated PostgreSQL checks passed in 10.22 
 
 The approved pipeline preserves original sources and writes source-linked claim revisions through the shared service. The browser adds **Process pending**, **Refresh memories**, **Retry failed**, a Memories list and expandable evidence/history. No CLI is required for these user actions. Open a collection before processing; refresh to see completed/failed jobs and zero-memory or clarification outcomes. Conditions, uncertainty and scope are visible on each memory. **View original source** opens the existing source inspector. Switching Private clears sources, memories, history and pending UI responses. Previously accepted Normal imports/jobs may finish; Private input never enters them.
 
-**Live inference is disabled in the delivered configuration.** Imports/inspection still work, and a processing request returns `provider_disabled` before saved-store access. The code contains a fixed NVIDIA Nemotron adapter, but no provider authentication, endpoint capability or semantic quality has been established by a live call. The isolated browser test server uses an explicit deterministic fixture extractor; it cannot start against the application database. Its results are contract evidence, not model output.
+**Unattended inference remains off in the delivered configuration after the S09 live failures.** Synthetic-only one-off evaluations used the approved flag and existing keys. Nemotron returned authenticated completions, some contract-valid but semantically incomplete; Kimi returned no completed answer. Imports, inspection, Search and local controls work without provider access. The isolated browser backend injects labeled deterministic providers and cannot start against the application database.
 
-After the separately requested provider decision is approved, an operator can set `JARVIS_S07_SYNTHETIC_TRIAL_APPROVED=true` in ignored `.env`, with the existing `NEMOTRON_30B_API_KEY`. Recreate API/worker/CLI services so settings take effect. Only the worker receives the key; database, migration and test services receive no provider credentials. The flag permits only the exact bundled synthetic source fields, not arbitrary personal imports or a caller's synthetic label. The persisted pilot ceiling is 32 calls and 500,000 total input/output tokens including repair/retry, with $0 paid spend. Do not reset or edit the application budget to bypass it. General personal inference needs compliant provider terms/settings and a new explicit decision.
+The user approved the synthetic-only trial. An operator can set `JARVIS_S07_SYNTHETIC_TRIAL_APPROVED=true` in ignored `.env` and recreate API/worker services to enable it, accepting the documented current failures. Nemotron uses `NEMOTRON_30B_API_KEY` in the worker; Kimi uses `KIMI_K3_API_KEY` in API/CLI and the evaluator worker. DB/migration/test services receive no provider keys. Exact public source/question/control fields are checked in code. The shared persisted cap is 96 requests and 1,500,000 total tokens including repairs/retries and unknown-usage reservations, $0 paid; do not reset it. General personal inference needs a new provider/settings decision.
 
 Optional developer commands through the same service:
 
@@ -79,7 +139,7 @@ docker compose run --rm --no-deps worker jarvis worker --once
 
 Use the current policy revision from source listing, not an assumed zero after controls change it. The first/third commands require the live gate; a failure returns a fixed category. Ordinary use is **Process pending** in the browser, with the long-running Compose worker. Failed jobs can be explicitly retried at most three lease attempts; stale/expired workers are fenced. There is at most one schema-repair call per attempt. Unknown provider usage retains its conservative token reservation. Empty/invalid model output, database failures and stale packets never silently become successful zero-memory decisions.
 
-The live evaluator is ready but **has not been run**:
+The older extraction-only command below remains available. S09 actually used `python eval/live.py` for the diagnostic; the [live attempts](eval/reports/s09-live-attempts.json) and [semantic review](eval/reports/s09-live-review.json) retain every call. The full three-repeat extraction/answer matrix has not passed and was not continued after the smoke failures.
 
 ```powershell
 # Only after the S07 provider/allowance decision; keep unrelated workers idle for the pilot.

@@ -128,7 +128,7 @@ test("S08 searches original pairs without a model and clears search on Private",
   if (process.env.JARVIS_UI_SCREENSHOTS === "1") {
     const directory = new URL("../../.tmp/ui-review/", import.meta.url);
     await mkdir(directory, { recursive: true });
-    await page.locator(".search-card").screenshot({
+    await page.locator('[aria-labelledby="search-title"]').screenshot({
       path: new URL("s08-search.png", directory).pathname.replace(
         /^\/(\w:)/,
         "$1",
@@ -174,14 +174,12 @@ test("S08 distinguishes search outage from no matches and ignores late results",
   if (process.env.JARVIS_UI_SCREENSHOTS === "1") {
     const directory = new URL("../../.tmp/ui-review/", import.meta.url);
     await mkdir(directory, { recursive: true });
-    await page
-      .locator(".search-card")
-      .screenshot({
-        path: new URL("s08-mobile.png", directory).pathname.replace(
-          /^\/(\w:)/,
-          "$1",
-        ),
-      });
+    await page.locator('[aria-labelledby="search-title"]').screenshot({
+      path: new URL("s08-mobile.png", directory).pathname.replace(
+        /^\/(\w:)/,
+        "$1",
+      ),
+    });
   }
   await page.locator("#search-undated").uncheck();
   await page.getByRole("button", { name: "Search", exact: true }).click();
@@ -259,7 +257,10 @@ test("S07 processes synthetic fixtures and exposes memory history through the re
     .getByRole("button", { name: "Refresh memories", exact: true })
     .click();
   await eventually(async () =>
-    assert.equal(await page.locator("#memory-list button").count(), 11),
+    assert.equal(
+      await page.locator("#memory-list > li > .source-button").count(),
+      11,
+    ),
   );
   await page
     .getByRole("button", { name: /Atlas · launch date: 2026-09-21/ })
@@ -316,10 +317,16 @@ test("S07 processes synthetic fixtures and exposes memory history through the re
     });
   }
   await page.getByRole("radio", { name: "Private", exact: true }).check();
-  assert.equal(await page.locator("#memory-list button").count(), 0);
+  assert.equal(
+    await page.locator("#memory-list > li > .source-button").count(),
+    0,
+  );
   assert.equal(await page.locator("#memory-history").textContent(), "");
   await page.getByRole("radio", { name: "Normal", exact: true }).check();
-  assert.equal(await page.locator("#memory-list button").count(), 0);
+  assert.equal(
+    await page.locator("#memory-list > li > .source-button").count(),
+    0,
+  );
 });
 
 test("Private drops late memory responses and makes no processing request", async (t) => {
@@ -620,4 +627,208 @@ test("mobile keyboard journey fits viewport; navigation never restores prior evi
   await page.getByRole("heading", { name: "Start with the source." }).waitFor();
   assert.equal(await page.locator("#raw-text").textContent(), "");
   assert.equal(await page.locator(".source-button").count(), 0);
+});
+
+test("S06 Ask cites stored evidence, diagnoses feedback, and clears all reply state in Private", async (t) => {
+  const page = await pageFor(t);
+  await importFile(page, `ask-${randomUUID()}`);
+  await page.getByRole("button", { name: "Try a sample question" }).click();
+  await eventually(async () =>
+    assert.match(
+      await page.locator("#ask-question").inputValue(),
+      /Atlas launch/,
+    ),
+  );
+  await page.getByRole("button", { name: "Ask from my sources" }).click();
+  await eventually(async () =>
+    assert.match(
+      await page.locator("#ask-result").innerText(),
+      /Synthetic contract answer/,
+    ),
+  );
+  assert.ok(await page.locator("#ask-result details").count());
+  await page.getByRole("button", { name: "Review feedback" }).click();
+  await eventually(async () =>
+    assert.match(
+      await page.locator("#feedback-guidance").innerText(),
+      /Which source/,
+    ),
+  );
+  await page.locator("#feedback-kind").selectOption("generation");
+  await page.getByRole("button", { name: "Review feedback" }).click();
+  await eventually(async () =>
+    assert.match(
+      await page.locator("#feedback-guidance").innerText(),
+      /One new answer/,
+    ),
+  );
+  if (process.env.JARVIS_UI_SCREENSHOTS === "1")
+    await page.screenshot({
+      path: new URL(
+        "../../.tmp/ui-review/s09-ask.png",
+        import.meta.url,
+      ).pathname.replace(/^\/(\w:)/, "$1"),
+      fullPage: true,
+    });
+  await page.getByLabel("Private", { exact: true }).check();
+  assert.equal(await page.locator("#ask-question").inputValue(), "");
+  assert.equal(await page.locator("#ask-result").textContent(), "");
+  assert.equal(await page.locator("#feedback-guidance").textContent(), "");
+  await page.getByLabel("Normal", { exact: true }).check();
+  assert.equal(await page.locator("#ask-result").textContent(), "");
+});
+
+test("Ask distinguishes transport failure and rejects a late reply after Private", async (t) => {
+  const page = await pageFor(t);
+  await importFile(page, `late-ask-${randomUUID()}`);
+  await page.locator("#ask-question").fill("Atlas launch");
+  await page.route("**/ask", (route) => route.abort());
+  await page.getByRole("button", { name: "Ask from my sources" }).click();
+  await eventually(async () =>
+    assert.match(
+      await page.locator("#ask-state").innerText(),
+      /could not|failed/i,
+    ),
+  );
+  assert.equal(await page.locator("#ask-result").textContent(), "");
+  await page.unroute("**/ask");
+  let release, intercepted;
+  const arrived = new Promise((resolve) => {
+    intercepted = resolve;
+  });
+  const held = new Promise((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/ask", async (route) => {
+    const response = await route.fetch();
+    intercepted();
+    await held;
+    await route.fulfill({ response }).catch(() => {});
+  });
+  await page.getByRole("button", { name: "Ask from my sources" }).click();
+  await arrived;
+  await page.getByLabel("Private", { exact: true }).check();
+  release();
+  await page.getByLabel("Normal", { exact: true }).check();
+  assert.equal(await page.locator("#ask-result").textContent(), "");
+  assert.equal(await page.locator("#ask-question").inputValue(), "");
+  assert.equal(await page.locator("#feedback-guidance").textContent(), "");
+});
+
+test("S09 mobile correction, world change, Forget and renamed reimport use the real backend", async (t) => {
+  const page = await pageFor(t, { width: 390, height: 844 });
+  await importFile(page, `controls-${randomUUID()}`);
+  await page
+    .getByRole("button", { name: "Process pending", exact: true })
+    .click();
+  await eventually(async () => {
+    if (
+      (await page.locator("#normal-panel").getAttribute("aria-busy")) ===
+      "false"
+    )
+      await page.getByRole("button", { name: "Refresh memories" }).click();
+    assert.match(
+      await page.locator("#processing-state").innerText(),
+      /8 succeeded/,
+    );
+  });
+  const launch = () =>
+    page
+      .locator("#memory-list > li")
+      .filter({ hasText: /launch date/ })
+      .first();
+  for (const [button, date] of [
+    ["Correct", "2026-09-23"],
+    ["Record a change", "2026-09-25"],
+  ]) {
+    await launch().getByRole("button", { name: button, exact: true }).click();
+    await page
+      .locator("#control-statement")
+      .fill(`The Atlas launch plan is ${date}.`);
+    await page.locator("#control-value").fill(date);
+    await page
+      .getByRole("button", { name: "Preview change", exact: true })
+      .click();
+    await page.locator("#confirm-control").waitFor({ state: "visible" });
+    assert.match(
+      await page.locator("#control-preview").innerText(),
+      new RegExp(date),
+    );
+    await page
+      .getByRole("button", { name: "Confirm this change", exact: true })
+      .click();
+    await eventually(async () =>
+      assert.match(await page.locator("#feedback").innerText(), /Change saved/),
+    );
+    await eventually(async () =>
+      assert.match(await launch().innerText(), new RegExp(date)),
+    );
+  }
+  await page.locator("#search-query").fill("legal review launch");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await eventually(async () =>
+    assert.match(
+      await page.locator("#search-results").innerText(),
+      /2026-09-25/,
+    ),
+  );
+  await launch().getByRole("button", { name: "Forget", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Preview change", exact: true })
+    .click();
+  await page.locator("#confirm-control").waitFor({ state: "visible" });
+  assert.match(
+    await page.locator("#forget-explanation").innerText(),
+    /known copies/,
+  );
+  assert.equal(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+    true,
+  );
+  if (process.env.JARVIS_UI_SCREENSHOTS === "1")
+    await page.screenshot({
+      path: new URL(
+        "../../.tmp/ui-review/s09-controls-mobile.png",
+        import.meta.url,
+      ).pathname.replace(/^\/(\w:)/, "$1"),
+      fullPage: true,
+    });
+  await page
+    .getByRole("button", { name: "Confirm this change", exact: true })
+    .click();
+  await eventually(async () =>
+    assert.match(
+      await page.locator("#feedback").innerText(),
+      /Forgotten for future use/,
+    ),
+  );
+  assert.equal(
+    await page
+      .locator("#memory-list > li")
+      .filter({ hasText: /launch date/ })
+      .count(),
+    0,
+  );
+  await page.getByRole("button", { name: /dict_0003/ }).click();
+  await eventually(async () =>
+    assert.match(
+      await page.locator("#raw-text").innerText(),
+      /september twenty first/,
+    ),
+  );
+  await importFile(page, `renamed-${randomUUID()}`);
+  await page.locator("#search-query").fill("eighteenth twenty first launch");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await eventually(async () =>
+    assert.match(
+      await page.locator("#search-state").innerText(),
+      /No matching|matching source/,
+    ),
+  );
+  assert.doesNotMatch(
+    await page.locator("#search-results").innerText(),
+    /dict_0001|dict_0003/,
+  );
 });

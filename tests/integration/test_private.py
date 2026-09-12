@@ -114,6 +114,14 @@ def test_all_saved_operations_reject_private_before_parsing_or_io(
         lambda: service.search(private, SENTINEL),
         lambda: service.prepare_search(private, SENTINEL),
         lambda: service.release_search(private, SENTINEL),
+        lambda: service.ask(private, SENTINEL),
+        lambda: service.prepare_answer(private, SENTINEL),
+        lambda: service.reserve_answer_call(private, None, 100),
+        lambda: service.release_answer(private, None, SENTINEL),
+        lambda: service.preview_control(private, SENTINEL),
+        lambda: service.apply_control(private, SENTINEL),
+        lambda: service.feedback(private, SENTINEL),
+        lambda: service.model_call_report(private),
         lambda: process_one(service, private),
     ]
     with no_store_access(engine, monkeypatch):
@@ -207,7 +215,13 @@ def test_private_current_context_is_not_backfilled(service, normal, private, obs
     )
     assert stored.raw_text == observation["raw_text"]
     assert SENTINEL not in json.dumps(snapshot(engine))
-    assert set(vars(service)) == {"engine", "identity", "expected_revision", "extractor"}
+    assert set(vars(service)) == {
+        "engine",
+        "identity",
+        "expected_revision",
+        "extractor",
+        "responder",
+    }
     assert SENTINEL not in repr(vars(service.extractor))
 
 

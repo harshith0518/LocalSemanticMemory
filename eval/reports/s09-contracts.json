@@ -1,0 +1,135 @@
+{
+  "milestone": "S09 with S06 Ask foundation",
+  "date": "2026-09-12",
+  "contract_verdict": "passed",
+  "live_quality_verdict": "failed_or_incomplete",
+  "backend": {
+    "command": "docker compose -f compose.test.yaml run --rm --build tests",
+    "passed": 225,
+    "seconds": 130.25,
+    "database": "isolated PostgreSQL 17 with pgvector 0.8.6"
+  },
+  "browser": {
+    "command": "npm.cmd --prefix tests/browser test",
+    "passed": 15,
+    "seconds": 24.886,
+    "backend": "compose.test.yaml web, deterministic providers, no live keys",
+    "visual_review": [
+      "1440x1100 desktop Ask",
+      "390x844 mobile controls"
+    ],
+    "storage_writes": 0,
+    "external_browser_requests": 0
+  },
+  "migration": {
+    "head": "0005_user_controls",
+    "empty_repeated_and_drift": "passed",
+    "preserved_previous_sources_jobs": 17,
+    "preserved_previous_calls": 4,
+    "new_tables": [
+      "control_receipts",
+      "feedback_receipts",
+      "source_exclusions",
+      "passage_exclusions"
+    ]
+  },
+  "application_restart": {
+    "api_and_db_containers_replaced": true,
+    "all_fields_identical": true,
+    "sources": 33,
+    "jobs": 33,
+    "claims": 3,
+    "processing_receipts": 6,
+    "model_calls": 18,
+    "budget": {
+      "requests": 18,
+      "accounted_tokens": 165273
+    },
+    "application_volume_deleted": false
+  },
+  "isolated_restart": {
+    "database_and_web_containers_replaced": true,
+    "all_14_tables_identical": true,
+    "control_receipts": 3,
+    "feedback_receipts": 1,
+    "claim_revisions": 26,
+    "passage_exclusions": 4,
+    "source_exclusions": 26
+  },
+  "retrieval": {
+    "report": "s09-retrieval.json",
+    "records": 500,
+    "cases": 17,
+    "repeats": 3,
+    "coverage": {
+      "sources": {
+        "attempts": 51,
+        "answerable_attempts": 45,
+        "all_evidence_found": 45,
+        "passage_coverage": 1.0,
+        "mean_evidence_bytes": 2368.94,
+        "p50_ms": 175.555,
+        "p95_ms": 235.896
+      },
+      "sources_and_memories": {
+        "attempts": 51,
+        "answerable_attempts": 45,
+        "all_evidence_found": 45,
+        "passage_coverage": 1.0,
+        "mean_evidence_bytes": 5358.06,
+        "p50_ms": 320.107,
+        "p95_ms": 565.319
+      }
+    },
+    "live_models": false
+  },
+  "lifecycle_checks": [
+    "Correct versus world change",
+    "preview digest and idempotent receipt",
+    "cross-owner and stale revision rejection",
+    "new duplicate between preview and commit",
+    "known exact copies carry corrections",
+    "known corrected interpretation cannot be re-added from old evidence",
+    "Forget covers family history and literal/variant reimports",
+    "real independent PostgreSQL connections and barriers in both control/worker and control/reply orders",
+    "one persisted feedback retry, including failures/restart",
+    "Private denies all new operations before body or store access",
+    "late Ask and control state clearing"
+  ],
+  "resolved_failures": [
+    "JSONB receipt mutation failed to persist replacement result; copied values fixed it",
+    "index-only migration regression dropped new tables; isolated actual index migration instead",
+    "browser selectors counted new control buttons or matched multiple cards; narrowed selectors",
+    "initial selector edit failed host codepage decode before writing; explicit UTF-8 corrected it",
+    "model v1 object/offset failures motivated exact unique excerpt resolution without accepting bad explicit offsets",
+    "Overlapping occurrences must fail unique-excerpt matching; malformed source IDs return validation errors"
+  ],
+  "live_report": "s09-live-review.json",
+  "raw_public_attempts": "s09-live-attempts.json",
+  "limitations": [
+    "No successful Kimi answer; four attempts failed",
+    "Nemotron semantic extraction gate failed: missing details, event times and unreconciled dates",
+    "No full three-repeat extraction or answer comparison completed",
+    "No automatic Ultra fallback or provider/budget expansion",
+    "Forget conservatively excludes whole affected observations; unseen paraphrases not detected",
+    "Private has no provider conversation in this prototype",
+    "Single local owner and no production authentication",
+    "500-record retrieval diagnostic is authored and uses deterministic claims, not an unfamiliar-corpus semantic evaluation",
+    "Phase One finals remain user-held and unverified",
+    "S12 final acceptance gate remains open"
+  ],
+  "post_review_checks": {
+    "fix": "Reject overlapping excerpt matches and unhashable source IDs as validation errors",
+    "targeted_answer_processing_tests": 56,
+    "seconds": 22.33,
+    "lint": "passed",
+    "format_python_files": 42
+  },
+  "documentation_checks": {
+    "utf8_markdown_files": 10,
+    "local_links_and_anchors": 167,
+    "part_one_material": "unchanged",
+    "staged_whitespace": "passed",
+    "credential_and_runtime_artifact_scan": "passed"
+  }
+}

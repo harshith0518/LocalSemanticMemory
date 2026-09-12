@@ -1,5 +1,6 @@
 """Shared memory application operations. Adapters and workers own no SQL."""
 
+import json
 from datetime import timedelta
 from functools import cache
 from pathlib import Path
@@ -9,7 +10,8 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import aliased
 
-from jarvis.contracts import ClaimWrite, parse_contract
+from jarvis.contracts import ClaimWrite, ObservationInput, parse_contract
+from jarvis.controls import blocked_sources
 from jarvis.errors import ApplicationError, ErrorCode
 from jarvis.extraction import (
     LEASE_SECONDS,
@@ -42,6 +44,9 @@ def _synthetic_sources():
     """Only checked-in public fixtures are cached; never a user's saved observations."""
     return tuple(
         parse_dictations("fixture", Path("data/synthetic/sample-dictations.jsonl").read_bytes())
+    ) + tuple(
+        parse_contract(ObservationInput, row)
+        for row in json.loads(Path("data/synthetic/control-observations.json").read_text())
     )
 
 
@@ -53,8 +58,8 @@ class ProcessingOperations:
         if not self.extractor.enabled:
             raise ApplicationError(ErrorCode.PROVIDER_DISABLED)
 
-    def _trial_source(self, source):
-        if not self.extractor.live:
+    def _trial_source(self, source, *, live=None):
+        if not (self.extractor.live if live is None else live):
             return  # Only trusted dependency injection in tests; never a request flag.
         allowed = _synthetic_sources()
         # Compare all original fields, not a caller-supplied namespace/hash/synthetic label.
@@ -76,7 +81,11 @@ class ProcessingOperations:
         command = parse_contract(ProcessingRequest, payload)
         with self._session(context, write=True) as session:
             self._policy(session, context, command.expected_policy_revision, lock=True)
-            sources = session.scalars(self._namespace_sources(context, command.namespace)).all()
+            sources = session.scalars(
+                self._namespace_sources(context, command.namespace).where(
+                    ~Source.id.in_(blocked_sources(context))
+                )
+            ).all()
             for source in sources:
                 self._trial_source(source)
             jobs = session.scalars(
@@ -92,6 +101,7 @@ class ProcessingOperations:
                     job.error_code = None
                     job.finished_at = None
                 if job.status == "pending" and not job.requested:
+                    job.expected_policy_revision = command.expected_policy_revision
                     job.requested = True
                     count += 1
             return {"status": "queued", "requested": count}
@@ -104,12 +114,21 @@ class ProcessingOperations:
             .where(ClaimEvidence.owner_id == context.owner_id, Passage.source_id.in_(source_ids))
         )
         newer = aliased(ClaimRecord)
+        blocked_claims = (
+            select(ClaimEvidence.claim_revision_id)
+            .join(Passage, Passage.id == ClaimEvidence.passage_id)
+            .where(
+                ClaimEvidence.owner_id == context.owner_id,
+                Passage.source_id.in_(blocked_sources(context)),
+            )
+        )
         return (
             select(ClaimRecord)
             .where(
                 ClaimRecord.owner_id == context.owner_id,
                 ClaimRecord.lifecycle == "active",
                 ClaimRecord.id.in_(ids),
+                ~ClaimRecord.id.in_(blocked_claims),
                 ~select(newer.id)
                 .where(
                     newer.owner_id == context.owner_id,
@@ -125,6 +144,8 @@ class ProcessingOperations:
         source = session.get(Source, job.source_id)
         if source is None or source.owner_id != context.owner_id:
             raise ApplicationError(ErrorCode.REFERENCE_UNAVAILABLE)
+        if session.scalar(blocked_sources(context).where(Source.id == source.id)):
+            raise ApplicationError(ErrorCode.EXCLUDED_SOURCE)
         if not source.source_key.startswith("import:"):
             raise ApplicationError(ErrorCode.INELIGIBLE_SOURCE)
         namespace = source.source_key.split(":")[1]
@@ -441,49 +462,62 @@ class ProcessingOperations:
             raise ApplicationError(ErrorCode.INVALID_INPUT)
         with self._session(context, write=True) as session:
             self._check_packet(session, context, packet)
-            session.execute(
-                insert(ModelBudget).values(key=self.extractor.budget_key).on_conflict_do_nothing()
-            )
-            budget = session.scalar(
-                select(ModelBudget)
-                .where(ModelBudget.key == self.extractor.budget_key)
-                .with_for_update()
-            )
-            if (
-                budget.requests >= MAX_REQUESTS
-                or budget.tokens + reserved_tokens > MAX_TOTAL_TOKENS
-            ):
-                raise ApplicationError(ErrorCode.BUDGET_EXHAUSTED)
-            budget.requests += 1
-            budget.tokens += reserved_tokens
-            call = ModelCall(
-                owner_id=context.owner_id,
+            return self._reserve_provider(
+                session,
+                context,
+                self.extractor,
+                reserved_tokens,
+                PROMPT_VERSION,
                 job_id=packet.job_id,
                 lease_token=packet.lease_token,
-                budget_key=budget.key,
-                configured_model=self.extractor.model,
-                prompt_version=PROMPT_VERSION,
-                reserved_tokens=reserved_tokens,
+                policy_revision=packet.policy_revision,
             )
-            session.add(call)
-            session.flush()
-            return call.id
+
+    @staticmethod
+    def _reserve_provider(session, context, provider, reserved_tokens, prompt_version, **fields):
+        session.execute(
+            insert(ModelBudget).values(key=provider.budget_key).on_conflict_do_nothing()
+        )
+        budget = session.scalar(
+            select(ModelBudget).where(ModelBudget.key == provider.budget_key).with_for_update()
+        )
+        if budget.requests >= MAX_REQUESTS or budget.tokens + reserved_tokens > MAX_TOTAL_TOKENS:
+            raise ApplicationError(ErrorCode.BUDGET_EXHAUSTED)
+        budget.requests += 1
+        budget.tokens += reserved_tokens
+        call = ModelCall(
+            owner_id=context.owner_id,
+            budget_key=budget.key,
+            configured_model=provider.model,
+            prompt_version=prompt_version,
+            reserved_tokens=reserved_tokens,
+            **fields,
+        )
+        session.add(call)
+        session.flush()
+        return call.id
 
     def finish_call(self, context, call_id, completion=None, error=None):
         self._authorize(context)
         with self._session(context, write=True) as session:
+            key = session.scalar(
+                select(ModelCall.budget_key).where(
+                    ModelCall.id == call_id,
+                    ModelCall.owner_id == context.owner_id,
+                )
+            )
+            if key is None:
+                raise ApplicationError(ErrorCode.REFERENCE_UNAVAILABLE)
             # Fixed lock order: budget before call; no network while either is held.
             budget = session.scalar(
-                select(ModelBudget)
-                .where(ModelBudget.key == self.extractor.budget_key)
-                .with_for_update()
+                select(ModelBudget).where(ModelBudget.key == key).with_for_update()
             )
             call = session.scalar(
                 select(ModelCall)
                 .where(
                     ModelCall.id == call_id,
                     ModelCall.owner_id == context.owner_id,
-                    ModelCall.budget_key == self.extractor.budget_key,
+                    ModelCall.budget_key == key,
                 )
                 .with_for_update()
             )
@@ -647,3 +681,16 @@ class ProcessingOperations:
             "calls": accounting,
             "memories": [self.memory_history(context, claim_id) for claim_id in claim_ids],
         }
+
+    def model_call_report(self, context):
+        """Permitted accounting only: no prompts, answers, reasoning, keys or raw errors."""
+        self._authorize(context)
+        with self._session(context) as session:
+            calls = session.scalars(
+                select(ModelCall)
+                .where(ModelCall.owner_id == context.owner_id)
+                .order_by(ModelCall.recorded_at)
+            ).all()
+            return [
+                {c.name: getattr(row, c.name) for c in ModelCall.__table__.columns} for row in calls
+            ]

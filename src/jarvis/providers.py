@@ -13,8 +13,8 @@ from jarvis.extraction import ExtractionPacket, messages
 MODEL = "nvidia/nemotron-3.5-lightning-30b-a3b"
 ENDPOINT = "https://integrate.api.nvidia.com/v1/chat/completions"
 BUDGET_KEY = "s07-synthetic-v1"
-MAX_REQUESTS = 32
-MAX_TOTAL_TOKENS = 500_000
+MAX_REQUESTS = 96
+MAX_TOTAL_TOKENS = 1_500_000
 MAX_OUTPUT_TOKENS = 4096
 MAX_INPUT_BYTES = 60_000
 MAX_RESPONSE_BYTES = 262_144
@@ -33,6 +33,7 @@ class NvidiaExtractor:
     model = MODEL
     budget_key = BUDGET_KEY
     live = True
+    timeout_seconds = 90
 
     def __init__(self, *, approved: bool = False, key: str = "", transport=None):
         self.enabled = approved
@@ -71,7 +72,7 @@ class NvidiaExtractor:
             # No redirects, proxy inheritance, streaming publication, SDK retries or fallbacks.
             with (
                 httpx.Client(
-                    timeout=httpx.Timeout(90, connect=10),
+                    timeout=httpx.Timeout(self.timeout_seconds, connect=10),
                     transport=self._transport,
                     follow_redirects=False,
                     trust_env=False,
@@ -87,7 +88,7 @@ class NvidiaExtractor:
                     raise ApplicationError(ErrorCode.PROVIDER_FAILED)
                 data = bytearray()
                 for chunk in response.iter_bytes():
-                    if monotonic() - started > 90:
+                    if monotonic() - started > self.timeout_seconds:
                         raise ApplicationError(ErrorCode.PROVIDER_FAILED)
                     data.extend(chunk)
                     if len(data) > MAX_RESPONSE_BYTES:
@@ -115,3 +116,39 @@ class NvidiaExtractor:
             raise ApplicationError(ErrorCode.PROVIDER_RESPONSE) from None
         except Exception:
             raise ApplicationError(ErrorCode.PROVIDER_FAILED) from None
+
+
+class NvidiaResponder(NvidiaExtractor):
+    """Same bounded transport/accounting, explicitly selected response model."""
+
+    model = "moonshotai/kimi-k3"
+    # This always-thinking responder timed out at the extractor's 90-second limit.
+    # Keep a bounded wait; token/call ceilings and the release guard are unchanged.
+    timeout_seconds = 180
+
+    @classmethod
+    def from_env(cls):
+        return cls(
+            approved=os.environ.get("JARVIS_S07_SYNTHETIC_TRIAL_APPROVED") == "true",
+            key=os.environ.get("KIMI_K3_API_KEY", ""),
+        )
+
+    def prepare(self, packet, *, repair=False):
+        from jarvis.answers import answer_messages
+
+        if not self.enabled:
+            raise ApplicationError(ErrorCode.PROVIDER_DISABLED)
+        conversation = answer_messages(packet, repair=repair)
+        size = len(json.dumps(conversation, ensure_ascii=False).encode("utf-8"))
+        if size > MAX_INPUT_BYTES:
+            raise ApplicationError(ErrorCode.CONTEXT_LIMIT)
+        return {
+            "model": self.model,
+            "messages": conversation,
+            "max_tokens": 8192,
+            "temperature": 0,
+            "seed": 0,
+            "reasoning_effort": "low",
+            "stream": False,
+            "response_format": {"type": "json_object"},
+        }, size + 8192 + 512

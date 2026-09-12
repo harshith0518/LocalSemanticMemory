@@ -12,10 +12,14 @@ let nextAfter = null;
 let policyRevision = null;
 let sourceCount = 0;
 let memoryAfter = null;
+let editing = null;
+let reviewedControl = null;
+let lastAnswer = null;
+let questionIndex = 0;
 
 const messages = {
   provider_disabled:
-    "Memory processing is disabled until provider settings and the evaluation allowance are approved.",
+    "Live model calls are disabled. Source search and memory controls remain available.",
   trial_input_denied:
     "This trial permits only the bundled synthetic sample. Your sources remain saved.",
   budget_exhausted:
@@ -33,6 +37,11 @@ const messages = {
     "Check the collection name and file format. The entire batch must contain valid JSONL records.",
   database_unavailable:
     "The workspace is unavailable. Check the connection and try again.",
+  excluded_source: "This evidence was forgotten and cannot be used again.",
+  provider_failed:
+    "The model provider could not finish. This is a service failure, not missing evidence.",
+  provider_response_invalid:
+    "The model response failed validation. No answer was released.",
 };
 
 function feedback(message = "", error = false) {
@@ -62,6 +71,8 @@ function clearEvidence() {
 }
 
 function clearSources() {
+  clearAnswer();
+  clearControl();
   ui["search-form"].reset();
   ui["search-results"].replaceChildren();
   ui["search-state"].textContent = "Search runs only when you ask.";
@@ -129,7 +140,12 @@ async function request(path, options, ticket, signal) {
   assertCurrent(ticket);
   const response = await fetch(path, {
     ...options,
-    signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]),
+    signal: AbortSignal.any([
+      signal,
+      AbortSignal.timeout(
+        path === "/ask" || path === "/feedback" ? 390000 : 15000,
+      ),
+    ]),
     cache: "no-store",
     credentials: "omit",
     redirect: "error",
@@ -342,6 +358,348 @@ function memoryLabel(claim) {
   return `${c.subject.label} · ${c.negated ? "Not: " : ""}${c.predicate.replaceAll("_", " ")}: ${value.value}${value.unit ? ` ${value.unit}` : ""}`;
 }
 
+function clearAnswer() {
+  lastAnswer = null;
+  ui["ask-form"].reset();
+  ui["ask-result"].replaceChildren();
+  ui["ask-state"].textContent = "Ask runs only when you choose.";
+  ui["answer-feedback"].hidden = true;
+  ui["feedback-guidance"].textContent = "";
+  ui["feedback-kind"].value = "unclear";
+}
+
+function clearControl() {
+  editing = null;
+  reviewedControl = null;
+  ui["control-form"].reset();
+  ui["control-panel"].hidden = true;
+  ui["control-target"].textContent = "";
+  ui["control-qualifiers"].replaceChildren();
+  ui["control-preview"].replaceChildren();
+  ui["confirm-control"].hidden = true;
+}
+
+function renderAnswer(result, payload) {
+  lastAnswer = { result, payload };
+  ui["ask-result"].replaceChildren(paragraph(result.text, "passage"));
+  ui["ask-state"].textContent = {
+    answered: "Answer from recorded evidence",
+    draft: "Draft — not sent",
+    unknown: "Not established by the available evidence",
+    clarification: "Clarification needed",
+  }[result.status];
+  const sources = new Map(result.sources.map((s) => [s.id, s]));
+  for (const passage of result.citations) {
+    const details = document.createElement("details");
+    const summary = document.createElement("summary");
+    summary.textContent = `Source: ${sources.get(passage.source_id)?.source_key.split(":").at(-1) ?? "Original record"} · ${passage.variant}`;
+    details.append(summary, paragraph(passage.exact_text, "passage"));
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "secondary";
+    button.textContent = "Inspect cited source";
+    button.setAttribute("data-normal", "");
+    button.addEventListener("click", () => inspect(passage.source_id, null));
+    details.append(button);
+    ui["ask-result"].append(details);
+  }
+  ui["answer-feedback"].hidden = !result.call_ids.length;
+}
+
+ui["ask-form"].addEventListener("submit", (event) => {
+  event.preventDefault();
+  const namespace = collection();
+  if (!namespace) return;
+  const payload = {
+    namespace,
+    question: ui["ask-question"].value,
+    representation: ui["ask-representation"].value,
+  };
+  action(async (ticket, signal) => {
+    lastAnswer = null;
+    ui["answer-feedback"].hidden = true;
+    ui["ask-result"].replaceChildren();
+    ui["ask-state"].textContent = "Reading evidence and checking the answer…";
+    try {
+      const result = await request(
+        "/ask",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+        ticket,
+        signal,
+      );
+      renderAnswer(result, payload);
+      feedback(
+        "Answer checked against current source references. Review its meaning and evidence.",
+      );
+    } catch (error) {
+      assertCurrent(ticket);
+      ui["ask-state"].textContent =
+        "The answer could not finish. This does not establish that a fact is unknown.";
+      throw error;
+    }
+  });
+});
+
+ui["sample-questions"].addEventListener("click", () =>
+  action(async (ticket, signal) => {
+    const result = await request("/trial/questions", {}, ticket, signal);
+    ui["ask-question"].value =
+      result.questions[questionIndex++ % result.questions.length];
+    feedback("Synthetic sample question selected. Choose Ask when ready.");
+  }),
+);
+
+ui["review-feedback"].addEventListener("click", () => {
+  if (!lastAnswer?.result.call_ids.length) return;
+  const previous = lastAnswer;
+  const payload = {
+    call_id: previous.result.call_ids.at(-1),
+    request: previous.payload,
+    diagnosis: ui["feedback-kind"].value,
+  };
+  action(async (ticket, signal) => {
+    const result = await request(
+      "/feedback",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+      ticket,
+      signal,
+    );
+    if (result.answer) renderAnswer(result.answer, result.request);
+    ui["feedback-guidance"].textContent = result.guidance;
+    feedback(result.guidance);
+  });
+});
+
+function qualifier(label, name, value, choices = null) {
+  const field = document.createElement("label");
+  field.textContent = label;
+  const input = document.createElement(choices ? "select" : "input");
+  input.name = name;
+  input.setAttribute("data-normal", "");
+  if (choices)
+    for (const choice of choices) {
+      const option = document.createElement("option");
+      option.value = choice;
+      option.textContent = choice.replaceAll("_", " ");
+      input.append(option);
+    }
+  input.value = value ?? "";
+  field.append(input);
+  ui["control-qualifiers"].append(field);
+}
+
+function editMemory(claim, actionName) {
+  if (mode !== "normal" || pending) return;
+  clearControl();
+  editing = { claim, action: actionName, operation_id: crypto.randomUUID() };
+  ui["control-title"].textContent = {
+    correct: "Correct an interpretation",
+    world_change: "Record a change in the world",
+    forget: "Forget this memory",
+  }[actionName];
+  ui["control-target"].textContent = memoryLabel(claim);
+  const forget = actionName === "forget";
+  ui["replacement-fields"].hidden = forget;
+  ui["forget-explanation"].hidden = !forget;
+  ui["control-statement"].required = !forget;
+  ui["control-value"].required = !forget;
+  const c = claim.content;
+  ui["control-value"].value = String(c.value.value);
+  if (!forget) {
+    qualifier("Who or what", "subject", c.subject.label);
+    qualifier("Property", "predicate", c.predicate);
+    qualifier("Value type", "kind", c.value.kind, [
+      "text",
+      "date",
+      "quantity",
+      "boolean",
+    ]);
+    qualifier("Units, if any", "unit", c.value.unit);
+    qualifier("Applies to", "scope_kind", c.scope.kind, [
+      "unspecified",
+      "global",
+      "project",
+      "task",
+    ]);
+    qualifier("Project or task name", "scope_key", c.scope.key);
+    qualifier("Reported by", "attribution", c.attribution.label);
+    qualifier("Evidence", "evidence_status", c.evidence_status, [
+      "reported",
+      "tentative",
+      "disputed",
+    ]);
+    qualifier("Meaning", "modality", c.modality, [
+      "asserted",
+      "conditional",
+      "hypothetical",
+      "question",
+      "quoted",
+    ]);
+    qualifier("Is this negated?", "negated", String(c.negated), [
+      "false",
+      "true",
+    ]);
+    qualifier("Condition, if any", "condition", c.condition);
+    qualifier(
+      "Event date/time (blank = unknown)",
+      "event",
+      c.time.event?.value,
+    );
+    qualifier(
+      "Applies from (blank = unknown)",
+      "valid_from",
+      c.time.valid_from?.value,
+    );
+    qualifier(
+      "Applies until (blank = unknown)",
+      "valid_to",
+      c.time.valid_to?.value,
+    );
+  }
+  ui["control-panel"].hidden = false;
+  ui["control-panel"].scrollIntoView({ block: "start" });
+}
+
+ui["cancel-control"].addEventListener("click", clearControl);
+ui["control-form"].addEventListener("input", () => {
+  reviewedControl = null;
+  ui["control-preview"].replaceChildren();
+  ui["confirm-control"].hidden = true;
+});
+ui["control-form"].addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!editing || !opened) return;
+  const payload = {
+    operation_id: editing.operation_id,
+    namespace: opened,
+    target_revision_id: editing.claim.id,
+    expected_policy_revision: policyRevision,
+    action: editing.action,
+  };
+  if (editing.action !== "forget") {
+    const f = Object.fromEntries(new FormData(ui["control-form"]));
+    const value = { kind: f.kind, value: ui["control-value"].value };
+    if (f.kind === "quantity") value.unit = f.unit || null;
+    if (f.kind === "boolean") {
+      if (!["true", "false"].includes(value.value)) {
+        feedback("A yes/no value must be true or false.", true);
+        return;
+      }
+      value.value = value.value === "true";
+    }
+    const time = Object.fromEntries(
+      ["event", "valid_from", "valid_to"].map((key) => [
+        key,
+        f[key]
+          ? {
+              precision: f[key].includes("T") ? "instant" : "date",
+              value: f[key],
+            }
+          : null,
+      ]),
+    );
+    payload.statement = ui["control-statement"].value;
+    payload.replacement = {
+      subject: { label: f.subject, entity_id: null },
+      predicate: f.predicate,
+      value,
+      scope: {
+        kind: f.scope_kind,
+        key: ["project", "task"].includes(f.scope_kind) ? f.scope_key : null,
+      },
+      attribution: { label: f.attribution, entity_id: null },
+      evidence_status: f.evidence_status,
+      modality: f.modality,
+      negated: f.negated === "true",
+      condition: f.condition || null,
+      time,
+    };
+  }
+  action(async (ticket, signal) => {
+    const preview = await request(
+      "/controls/preview",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+      ticket,
+      signal,
+    );
+    reviewedControl = { ...payload, preview_token: preview.preview_token };
+    const content = document.createDocumentFragment();
+    if (preview.replacement)
+      content.append(
+        paragraph(`Proposed: ${memoryLabel({ content: preview.replacement })}`),
+        paragraph(preview.statement, "passage"),
+      );
+    content.append(
+      paragraph(
+        `${preview.sources.length} supporting note(s) · ${preview.affected_revision_ids.length} linked revision(s). Original history remains visible.`,
+        "help",
+      ),
+    );
+    const details = document.createElement("details");
+    const summary = document.createElement("summary");
+    summary.textContent = "Review affected notes";
+    details.append(summary);
+    for (const source of preview.sources)
+      details.append(
+        paragraph(source.source_key.split(":").slice(1).join(" / "), "help"),
+        paragraph(source.raw_text, "passage"),
+      );
+    content.append(details);
+    ui["control-preview"].replaceChildren(content);
+    ui["confirm-control"].hidden = false;
+    feedback("Review this exact change before confirming.");
+  });
+});
+
+ui["confirm-control"].addEventListener("click", () => {
+  if (!reviewedControl) return;
+  const payload = reviewedControl;
+  action(async (ticket, signal) => {
+    const result = await request(
+      "/controls/apply",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+      ticket,
+      signal,
+    );
+    clearAnswer();
+    clearControl();
+    ui["search-results"].replaceChildren();
+    ui["memory-history"].replaceChildren();
+    policyRevision = result.policy_revision;
+    try {
+      renderPage(await loadPage(payload.namespace, ticket, signal));
+      await refreshMemories(ticket, signal);
+    } catch (error) {
+      assertCurrent(ticket);
+      feedback(
+        "Change saved. Open the collection to refresh its current state.",
+      );
+      return;
+    }
+    feedback(
+      result.action === "forget"
+        ? "Forgotten for future use and learning. Original history remains in Sources."
+        : "Change saved with evidence. Later searches include your update.",
+    );
+  });
+});
+
 ui["search-form"].addEventListener("submit", (event) => {
   event.preventDefault();
   const namespace = collection();
@@ -545,6 +903,22 @@ function renderMemoryPage(page, append = false) {
       }),
     );
     item.append(button);
+    const controls = document.createElement("div");
+    controls.className = "memory-actions";
+    for (const [actionName, label] of [
+      ["correct", "Correct"],
+      ["world_change", "Record a change"],
+      ["forget", "Forget"],
+    ]) {
+      const control = document.createElement("button");
+      control.type = "button";
+      control.className = "secondary";
+      control.textContent = label;
+      control.setAttribute("data-normal", "");
+      control.addEventListener("click", () => editMemory(claim, actionName));
+      controls.append(control);
+    }
+    item.append(controls);
     ui["memory-list"].append(item);
   }
   memoryAfter = page.next_after;

@@ -113,6 +113,41 @@ class SupportingPassage(Contract):
         return self
 
 
+def resolve_excerpt(passage, sources):
+    """Resolve a model's unique exact quote; never repair supplied offsets or fuzzy text."""
+    if not isinstance(passage, dict):
+        raise ApplicationError(ErrorCode.INVALID_INPUT)
+    if "start" in passage or "end" in passage:
+        return passage
+    source_id = passage.get("source_id")
+    if not isinstance(source_id, str):
+        raise ApplicationError(ErrorCode.INVALID_INPUT)
+    source = sources.get(source_id)
+    if source is None:
+        raise ApplicationError(ErrorCode.REFERENCE_UNAVAILABLE)
+    variant = (
+        source.raw_text
+        if passage.get("variant") == "raw"
+        else (source.formatted_text if passage.get("variant") == "formatted" else None)
+    )
+    quote = passage.get("exact_text")
+    if not isinstance(quote, str) or not quote or variant is None:
+        raise ApplicationError(ErrorCode.INVALID_PASSAGE)
+    start = variant.find(quote)
+    if start < 0 or variant.find(quote, start + 1) >= 0:
+        raise ApplicationError(ErrorCode.INVALID_PASSAGE)
+    return {**passage, "start": start, "end": start + len(quote)}
+
+
+def excerpt_schema(schema):
+    """The model selects evidence; the canonical storage contract still requires offsets."""
+    passage = schema["$defs"]["SupportingPassage"]
+    for key in ("start", "end"):
+        passage["properties"].pop(key)
+        passage["required"].remove(key)
+    return schema
+
+
 class EntityReference(Contract):
     label: Label
     # Absence means unresolved identity; equal names never supply this ID.

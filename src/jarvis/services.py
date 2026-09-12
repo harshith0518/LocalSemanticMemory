@@ -12,6 +12,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from jarvis.answers import AnswerOperations
 from jarvis.contracts import (
     ClaimRevision,
     ClaimWrite,
@@ -21,6 +22,7 @@ from jarvis.contracts import (
     SupportingPassage,
     parse_contract,
 )
+from jarvis.controls import ControlOperations, blocked_sources
 from jarvis.errors import ApplicationError, ErrorCode
 from jarvis.imports import (
     IMPORT_PREFIX,
@@ -40,7 +42,7 @@ from jarvis.imports import (
 from jarvis.models import ClaimEvidence, ClaimRecord, Job, Passage, Policy, Source
 from jarvis.policy import LocalIdentity, Mode, RequestContext
 from jarvis.processing import ProcessingOperations
-from jarvis.providers import NvidiaExtractor
+from jarvis.providers import NvidiaExtractor, NvidiaResponder
 from jarvis.retrieval import RetrievalOperations
 
 PROBE_KEY = "bootstrap:synthetic:v1"
@@ -54,11 +56,19 @@ def content_hash(raw: str, formatted: str | None) -> str:
     return hashlib.sha256(pair.encode("utf-8")).hexdigest()
 
 
-class Service(ProcessingOperations, RetrievalOperations):
-    def __init__(self, engine: Engine, identity: LocalIdentity | None = None, *, extractor=None):
+class Service(ProcessingOperations, RetrievalOperations, AnswerOperations, ControlOperations):
+    def __init__(
+        self,
+        engine: Engine,
+        identity: LocalIdentity | None = None,
+        *,
+        extractor=None,
+        responder=None,
+    ):
         self.engine = engine
         self.identity = identity or LocalIdentity()
         self.extractor = extractor if extractor is not None else NvidiaExtractor.from_env()
+        self.responder = responder if responder is not None else NvidiaResponder.from_env()
         self.expected_revision = ScriptDirectory.from_config(
             Config("alembic.ini")
         ).get_current_head()
@@ -251,6 +261,13 @@ class Service(ProcessingOperations, RetrievalOperations):
         ]
         session.add_all(jobs)
         session.flush()
+        excluded = set(
+            session.scalars(blocked_sources(context).where(Source.id.in_([s.id for s in sources])))
+        )
+        for job in jobs:
+            if job.source_id in excluded:
+                job.status, job.requested, job.error_code = "cancelled", False, "excluded_source"
+                job.finished_at = session.scalar(select(func.clock_timestamp()))
         return list(zip(sources, jobs, strict=True))
 
     @staticmethod
@@ -384,6 +401,12 @@ class Service(ProcessingOperations, RetrievalOperations):
 
     @staticmethod
     def _support(session: Session, context: RequestContext, command: ClaimWrite) -> None:
+        if session.scalar(
+            blocked_sources(context)
+            .where(Source.id.in_({p.source_id for p in command.passages}))
+            .limit(1)
+        ):
+            raise ApplicationError(ErrorCode.EXCLUDED_SOURCE)
         sources = {
             source.id: source
             for source in session.scalars(
@@ -421,6 +444,9 @@ class Service(ProcessingOperations, RetrievalOperations):
                 or variant[passage.start : passage.end] != passage.exact_text
             ):
                 raise ApplicationError(ErrorCode.INVALID_PASSAGE)
+        from jarvis.controls import reject_corrected_relearning
+
+        reject_corrected_relearning(session, context, command, sources.values())
 
     @staticmethod
     def _claim_revision(session: Session, context: RequestContext, command: ClaimWrite) -> int:
@@ -435,6 +461,15 @@ class Service(ProcessingOperations, RetrievalOperations):
             raise ApplicationError(ErrorCode.REFERENCE_UNAVAILABLE)
         if current != command.expected_claim_revision:
             raise ApplicationError(ErrorCode.STALE_REVISION)
+        lifecycle = session.scalar(
+            select(ClaimRecord.lifecycle).where(
+                ClaimRecord.owner_id == context.owner_id,
+                ClaimRecord.claim_id == command.claim_id,
+                ClaimRecord.revision == current,
+            )
+        )
+        if lifecycle == "excluded":
+            raise ApplicationError(ErrorCode.EXCLUDED_SOURCE)
         return current + 1
 
     def validate_claim(self, context: RequestContext, payload: object) -> ClaimWrite:

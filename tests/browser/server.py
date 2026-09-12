@@ -7,6 +7,7 @@ from threading import Event, Thread
 import uvicorn
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from answer_double import FixtureResponder  # noqa: E402
 from memory_double import FixtureExtractor  # noqa: E402
 
 from jarvis.api import create_app
@@ -18,7 +19,7 @@ from jarvis.worker import run_worker
 settings = Settings.from_env()
 settings.require_test_database()  # Fail before any fixture or worker operation.
 engine = make_engine(settings)
-service = Service(engine, extractor=FixtureExtractor())
+service = Service(engine, extractor=FixtureExtractor(), responder=FixtureResponder())
 stop = Event()
 worker = Thread(target=run_worker, args=(service, stop), daemon=True)
 worker.start()

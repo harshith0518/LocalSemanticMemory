@@ -61,6 +61,10 @@ def test_migrations_from_empty_schema_and_repeat_without_drift(engine, migration
             "processing_receipts",
             "model_calls",
             "model_budgets",
+            "control_receipts",
+            "source_exclusions",
+            "passage_exclusions",
+            "feedback_receipts",
         }
     finally:
         migrations(command.upgrade, "head")
@@ -69,7 +73,7 @@ def test_migrations_from_empty_schema_and_repeat_without_drift(engine, migration
 def test_api_cli_and_service_report_identical_readiness(service):
     expected = service.ready()
     assert expected["status"] == "ready"
-    assert expected["schema"] == "0004_lexical_retrieval"
+    assert expected["schema"] == "0005_user_controls"
     assert expected["pgvector"] == "0.8.6"
     response, health = api_responses(service)
     assert response.status_code == 200

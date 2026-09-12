@@ -410,15 +410,32 @@ def test_fusion_preserves_unextracted_original_context(processed):
     assert {"visitor", "dict_0004"}.issubset(records(combined))
 
 
-def test_index_migration_preserves_all_canonical_rows_and_results(processed, engine, migrations):
+def test_index_migration_preserves_all_canonical_rows_and_results(
+    processed, engine, migrations, migration_engine
+):
     from alembic import command
+    from alembic.config import Config
+    from alembic.migration import MigrationContext
+    from alembic.operations import Operations
+    from alembic.script import ScriptDirectory
     from sqlalchemy import inspect
     from test_private import snapshot
 
     service, context = processed
     query = {"namespace": "search", "query": "Ravi", "representation": "sources_and_memories"}
     before, result = snapshot(engine), service.search(context, query)
-    migrations(command.downgrade, "0003_memory_processing")
+    revision = (
+        ScriptDirectory.from_config(Config("alembic.ini"))
+        .get_revision("0004_lexical_retrieval")
+        .module
+    )
+
+    def indexes(action):
+        with migration_engine.begin() as connection:
+            with Operations.context(MigrationContext.configure(connection)):
+                getattr(revision, action)()
+
+    indexes("downgrade")
     try:
         assert "sources_search_idx" not in {
             i["name"] for i in inspect(engine).get_indexes("sources", schema="jarvis")
@@ -426,7 +443,7 @@ def test_index_migration_preserves_all_canonical_rows_and_results(processed, eng
         assert snapshot(engine) == before
         assert service.search(context, query) == result
     finally:
-        migrations(command.upgrade, "head")
+        indexes("upgrade")
     migrations(command.check)
     assert snapshot(engine) == before
     assert service.search(context, query) == result

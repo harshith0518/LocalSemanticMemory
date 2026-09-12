@@ -17,7 +17,7 @@ from jarvis.db import make_engine
 from jarvis.errors import ApplicationError, ErrorCode
 from jarvis.extraction import parse_proposal
 from jarvis.models import ClaimRecord, Job, ModelBudget, ModelCall, Policy, ProcessingReceipt
-from jarvis.providers import Completion, NvidiaExtractor
+from jarvis.providers import MAX_REQUESTS, MAX_TOTAL_TOKENS, Completion, NvidiaExtractor
 from jarvis.services import Service
 from jarvis.worker import process_one
 
@@ -338,7 +338,7 @@ def test_budget_race_reserves_last_call_only_once(memory_service, settings, engi
     context = queue(memory_service, FIXTURE.read_text().splitlines()[0])
     packet = memory_service.lease_next(context)
     with Session(engine) as session, session.begin():
-        session.add(ModelBudget(key="s07-contract-tests", requests=31, tokens=0))
+        session.add(ModelBudget(key="s07-contract-tests", requests=MAX_REQUESTS - 1, tokens=0))
     barrier = Barrier(2, timeout=10)
 
     def reserve():
@@ -358,7 +358,7 @@ def test_budget_race_reserves_last_call_only_once(memory_service, settings, engi
     assert results.count(ErrorCode.BUDGET_EXHAUSTED) == 1
     with Session(engine) as session:
         budget = session.get(ModelBudget, "s07-contract-tests")
-        assert (budget.requests, budget.tokens) == (32, 1000)
+        assert (budget.requests, budget.tokens) == (MAX_REQUESTS, 1000)
 
 
 def test_worker_commit_holds_policy_guard_until_receipt_commit(memory_service, settings, engine):
@@ -445,6 +445,32 @@ def test_ambiguous_or_nonfinite_model_json_is_rejected(payload):
         parse_proposal(payload)
 
 
+def test_model_quotes_resolve_only_exact_unique_excerpts(memory_service):
+    context = queue(memory_service, FIXTURE.read_text().splitlines()[0])
+    packet = memory_service.lease_next(context)
+    proposal = fixture_proposal(
+        {"CURRENT_SOURCE": packet.source.model_dump(mode="json"), "MEMORIES": []}
+    )
+    quoted = deepcopy(proposal)
+    for op in quoted["operations"]:
+        for passage in op["passages"]:
+            passage.pop("start")
+            passage.pop("end")
+    assert parse_proposal(quoted, packet) == parse_proposal(proposal)
+    quoted["operations"][0]["passages"][0]["exact_text"] = "invented excerpt"
+    with pytest.raises(ApplicationError, match="invalid_passage"):
+        parse_proposal(quoted, packet)
+
+    from jarvis.contracts import resolve_excerpt
+
+    source = packet.source.model_copy(update={"raw_text": "aaaaa"})
+    evidence = {"source_id": str(source.id), "variant": "raw", "exact_text": "aaa"}
+    with pytest.raises(ApplicationError, match="invalid_passage"):
+        resolve_excerpt(evidence, {str(source.id): source})  # Overlapping occurrences count.
+    with pytest.raises(ApplicationError, match="invalid_input"):
+        resolve_excerpt({**evidence, "source_id": []}, {str(source.id): source})
+
+
 def test_bad_usage_closes_budget_without_committing_claims(memory_service, engine):
     context = queue(memory_service, FIXTURE.read_text().splitlines()[0])
     memory_service.extractor.complete = lambda _: Completion(
@@ -457,14 +483,14 @@ def test_bad_usage_closes_budget_without_committing_claims(memory_service, engin
     assert process_one(memory_service, context)["reason"] == "budget_exhausted"
     with Session(engine) as session:
         budget = session.get(ModelBudget, "s07-contract-tests")
-        assert budget.requests == 32 and budget.tokens == 1000000
+        assert budget.requests == MAX_REQUESTS and budget.tokens == 1000000
         assert session.scalar(select(func.count()).select_from(ClaimRecord)) == 0
 
 
 def test_token_ceiling_rejects_call_before_transport(memory_service, engine):
     context = queue(memory_service, FIXTURE.read_text().splitlines()[0])
     with Session(engine) as session, session.begin():
-        session.add(ModelBudget(key="s07-contract-tests", requests=0, tokens=499999))
+        session.add(ModelBudget(key="s07-contract-tests", requests=0, tokens=MAX_TOTAL_TOKENS - 1))
     assert process_one(memory_service, context)["reason"] == "budget_exhausted"
     assert memory_service.extractor.calls == 0
     with Session(engine) as session:

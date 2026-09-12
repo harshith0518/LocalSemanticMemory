@@ -138,6 +138,21 @@ def search(mode: str = typer.Option(...)):
     run(operation)
 
 
+@app.command("ask")
+def ask(mode: str = typer.Option(...)):
+    """Optional developer adapter; ordinary users ask through the browser."""
+
+    def operation(service):
+        context = service.identity.context(mode)
+        context.require_saved_access()
+        payload = sys.stdin.read(8193)
+        if len(payload.encode("utf-8")) > 8192:
+            raise ApplicationError(ErrorCode.INVALID_INPUT)
+        return service.ask(context, payload)
+
+    run(operation)
+
+
 @probe.command("write")
 def write_probe(mode: str = "normal") -> None:
     run(lambda service: service.write_probe(service.identity.context(mode)))

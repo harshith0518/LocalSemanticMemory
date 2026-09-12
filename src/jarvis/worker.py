@@ -28,7 +28,7 @@ def process_one(service, context, *, namespace=None):
             if completion.input_tokens + completion.output_tokens > reservation:
                 raise ApplicationError(ErrorCode.BUDGET_EXHAUSTED)
             try:
-                proposal = parse_proposal(completion.content)
+                proposal = parse_proposal(completion.content, packet)
                 return service.commit_extraction(context, packet, proposal)
             except ApplicationError as error:
                 service.finish_call(context, call_id, error=error.code)

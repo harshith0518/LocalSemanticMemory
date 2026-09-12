@@ -282,9 +282,84 @@
           </p>
           <div id="search-results" aria-live="polite"></div>
         </section>
-        <section class="card memories-card" aria-labelledby="memories-title">
+        <section class="card search-card" aria-labelledby="ask-title">
           <div class="section-heading">
             <span class="step">05</span>
+            <h2 id="ask-title">Ask Jarvis</h2>
+          </div>
+          <form id="ask-form" autocomplete="off">
+            <label for="ask-question"
+              >What would you like to know or draft?</label
+            >
+            <textarea
+              id="ask-question"
+              rows="3"
+              maxlength="512"
+              required
+              data-normal
+            ></textarea>
+            <div class="memory-actions">
+              <button type="submit" class="primary" data-normal>
+                Ask from my sources
+              </button>
+              <button
+                id="sample-questions"
+                type="button"
+                class="secondary"
+                data-normal
+              >
+                Try a sample question
+              </button>
+            </div>
+            <details>
+              <summary>Evidence options</summary>
+              <label for="ask-representation">Answer using</label>
+              <select id="ask-representation" data-normal>
+                <option value="sources">Relevant original sources</option>
+                <option value="sources_and_memories">
+                  Sources with related memories
+                </option>
+                <option value="history">
+                  Complete source history, if it fits
+                </option>
+              </select>
+            </details>
+            <p class="help">
+              The NVIDIA prototype sends only approved synthetic examples.
+              Answers are drafts or supported recollections; no message is sent.
+            </p>
+          </form>
+          <p id="ask-state" class="help" role="status">
+            Ask runs only when you choose.
+          </p>
+          <div id="ask-result" aria-live="polite"></div>
+          <div id="answer-feedback" hidden>
+            <label for="feedback-kind">What needs attention?</label>
+            <select id="feedback-kind" data-normal>
+              <option value="unclear">I'm not sure — help me check</option>
+              <option value="memory">A remembered fact is wrong</option>
+              <option value="world_change">The situation has changed</option>
+              <option value="retrieval">Relevant evidence was missed</option>
+              <option value="generation">
+                The answer misread the evidence
+              </option>
+              <option value="style">The wording or format</option>
+              <option value="operation">Something failed to run</option>
+            </select>
+            <button
+              id="review-feedback"
+              type="button"
+              class="secondary"
+              data-normal
+            >
+              Review feedback
+            </button>
+            <p id="feedback-guidance" class="help" role="status"></p>
+          </div>
+        </section>
+        <section class="card memories-card" aria-labelledby="memories-title">
+          <div class="section-heading">
+            <span class="step">06</span>
             <h2 id="memories-title">Memories</h2>
           </div>
           <p class="help">
@@ -335,6 +410,67 @@
           </button>
           <div id="memory-history" aria-live="polite"></div>
         </section>
+        <section
+          id="control-panel"
+          class="card search-card"
+          hidden
+          aria-labelledby="control-title"
+        >
+          <h2 id="control-title">Review a memory change</h2>
+          <p id="control-target" class="passage"></p>
+          <form id="control-form" autocomplete="off">
+            <div id="replacement-fields">
+              <label for="control-statement"
+                >Your correction or update, in your own words</label
+              >
+              <textarea
+                id="control-statement"
+                rows="3"
+                maxlength="65536"
+                data-normal
+              ></textarea>
+              <label for="control-value">What should this value be?</label>
+              <input id="control-value" data-normal />
+              <details>
+                <summary>Check scope, uncertainty and time</summary>
+                <div id="control-qualifiers" class="control-fields"></div>
+              </details>
+              <p class="help">
+                Review the value and qualifiers. Your statement is saved as its
+                evidence; Jarvis does not independently verify it.
+              </p>
+            </div>
+            <p id="forget-explanation" class="help" hidden>
+              Forget stops future use of this memory and its supporting notes,
+              including known copies and matching excerpts on reimport. Other
+              memories depending on those notes are affected too. Originals
+              remain visible in Sources.
+            </p>
+            <div class="memory-actions">
+              <button type="submit" class="secondary" data-normal>
+                Preview change
+              </button>
+              <button
+                id="cancel-control"
+                type="button"
+                class="secondary"
+                data-normal
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+          <div id="control-preview" aria-live="polite"></div>
+          <button
+            id="confirm-control"
+            type="button"
+            class="primary"
+            hidden
+            data-normal
+          >
+            Confirm this change
+          </button>
+        </section>
       </div>
       <p
         id="feedback"
@@ -346,11 +482,11 @@
       <aside class="next-note">
         <span class="next-label">UP NEXT</span>
         <p>
-          <strong>Answers grounded in your sources.</strong> Source-based
-          answers, Correct and Forget will appear here as their backend checks
-          pass.
+          <strong>Inspect, then decide.</strong> Answers cite saved evidence.
+          Correct, update or forget a memory from its card. Private starts
+          fresh.
         </p>
-        <span class="pill">In progress</span>
+        <span class="pill">Synthetic prototype</span>
       </aside>
       <noscript
         ><p class="feedback">

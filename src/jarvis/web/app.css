@@ -634,6 +634,33 @@ body.private .mode-note {
 .memories-card {
   grid-column: 1 / -1;
 }
+textarea,
+select {
+  width: 100%;
+  max-width: 100%;
+  padding: 0.8rem;
+  margin: 0.4rem 0 1rem;
+  border: 1px solid var(--line, #ddd);
+  border-radius: 8px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+}
+textarea {
+  resize: vertical;
+}
+.control-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 1rem;
+}
+#control-panel,
+#ask-result {
+  overflow-wrap: anywhere;
+}
+#ask-result details {
+  margin-top: 0.8rem;
+}
 .search-card {
   grid-column: 1 / -1;
   min-height: 0;

@@ -20,6 +20,7 @@ from jarvis.contracts import (
     exact_text,
     parse_contract,
 )
+from jarvis.controls import blocked_sources
 from jarvis.errors import ApplicationError, ErrorCode
 from jarvis.imports import Identifier
 from jarvis.models import (
@@ -61,12 +62,19 @@ class SearchMatch(Contract):
     via: tuple[Literal["source", "memory"], ...]
 
 
+class ControlAnnotation(Contract):
+    action: Literal["correct", "world_change"]
+    source_id: UUID
+    prior_source_ids: tuple[UUID, ...]
+
+
 class SearchPacket(Contract):
     request: SearchRequest
     policy_revision: int | None
     status: Literal["matched", "no_matches", "evidence_budget_exceeded"]
     sources: tuple[SourceObservation, ...] = ()
     memories: tuple[ClaimRevision, ...] = ()
+    controls: tuple[ControlAnnotation, ...] = ()
     matches: tuple[SearchMatch, ...] = ()
     evidence_bytes: int = 0
     has_more: bool = False
@@ -100,19 +108,11 @@ def fuse_rankings(*rankings):
 class RetrievalOperations:
     def _search_sources(self, context, query):
         newer = aliased(Source)
-        # Conservative until S09 passage-level controls: an excluded supporting passage
-        # blocks the entire paired observation from reuse, including original fallback.
-        excluded = (
-            select(Passage.source_id)
-            .join(ClaimEvidence, ClaimEvidence.passage_id == Passage.id)
-            .join(ClaimRecord, ClaimRecord.id == ClaimEvidence.claim_revision_id)
-            .where(ClaimRecord.owner_id == context.owner_id, ClaimRecord.lifecycle == "excluded")
-        )
         statement = select(Source.id).where(
             Source.owner_id == context.owner_id,
             Source.source_key.startswith(f"import:{query.namespace}:", autoescape=True),
             Source.kind.in_(["user_message", "imported_dictation"]),
-            ~Source.id.in_(excluded),
+            ~Source.id.in_(blocked_sources(context)),
             ~select(newer.id)
             .where(
                 newer.owner_id == context.owner_id,
@@ -277,18 +277,22 @@ class RetrievalOperations:
                     ),
                 )
             )
-        return SearchPacket(
-            request=query,
-            policy_revision=policy.revision if policy else None,
-            status="matched" if matches else "evidence_budget_exceeded",
-            sources=tuple(selected_sources.values()),
-            memories=tuple(selected_memories.values()),
-            matches=tuple(matches),
-            evidence_bytes=evidence_size(selected_sources.values(), selected_memories.values()),
-            budget_limited=budget_limited,
-            has_more=len(matches) < len(ordered)
-            or len(lexical) == CANDIDATES
-            or len(memories) == CANDIDATES,
+        return self._attach_controls(
+            session,
+            context,
+            SearchPacket(
+                request=query,
+                policy_revision=policy.revision if policy else None,
+                status="matched" if matches else "evidence_budget_exceeded",
+                sources=tuple(selected_sources.values()),
+                memories=tuple(selected_memories.values()),
+                matches=tuple(matches),
+                evidence_bytes=evidence_size(selected_sources.values(), selected_memories.values()),
+                budget_limited=budget_limited,
+                has_more=len(matches) < len(ordered)
+                or len(lexical) == CANDIDATES
+                or len(memories) == CANDIDATES,
+            ),
         )
 
     def prepare_search(self, context, payload):

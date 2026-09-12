@@ -1,0 +1,87 @@
+{
+  "kind": "manual_semantic_review_of_public_diagnostic",
+  "reviewed_by": "coding assistant",
+  "date": "2026-09-12",
+  "verdict": "live_quality_gates_failed_or_incomplete",
+  "prompt": "s07-v2-excerpts",
+  "completed_extraction_repeats": 0,
+  "attempted_full_extraction_repeats": 1,
+  "namespace": "live-279608e17b0b435fa46977d3bfe61f79",
+  "requests": 18,
+  "known_input_tokens": 25560,
+  "known_output_tokens": 1944,
+  "accounted_tokens_including_unknown_reservations": 165273,
+  "paid_spend_authorized_usd": 0,
+  "paid_spend_measured": "No billing API queried; only approved free-trial endpoint used.",
+  "request_cap": 96,
+  "token_cap": 1500000,
+  "budget_reset": false,
+  "calls": {
+    "nvidia/nemotron-3.5-lightning-30b-a3b:failed:invalid_input": 3,
+    "nvidia/nemotron-3.5-lightning-30b-a3b:failed:provider_failed": 5,
+    "moonshotai/kimi-k3:failed:provider_failed": 4,
+    "nvidia/nemotron-3.5-lightning-30b-a3b:succeeded:None": 6
+  },
+  "observations": [
+    {
+      "record_id": "dict_0001",
+      "contract": "accepted",
+      "semantic": "partial",
+      "finding": "Correct planned date and Atlas scope retained. Added event time despite prompt requiring separately supported event time. Generic subject launch also failed to match the subsequent launch-date proposition."
+    },
+    {
+      "record_id": "dict_0002",
+      "contract": "accepted",
+      "semantic": "fail",
+      "finding": "Extracted only three-bullet limit, losing Mira as preference subject and the blocker requirement. Capture date was promoted to event time."
+    },
+    {
+      "record_id": "dict_0003",
+      "contract": "accepted",
+      "semantic": "fail",
+      "finding": "Added 21 September under a new launch-date subject; original 18 September stayed active. No superseding link or legal-review reason retained. Event time conflated with the planned date."
+    },
+    {
+      "record_id": "dict_0004",
+      "contract": "no_memory",
+      "semantic": "miss",
+      "finding": "Did not fabricate a confirmed owner, but omitted the useful conditional, unconfirmed Ravi/Finance possibility required by this diagnostic."
+    },
+    {
+      "record_id": "dict_0005",
+      "contract": "provider_failed",
+      "semantic": "not_evaluable",
+      "finding": "No completion; timeout/transport failure is not a no-memory judgment."
+    },
+    {
+      "record_id": "dict_0006",
+      "contract": "provider_failed",
+      "semantic": "not_evaluable",
+      "finding": "No completion; useful blocker/next-step obligation remains untested."
+    },
+    {
+      "record_id": "dict_0007",
+      "contract": "no_memory",
+      "semantic": "miss",
+      "finding": "Did not invent capture metadata, but omitted the useful Orion client-date observation."
+    },
+    {
+      "record_id": "dict_0008",
+      "contract": "no_memory",
+      "semantic": "miss",
+      "finding": "Did not assert either conflicting value, but omitted the inspectable raw/formatted discrepancy."
+    }
+  ],
+  "answers": {
+    "kimi_attempts": 4,
+    "completed": 0,
+    "failures": "provider_failed, including observed ReadTimeout/ConnectError across transport diagnostics; exact cause not captured for every call",
+    "longer_timeout_seconds": 180,
+    "longer_timeout_attempt": "failed",
+    "representations_compared": false,
+    "full_three_repeat_matrix": "not run: smoke baseline did not succeed"
+  },
+  "initial_v1": "Three schema-invalid completions and one provider failure retained; exact excerpt wire conversion fixed schema/offset burden, not semantic accuracy.",
+  "local_contracts": "Deterministic S09 lifecycle/browser tests are reported separately and are not live quality scores.",
+  "decision": "Keep original-source search as default, retain exact originals and inspectable revisions. Stop additional matrix calls until provider stability and extraction semantic quality improve. No Ultra fallback, dense retrieval, or new allowance applied."
+}

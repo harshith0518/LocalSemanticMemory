@@ -21,6 +21,7 @@ Read todo.md for current status, then README.md, DECISIONS.md, PLAN.md, ARCHITEC
 - Model calls propose; code validates and commits. Real source IDs do not establish semantic entailment. Do not fabricate external action completion.
 - Current instructions override remembered preferences for the request. Ask targeted questions for consequential ambiguity and distinguish missing evidence from operational failure.
 - No model-training use in v1. Provider retention/settings and spend must be explicit before live calls.
+- User-approved prototype exception (12 September 2026): the NVIDIA trial may receive checked-in synthetic sources/questions despite its training/retention terms. The combined S06–S08 pilot is limited to 96 requests and 1,500,000 input/output tokens including retries, $0 paid. Personal input and Private provider requests remain blocked; no automatic Ultra fallback. This approval supersedes older pending-exception notes.
 
 ## Evidence and history
 

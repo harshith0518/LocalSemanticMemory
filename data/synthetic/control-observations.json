@@ -1,0 +1,78 @@
+[
+  {
+    "source_key": "fixture:control-23",
+    "kind": "user_message",
+    "raw_text": "The Atlas launch plan is 2026-09-23.",
+    "formatted_text": null,
+    "captured_at": null,
+    "capture_metadata": {
+      "input_kind": "user_control",
+      "confirmed_content": {
+        "subject": {
+          "label": "Atlas",
+          "entity_id": null
+        },
+        "predicate": "launch_date",
+        "value": {
+          "kind": "date",
+          "value": "2026-09-23"
+        },
+        "scope": {
+          "kind": "project",
+          "key": "Atlas"
+        },
+        "attribution": {
+          "label": "user",
+          "entity_id": null
+        },
+        "evidence_status": "reported",
+        "modality": "asserted",
+        "negated": false,
+        "condition": null,
+        "time": {
+          "event": null,
+          "valid_from": null,
+          "valid_to": null
+        }
+      }
+    }
+  },
+  {
+    "source_key": "fixture:control-25",
+    "kind": "user_message",
+    "raw_text": "The Atlas launch plan is 2026-09-25.",
+    "formatted_text": null,
+    "captured_at": null,
+    "capture_metadata": {
+      "input_kind": "user_control",
+      "confirmed_content": {
+        "subject": {
+          "label": "Atlas",
+          "entity_id": null
+        },
+        "predicate": "launch_date",
+        "value": {
+          "kind": "date",
+          "value": "2026-09-25"
+        },
+        "scope": {
+          "kind": "project",
+          "key": "Atlas"
+        },
+        "attribution": {
+          "label": "user",
+          "entity_id": null
+        },
+        "evidence_status": "reported",
+        "modality": "asserted",
+        "negated": false,
+        "condition": null,
+        "time": {
+          "event": null,
+          "valid_from": null,
+          "valid_to": null
+        }
+      }
+    }
+  }
+]

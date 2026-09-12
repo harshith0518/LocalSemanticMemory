@@ -20,6 +20,7 @@ class ErrorCode(StrEnum):
     CONTEXT_LIMIT = "context_limit"
     INVALID_TRANSITION = "invalid_transition"
     RETRY_LIMIT = "retry_limit_reached"
+    EXCLUDED_SOURCE = "excluded_source"
 
 
 class ApplicationError(Exception):

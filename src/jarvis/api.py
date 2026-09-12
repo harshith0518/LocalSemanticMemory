@@ -186,4 +186,43 @@ def create_app(service: Service | None = None) -> FastAPI:
         payload = await current_input(request)
         return await run_in_threadpool(service.search, context, payload, JSONResponse)
 
+    @app.post("/ask")
+    async def ask(request: Request):
+        service = app.state.service
+        context = service.identity.context(request.headers.get("X-Jarvis-Mode", ""))
+        context.require_saved_access()
+        payload = await current_input(request)
+        return await run_in_threadpool(service.ask, context, payload, JSONResponse)
+
+    @app.post("/controls/preview")
+    async def preview_control(request: Request):
+        service = app.state.service
+        context = service.identity.context(request.headers.get("X-Jarvis-Mode", ""))
+        context.require_saved_access()
+        return await run_in_threadpool(
+            service.preview_control, context, await current_input(request)
+        )
+
+    @app.post("/controls/apply")
+    async def apply_control(request: Request):
+        service = app.state.service
+        context = service.identity.context(request.headers.get("X-Jarvis-Mode", ""))
+        context.require_saved_access()
+        return await run_in_threadpool(service.apply_control, context, await current_input(request))
+
+    @app.get("/trial/questions")
+    def questions():
+        from jarvis.answers import trial_questions
+
+        return {"questions": trial_questions()}
+
+    @app.post("/feedback")
+    async def feedback(request: Request):
+        service = app.state.service
+        context = service.identity.context(request.headers.get("X-Jarvis-Mode", ""))
+        context.require_saved_access()
+        return await run_in_threadpool(
+            service.feedback, context, await current_input(request), JSONResponse
+        )
+
     return app

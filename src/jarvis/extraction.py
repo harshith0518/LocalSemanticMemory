@@ -14,13 +14,15 @@ from jarvis.contracts import (
     SourceObservation,
     SupportingPassage,
     Timestamp,
+    excerpt_schema,
     parse_contract,
+    resolve_excerpt,
 )
 from jarvis.errors import ApplicationError, ErrorCode
 from jarvis.imports import Identifier as Namespace
 from jarvis.imports import reject_constant, unique_object
 
-PROMPT_VERSION = "s07-v1"
+PROMPT_VERSION = "s07-v2-excerpts"
 MAX_OPERATIONS = 16
 MAX_CONTEXT_CLAIMS = 64
 MAX_ATTEMPTS = 3
@@ -56,7 +58,7 @@ class ExtractionProposal(Contract):
         return self
 
 
-def parse_proposal(payload: object) -> ExtractionProposal:
+def parse_proposal(payload: object, packet=None) -> ExtractionProposal:
     if isinstance(payload, (str, bytes)):
         try:
             payload = json.loads(
@@ -64,6 +66,22 @@ def parse_proposal(payload: object) -> ExtractionProposal:
             )
         except (ValueError, TypeError):
             raise ApplicationError(ErrorCode.INVALID_INPUT) from None
+    if packet is not None and isinstance(payload, dict):
+        # Models select exact text. Code resolves unique excerpts into code-point offsets;
+        # ambiguous, repaired/fuzzy or fabricated excerpts are never silently accepted.
+        payload = json.loads(json.dumps(payload))
+        sources = {str(source.id): source for source in packet.sources}
+        operations = payload.get("operations", [])
+        if not isinstance(operations, list):
+            raise ApplicationError(ErrorCode.INVALID_INPUT)
+        for operation in operations:
+            if not isinstance(operation, dict) or not isinstance(
+                operation.get("passages", []), list
+            ):
+                raise ApplicationError(ErrorCode.INVALID_INPUT)
+            operation["passages"] = [
+                resolve_excerpt(p, sources) for p in operation.get("passages", [])
+            ]
     return parse_contract(ExtractionProposal, payload)
 
 
@@ -103,8 +121,13 @@ material disagreement as disputed; never silently prefer formatted text. Unknown
 effective times stay null. Do not infer them from import time. Capture metadata is context,
 not a claim. Similar names do not establish identity. Keep entity_id null.
 Every operation needs exact supporting passages, including at least one from CURRENT_SOURCE.
-Use supplied source IDs/revisions, named variant, exact text and zero-based half-open Python
-Unicode code-point offsets. Include the entire condition and necessary surrounding context.
+Use supplied source IDs/revisions, named variant and one EXACT UNIQUE excerpt. Do not calculate
+or return character offsets: the backend computes them after exact matching. Include the entire
+condition and necessary surrounding context. Prefer a complete short sentence when useful.
+subject and attribution MUST be objects with label and entity_id, never strings.
+For a first-person dictation, attribution is {"label":"user","entity_id":null} unless quoted.
+Use the explicitly named project as project scope, not unspecified scope. A planned date belongs
+in the typed date value. Leave event/valid_from/valid_to null unless separately supported.
 An atomic claim expresses one proposition without removing scope or qualifiers.
 add: new claim. support: same meaning as a supplied target, content null, add evidence.
 supersede: explicitly supported real-world change of the same subject/property/scope.
@@ -149,7 +172,7 @@ def messages(packet: ExtractionPacket, *, repair: bool = False) -> list[dict]:
             )
             for claim in packet.memories
         ],
-        "OUTPUT_SCHEMA": ExtractionProposal.model_json_schema(),
+        "OUTPUT_SCHEMA": model_proposal_schema(),
     }
     instruction = SYSTEM_PROMPT
     if repair:
@@ -160,3 +183,7 @@ def messages(packet: ExtractionPacket, *, repair: bool = False) -> list[dict]:
         {"role": "system", "content": instruction},
         {"role": "user", "content": json.dumps(payload, ensure_ascii=False, separators=(",", ":"))},
     ]
+
+
+def model_proposal_schema():
+    return excerpt_schema(ExtractionProposal.model_json_schema())
