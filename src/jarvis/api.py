@@ -245,6 +245,35 @@ def create_app(service: Service | None = None) -> FastAPI:
 
         return {"questions": trial_questions()}
 
+    @app.get("/inference")
+    def inference(request: Request):
+        service = app.state.service
+        context = service.identity.context(request.headers.get("X-Jarvis-Mode", ""))
+        return service.inference_status(context)
+
+    @app.get("/trial/corpus")
+    def corpus(request: Request):
+        service = app.state.service
+        context = service.identity.context(request.headers.get("X-Jarvis-Mode", ""))
+        service._authorize(context)
+        return {"jsonl": Path("data/synthetic/corpus-540.jsonl").read_text(encoding="utf-8")}
+
+    @app.get("/trial/showcase")
+    def showcase(request: Request):
+        import json
+
+        service = app.state.service
+        context = service.identity.context(request.headers.get("X-Jarvis-Mode", ""))
+        service._authorize(context)
+        data = json.loads(Path("eval/fixtures/corpus-cases.json").read_text(encoding="utf-8"))
+        return {
+            "cases": [
+                {"title": c["title"], "request": c["request"], "category": c["category"]}
+                for c in data["cases"]
+                if c["split"] == "showcase"
+            ]
+        }
+
     @app.post("/feedback")
     async def feedback(request: Request):
         service = app.state.service

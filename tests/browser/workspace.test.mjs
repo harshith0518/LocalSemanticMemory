@@ -735,6 +735,79 @@ test("Private scratchpad is cleared before browser-history restoration", async (
     assert.equal(await page.locator("#private-draft").inputValue(), "");
 });
 
+test("greeting explains capabilities locally and evidence choices are explained and collapsed", async (t) => {
+  const page = await pageFor(t);
+  const calls = [];
+  page.on("request", (request) => {
+    if (!new URL(request.url()).pathname.startsWith("/assets/"))
+      calls.push(request.url());
+  });
+  assert.equal(await page.getByLabel("Answer evidence").isVisible(), false);
+  await page.getByLabel("Ask a question").fill("hello jarvis what are you doing");
+  await button(page, "Ask").click();
+  await page
+    .getByText("Hello! I help you find the details in your notes.", {
+      exact: true,
+    })
+    .waitFor();
+  assert.deepEqual(calls, []);
+  await page.getByText("Context: relevant notes", { exact: true }).click();
+  await page.getByLabel("Answer evidence").selectOption("sources_and_memories");
+  assert.match(
+    await page.locator(".context-options").innerText(),
+    /not what gets saved/,
+  );
+  await privateMode(page);
+  assert.equal(
+    await page
+      .getByText("Hello! I help you find the details in your notes.", {
+        exact: true,
+      })
+      .count(),
+    0,
+  );
+});
+
+test("540-note import, setup information and 30 preselected showcase questions use real APIs", async (t) => {
+  const page = await pageFor(t);
+  await page.getByLabel("Collection name").fill(`corpus-${randomUUID()}`);
+  await nav(page, "Sources");
+  await page
+    .getByText("Explore the complete 540-note fictional corpus", {
+      exact: true,
+    })
+    .click();
+  await button(page, "Import 540 fictional notes").click();
+  await notice(page, /Saved 540 new/);
+  await idle(page);
+  await button(page, "Import 540 fictional notes").click();
+  await notice(page, /Saved 0 new.*540 unchanged/);
+  await idle(page);
+  await nav(page, "Conversation");
+  await page
+    .getByText("Model setup and 30 showcase questions", { exact: true })
+    .click();
+  await button(page, "Check model setup").click();
+  await idle(page);
+  assert.match(
+    await page.locator(".conversation-page .setup-card").innerText(),
+    /deterministic-answer-double/,
+  );
+  await button(page, "Browse 30 showcase cases").click();
+  await idle(page);
+  assert.equal(await page.locator(".showcase-picker option").count(), 31);
+  await page.locator(".showcase-picker select").selectOption({ index: 1 });
+  assert.match(await page.getByLabel("Ask a question").inputValue(), /Juniper/);
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.equal(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+    true,
+  );
+  await screenshot(page, "showcase-mobile");
+});
+
 // Last: Forget intentionally excludes known sample copies across this isolated owner.
 test("mobile Correct, world change and Forget review effects and clear revoked cached results", async (t) => {
   const page = await pageFor(t, { width: 390, height: 844 });

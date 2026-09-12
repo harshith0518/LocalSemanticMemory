@@ -36,3 +36,7 @@ Read todo.md for current status, then README.md, DECISIONS.md, PLAN.md, ARCHITEC
 ## Verification
 
 Run targeted checks appropriate to the approved change. Lifecycle concurrency tests must use the actual selected DB with separate connections and barriers, not just simulated sequential events. Before final delivery, validate a clean Compose start, import, UI journey, tests, live evaluation and scoped reset from the documented commit.
+
+## Approved evening extension (12 September 2026)
+
+The user explicitly approved extending the NVIDIA synthetic exception to the checked-in 540-record corpus and its separate questions, with a combined persisted lifetime ceiling of 750 requests / 10,000,000 accounted tokens including retries/unknown reservations, $0 paid. Preserve the existing budget key and consumption; no automatic model fallback. The user also explicitly approved default-off unfamiliar inference for unfamiliar Normal-mode input using their own NVIDIA key, requiring an affirmative flag AND the exact data-policy acknowledgement. NVIDIA retention/training terms may apply and must be visible in setup. Private remains completely blocked. This supersedes older synthetic-only/pending-review notes only for this explicit operator-controlled mode. Details and acceptance are consolidated in DECISIONS.md, PLAN.md and EVALUATION.md.

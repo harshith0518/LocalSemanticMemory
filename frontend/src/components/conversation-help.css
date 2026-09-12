@@ -1,0 +1,56 @@
+.context-options {
+  max-width: min(100%, 30rem);
+  font-size: 0.8rem;
+  color: #425643;
+}
+.context-options summary {
+  padding: 0.65rem 0;
+  font-weight: 600;
+}
+.context-options p {
+  margin: 0.6rem 0;
+  line-height: 1.6;
+}
+.context-options select {
+  width: 100%;
+  max-width: 100%;
+}
+.setup-card {
+  margin: 1rem 0;
+  padding: 1rem 1.2rem;
+  border: 1px solid #d5ddc9;
+  border-radius: 1rem;
+  background: linear-gradient(120deg, #f4f5e9, #faf8ef);
+  font-size: 0.83rem;
+  line-height: 1.65;
+}
+.setup-card summary {
+  font-weight: 600;
+}
+.setup-card p {
+  margin: 0.8rem 0;
+  overflow-wrap: anywhere;
+}
+.setup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.showcase-picker {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 1rem;
+}
+.showcase-picker select {
+  width: 100%;
+  max-width: 100%;
+  padding: 0.65rem;
+  border: 1px solid #cad3be;
+  border-radius: 0.5rem;
+  background: #fffef6;
+}
+@media (max-width: 600px) {
+  .context-options {
+    max-width: calc(100% - 5rem);
+  }
+}

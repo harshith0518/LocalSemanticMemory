@@ -11,6 +11,11 @@ x-runtime-environment: &runtime-environment
   JARVIS_DB_NAME: jarvis
   JARVIS_DB_USER: jarvis_app
   JARVIS_DB_PASSWORD: ${JARVIS_APP_PASSWORD:?Copy .env.example to .env and set passwords}
+  JARVIS_RESPONSE_MODEL: ${JARVIS_RESPONSE_MODEL:-nvidia/nemotron-3.5-lightning-30b-a3b}
+  JARVIS_UNFAMILIAR_INFERENCE_APPROVED: ${JARVIS_UNFAMILIAR_INFERENCE_APPROVED:-false}
+  JARVIS_UNFAMILIAR_DATA_POLICY_ACK: ${JARVIS_UNFAMILIAR_DATA_POLICY_ACK:-}
+  JARVIS_MAX_REQUESTS: ${JARVIS_MAX_REQUESTS:-750}
+  JARVIS_MAX_TOTAL_TOKENS: ${JARVIS_MAX_TOTAL_TOKENS:-10000000}
 
 services:
   db:
@@ -50,6 +55,8 @@ services:
       <<: *runtime-environment
       JARVIS_S07_SYNTHETIC_TRIAL_APPROVED: ${JARVIS_S07_SYNTHETIC_TRIAL_APPROVED:-false}
       KIMI_K3_API_KEY: ${KIMI_K3_API_KEY:-}
+      NEMOTRON_30B_API_KEY: ${NEMOTRON_30B_API_KEY:-}
+      NVIDIA_API_KEY: ${NVIDIA_API_KEY:-}
     ports: ['127.0.0.1:${JARVIS_API_PORT:-8000}:8000']
     depends_on:
       migrate: {condition: service_completed_successfully}
@@ -69,6 +76,8 @@ services:
       <<: *runtime-environment
       JARVIS_S07_SYNTHETIC_TRIAL_APPROVED: ${JARVIS_S07_SYNTHETIC_TRIAL_APPROVED:-false}
       KIMI_K3_API_KEY: ${KIMI_K3_API_KEY:-}
+      NEMOTRON_30B_API_KEY: ${NEMOTRON_30B_API_KEY:-}
+      NVIDIA_API_KEY: ${NVIDIA_API_KEY:-}
     depends_on:
       migrate: {condition: service_completed_successfully}
 
@@ -81,6 +90,7 @@ services:
       JARVIS_S07_SYNTHETIC_TRIAL_APPROVED: ${JARVIS_S07_SYNTHETIC_TRIAL_APPROVED:-false}
       NEMOTRON_30B_API_KEY: ${NEMOTRON_30B_API_KEY:-}
       KIMI_K3_API_KEY: ${KIMI_K3_API_KEY:-}
+      NVIDIA_API_KEY: ${NVIDIA_API_KEY:-}
     depends_on:
       migrate: {condition: service_completed_successfully}
 

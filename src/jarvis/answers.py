@@ -64,7 +64,8 @@ class FeedbackRequest(Contract):
 @cache
 def trial_questions():
     data = json.loads(Path("eval/fixtures/sample-evaluation-cases.json").read_text())
-    return tuple(case["request"] for case in data["cases"])
+    corpus = json.loads(Path("eval/fixtures/corpus-cases.json").read_text())
+    return tuple(case["request"] for case in data["cases"] + corpus["cases"])
 
 
 def answer_messages(packet, *, repair=False):
@@ -194,14 +195,20 @@ class AnswerOperations:
         if evidence.budget_limited or evidence.status == "evidence_budget_exceeded":
             raise ApplicationError(ErrorCode.CONTEXT_LIMIT)
         for source in evidence.sources:
-            self._trial_source(source, live=self.responder.live)
+            self._trial_source(
+                source, live=self.responder.live, unfamiliar=self.responder.unfamiliar_mode
+            )
         return AnswerPacket(request=request, evidence=evidence)
 
     @measured("answer_context")
     def prepare_answer(self, context, payload):
         self._answer_gate(context)
         request = parse_contract(AskRequest, payload)
-        if self.responder.live and request.question not in trial_questions():
+        if (
+            self.responder.live
+            and not self.responder.unfamiliar_mode
+            and request.question not in trial_questions()
+        ):
             raise ApplicationError(ErrorCode.TRIAL_INPUT_DENIED)
         with self._session(context, write=True) as session:
             return self._answer_snapshot(session, context, request)

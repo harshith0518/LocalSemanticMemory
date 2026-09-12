@@ -1,0 +1,64 @@
+{
+  "date": "2026-09-12",
+  "baseline_commit": "6e9fc15fccfb642a420ef54195a3ed26158bbd06",
+  "scope": "Approved synthetic evaluation preparation, explicit unfamiliar opt-in and browser clarity; implementation acceptance is separate from live quality",
+  "backend": {
+    "passed": 244,
+    "elapsed_seconds": 129.87,
+    "database": "Actual isolated PostgreSQL; existing concurrency checks use separate connections and barriers"
+  },
+  "browser": {
+    "initial": {
+      "passed": 23,
+      "total": 24,
+      "elapsed_seconds": 46.8554387,
+      "failure": "New setup-card assertion also matched hidden Sources panel"
+    },
+    "final": {
+      "passed": 24,
+      "total": 24,
+      "elapsed_seconds": 41.7098508,
+      "fix": "Scope unchanged assertion to .conversation-page .setup-card; user-approved, no application behavior change"
+    },
+    "providers": "Deterministic model doubles, not live NVIDIA"
+  },
+  "additional_checks": {
+    "acceptance_regressions": "12 passed in 4.63 seconds after the isolated DB reset",
+    "ruff": "Passed after formatting; initial cache-permission and line-length findings resolved",
+    "typescript_vite": "Passed",
+    "migration_drift": "No new upgrade operations detected",
+    "corpus_validation": "540 unique paired records, 84 separate cases and frozen hashes passed",
+    "scoped_reset_caveat": "The first down command omitted the browser profile, leaving the old web container and network. This is not final clean-Compose rehearsal evidence."
+  },
+  "corpus": {
+    "source_records": 540,
+    "connected_records": 300,
+    "short_mechanism_records": 240,
+    "cases": 84,
+    "showcase": 30,
+    "held_out": 30,
+    "development": 24,
+    "source_sha256": "6d3e35c314d55873247ffa86766320c187b1f81e822dd865a36f2dfae852c4e9",
+    "cases_sha256": "2ae99b0e2de8e6997dea32f82adb8cd2b62e1d20dbe7ae94bff6f2e6eb9bd2aa",
+    "provenance": "Deterministic AI-assisted synthetic fiction, not independently collected audio transcripts",
+    "held_out_limit": "Questions withheld from source ingestion; same-author/template split, not an independent blind benchmark",
+    "showcase_selection": "Frozen before live outcomes; no success-only filtering"
+  },
+  "safety": {
+    "unfamiliar_mode": "Default off, requires explicit operator approval plus data-terms acknowledgement and own key",
+    "private": "Still blocked from saved data and live providers",
+    "budget": "Same persisted s07-synthetic-v1 accounting; 750 lifetime requests / 10,000,000 accounted tokens / $0 paid authorization; retries count"
+  },
+  "live_reports": [
+    "s11-lightning-answer-smoke.jsonl",
+    "s11-repair-checkpoint.jsonl",
+    "s11-ultra-probe.jsonl",
+    "s11-ultra-review.json"
+  ],
+  "incomplete": [
+    "Full 540-record live evaluation",
+    "Successful deployed live browser demonstration",
+    "Final clean Compose/import/process/UI/restart/reset rehearsal",
+    "Final Phase One originals and exact release commit"
+  ]
+}

@@ -104,6 +104,34 @@ export function Sources({ workspace: w }: { workspace: Workspace }) {
           Try the sample
         </Button>
       </section>
+      <details className="setup-card">
+        <summary>Explore the complete 540-note fictional corpus</summary>
+        <p>
+          Connected work and personal histories, small details, conditions,
+          updates, conflicting variants and deliberate nonfacts. Import
+          preserves both variants; learning is a separate, explicitly requested
+          step in Memory.
+        </p>
+        <p>
+          Use a new collection such as <b>corpus-demo</b>. Questions and answer
+          labels are never imported as notes.
+        </p>
+        <Button
+          disabled={!!w.busy}
+          variant="outline"
+          onClick={() =>
+            void w.run("Importing the fictional corpus", async () => {
+              const data = await w.session.request<{ jsonl: string }>(
+                "/trial/corpus",
+              );
+              await w.importContent(data.jsonl);
+              setResult(undefined);
+            })
+          }
+        >
+          Import 540 fictional notes
+        </Button>
+      </details>
       <div className="sources-grid">
         <section className="panel source-library">
           <div className="section-title">

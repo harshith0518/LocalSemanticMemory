@@ -1,0 +1,161 @@
+{
+  "recorded_at": "2026-09-12T13:48:47Z",
+  "scope": "Explicit maximum-10-call public synthetic Ultra diagnostic; not a model switch or full benchmark",
+  "model": "nvidia/nemotron-3-ultra-550b-a55b",
+  "namespace": "ultra-probe-fd3035a87c454efe9d7130853c794de9",
+  "source_sha256": "021ba1318952de4d5f1caf4b84fafea32c314c42c6b46bf26e30d7b5316a4cfc",
+  "evidence": "s11-ultra-probe.jsonl",
+  "settings": {
+    "temperature": 0,
+    "max_output_tokens": 4096,
+    "thinking": false,
+    "timeout_seconds": 90,
+    "stream": false,
+    "repeats": 1,
+    "automatic_fallback": false
+  },
+  "requests": {
+    "total": 10,
+    "provider_completions": 6,
+    "provider_failures": 4,
+    "validation_rejections": 1,
+    "accepted_calls": 5
+  },
+  "answers": {
+    "attempted": 2,
+    "accepted": 1,
+    "provider_failed": 1,
+    "manual_review": [
+      {
+        "case_id": "change_with_original_source",
+        "result": "Supported first/revised dates and legal-review reason; both source citations validated."
+      },
+      {
+        "case_id": "grounded_personalized_draft",
+        "result": "Provider failure; preference-following answer quality not assessable."
+      }
+    ]
+  },
+  "extraction": {
+    "imported_sources": 8,
+    "attempted_jobs": 7,
+    "succeeded_jobs": 4,
+    "failed_jobs": 3,
+    "pending_at_cap": 1,
+    "active_claims": 5,
+    "manual_review": [
+      {
+        "record_id": "dict_0001",
+        "result": "Provider failure; first launch plan not learned."
+      },
+      {
+        "record_id": "dict_0002",
+        "result": "Mira attribution, Atlas scope, three bullets and blocker requirement preserved."
+      },
+      {
+        "record_id": "dict_0003",
+        "result": "Proposed an asserted launch date with the reason in condition; rejected as invalid_input. Repair failed at provider. No revised date committed; automatic supersession not demonstrated."
+      },
+      {
+        "record_id": "dict_0004",
+        "result": "Tentative, conditional Ravi possibility preserved, including the Finance condition; exact source retains lack of confirmation."
+      },
+      {
+        "record_id": "dict_0005",
+        "result": "Provider failure; reported checklist action not learned."
+      },
+      {
+        "record_id": "dict_0006",
+        "result": "Blocker and next step stored separately with exact source support."
+      },
+      {
+        "record_id": "dict_0007",
+        "result": "Orion date retained, time fields remain null; client action is in predicate and source support."
+      },
+      {
+        "record_id": "dict_0008",
+        "result": "Not called because the 10-call cap was reached; conflict handling not assessed."
+      }
+    ]
+  },
+  "successful_provider_latency_ms": {
+    "min": 63853,
+    "max": 86920,
+    "median": 80443.5,
+    "mean": 77052.167
+  },
+  "accounting": {
+    "before": {
+      "requests": 34,
+      "accounted_tokens": 252341
+    },
+    "after": {
+      "requests": 44,
+      "accounted_tokens": 334052
+    },
+    "known_input_tokens": 17780,
+    "known_output_tokens": 2021,
+    "unknown_usage_reserved_tokens": 61910,
+    "new_accounted_tokens": 81711,
+    "lifetime_request_ceiling": 750,
+    "lifetime_accounted_token_ceiling": 10000000,
+    "authorized_paid_spend_usd": 0,
+    "actual_billing_verified": false
+  },
+  "comparison": {
+    "lightning_evidence": [
+      "s11-lightning-answer-smoke.jsonl",
+      "s11-repair-checkpoint.jsonl"
+    ],
+    "lightning_checkpoint_provider_completions": "12/12, including schema-rejected outputs",
+    "lightning_answer_results": "Three completed answers; two fulfilled their reviewed obligations, one missed the requested three-bullet format.",
+    "lightning_remaining_extraction_issues": [
+      "Unreconciled old/new launch dates",
+      "Conditional proposal rejected",
+      "Some structured attribution and episode details omitted"
+    ],
+    "limitations": [
+      "Single sequential diagnostic per model, not repeated/blind statistical evidence",
+      "Failure-dependent memory context differs between models",
+      "Both retained complete paired synthetic source records",
+      "A validated quote does not establish semantic completeness"
+    ],
+    "decision": "Do not select Ultra for the bulk run on this evidence. Preserve the existing explicit Lightning selection; its semantic quality gate remains open."
+  },
+  "running_app_read_only_check": {
+    "extractor_enabled": false,
+    "extractor_key_configured": false,
+    "responder_enabled": false,
+    "responder_model": "moonshotai/kimi-k3",
+    "responder_key_configured": true,
+    "explanation": "The running container is still the old disabled configuration. Current Compose/source changes have not been redeployed.",
+    "configuration_changed": false
+  },
+  "checks": {
+    "ruff": "Passed after formatting; initial line-length findings retained in command history.",
+    "application_tests": "Last full application checkpoint: 244 PostgreSQL tests and 24/24 browser journeys. Not rerun for this evaluation-only script."
+  },
+  "alternative_provider_preflight": {
+    "inference_calls": 0,
+    "openrouter_key_variable": "OPEN_ROUTER_API_KEY",
+    "openrouter_key_http_status": 200,
+    "openrouter_key_elapsed_ms": 689,
+    "openrouter_account": {"is_free_tier": true, "limit": 0, "limit_remaining": 0, "usage_daily": 0},
+    "openrouter_model_catalog_http_status": 200,
+    "openrouter_zero_token_price_json_candidates": ["google/gemma-4-31b-it:free", "google/gemma-4-26b-a4b-it:free", "nvidia/nemotron-3-super-120b-a12b:free", "nex-agi/nex-n2.5-pro:free"],
+    "google_key_variable": "GOOGLE_API_KEY_FREE_TIER",
+    "google_model_catalog_http_status": 200,
+    "google_catalog_elapsed_ms": 214,
+    "google_catalog_candidates": ["models/gemini-3.8-flash", "models/gemini-3.5-flash-lite"],
+    "qualification": "Authentication/catalog access is not generation, free-tier billing or available-quota proof. No prompts or source records were sent.",
+    "proposal": "Awaiting explicit synthetic data-terms and bounded implementation approval before a maximum-20-call comparison or new-provider integration.",
+    "sources": ["https://ai.google.dev/gemini-api/terms", "https://ai.google.dev/gemini-api/docs/pricing", "https://ai.google.dev/gemini-api/docs/rate-limits", "https://openrouter.ai/docs/faq", "https://openrouter.ai/docs/guides/routing/provider-selection"]
+  },
+  "remaining": [
+    "Enable/redeploy the already-approved synthetic browser configuration as a separate operational step",
+    "Repair and evaluate remaining Lightning semantic weaknesses",
+    "Complete the 540-record live run and held-out/showcase questions",
+    "Final clean-start, UI, persistence and scoped-reset acceptance rehearsal",
+    "Preserve independently authored Phase One finals when supplied"
+  ]
+}

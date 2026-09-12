@@ -7,8 +7,8 @@ from pathlib import Path
 from time import perf_counter
 from uuid import UUID, uuid4
 
-from sqlalchemy import func, or_, select
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import func, literal_column, or_, select
+from sqlalchemy.dialects.postgresql import TSVECTOR, insert
 from sqlalchemy.orm import aliased
 
 from jarvis.contracts import ClaimWrite, ObservationInput, parse_contract
@@ -22,11 +22,13 @@ from jarvis.extraction import (
     ExtractionPacket,
     MemoryQuery,
     ProcessingRequest,
+    messages,
     parse_proposal,
 )
 from jarvis.imports import parse_dictations, same_json
 from jarvis.metrics import measured, stage
 from jarvis.models import (
+    CLAIM_SEARCH_SQL,
     ClaimEvidence,
     ClaimRecord,
     ClaimRelation,
@@ -38,17 +40,21 @@ from jarvis.models import (
     ProcessingReceipt,
     Source,
 )
-from jarvis.providers import MAX_REQUESTS, MAX_TOTAL_TOKENS
+from jarvis.providers import MAX_INPUT_BYTES, MAX_REQUESTS, MAX_TOTAL_TOKENS
 
 
 @cache
 def _synthetic_sources():
     """Only checked-in public fixtures are cached; never a user's saved observations."""
-    return tuple(
-        parse_dictations("fixture", Path("data/synthetic/sample-dictations.jsonl").read_bytes())
-    ) + tuple(
-        parse_contract(ObservationInput, row)
-        for row in json.loads(Path("data/synthetic/control-observations.json").read_text())
+    return (
+        tuple(
+            parse_dictations("fixture", Path("data/synthetic/sample-dictations.jsonl").read_bytes())
+        )
+        + tuple(
+            parse_contract(ObservationInput, row)
+            for row in json.loads(Path("data/synthetic/control-observations.json").read_text())
+        )
+        + tuple(parse_dictations("fixture", Path("data/synthetic/corpus-540.jsonl").read_bytes()))
     )
 
 
@@ -60,9 +66,11 @@ class ProcessingOperations:
         if not self.extractor.enabled:
             raise ApplicationError(ErrorCode.PROVIDER_DISABLED)
 
-    def _trial_source(self, source, *, live=None):
+    def _trial_source(self, source, *, live=None, unfamiliar=None):
         if not (self.extractor.live if live is None else live):
             return  # Only trusted dependency injection in tests; never a request flag.
+        if self.extractor.unfamiliar_mode if unfamiliar is None else unfamiliar:
+            return  # Explicit operator approval, never inferred from source metadata.
         allowed = _synthetic_sources()
         # Compare all original fields, not a caller-supplied namespace/hash/synthetic label.
         fields = ("kind", "raw_text", "formatted_text", "captured_at", "capture_metadata")
@@ -160,11 +168,29 @@ class ProcessingOperations:
         )
         if latest != job.expected_source_revision or source.revision != latest:
             raise ApplicationError(ErrorCode.STALE_REVISION)
-        records = session.scalars(
-            self._active_memories(session, context, namespace).limit(MAX_CONTEXT_CLAIMS + 1)
-        ).all()
-        if len(records) > MAX_CONTEXT_CLAIMS:
-            raise ApplicationError(ErrorCode.CONTEXT_LIMIT)
+        active = self._active_memories(session, context, namespace)
+        count = session.scalar(select(func.count()).select_from(active.order_by(None).subquery()))
+        # Small collections retain the original complete-context behavior. At scale use
+        # the same lexical machinery as retrieval, with an explicit project-scope boost.
+        if count > 16:
+            tsquery = self._search_query(
+                session, (source.raw_text + " " + (source.formatted_text or ""))[:4096]
+            )
+            vector = literal_column(f"({CLAIM_SEARCH_SQL})", type_=TSVECTOR())
+            scope = ClaimRecord.content["scope"]["key"].astext
+            scope_match = (func.length(scope) > 1) & (
+                func.strpos(func.lower(source.raw_text), func.lower(scope)) > 0
+            )
+            active = (
+                active.where(vector.op("@@")(tsquery))
+                .order_by(None)
+                .order_by(
+                    scope_match.desc().nulls_last(),
+                    func.ts_rank_cd(vector, tsquery, 32).desc(),
+                    ClaimRecord.id,
+                )
+            )
+        records = session.scalars(active.limit(min(16, MAX_CONTEXT_CLAIMS))).all()
         claims = tuple(self._claim_contract(session, context, row) for row in records)
         for claim in claims:
             self._support(
@@ -186,7 +212,7 @@ class ProcessingOperations:
             if not item.source_key.startswith(f"import:{namespace}:"):
                 raise ApplicationError(ErrorCode.REFERENCE_UNAVAILABLE)
             self._trial_source(item)
-        return ExtractionPacket(
+        packet = ExtractionPacket(
             job_id=job.id,
             lease_token=job.lease_token,
             lease_until=job.lease_until,
@@ -195,7 +221,26 @@ class ProcessingOperations:
             source=self._source_contract(source),
             sources=tuple(self._source_contract(s) for s in sources),
             memories=claims,
+            context_claim_count=count,
+            context_bounded=count > len(claims),
         )
+        # Remove whole lowest-ranked memory/support groups, never truncate a passage,
+        # a qualifier, the current observation or one of its paired variants.
+        while (
+            packet.memories
+            and len(json.dumps(messages(packet), ensure_ascii=False).encode("utf-8"))
+            > MAX_INPUT_BYTES - 1024
+        ):
+            retained = packet.memories[:-1]
+            keep = {source.id} | {p.source_id for c in retained for p in c.passages}
+            packet = packet.model_copy(
+                update={
+                    "memories": retained,
+                    "sources": tuple(s for s in packet.sources if s.id in keep),
+                    "context_bounded": True,
+                }
+            )
+        return packet
 
     @measured("lease")
     def lease_next(self, context, *, namespace=None):
@@ -487,7 +532,9 @@ class ProcessingOperations:
         budget = session.scalar(
             select(ModelBudget).where(ModelBudget.key == provider.budget_key).with_for_update()
         )
-        if budget.requests >= MAX_REQUESTS or budget.tokens + reserved_tokens > MAX_TOTAL_TOKENS:
+        request_limit = min(MAX_REQUESTS, getattr(provider, "max_requests", MAX_REQUESTS))
+        token_limit = min(MAX_TOTAL_TOKENS, getattr(provider, "max_total_tokens", MAX_TOTAL_TOKENS))
+        if budget.requests >= request_limit or budget.tokens + reserved_tokens > token_limit:
             raise ApplicationError(ErrorCode.BUDGET_EXHAUSTED)
         budget.requests += 1
         budget.tokens += reserved_tokens
@@ -673,6 +720,30 @@ class ProcessingOperations:
                     for name in ("extracted", "no_memory", "duplicate", "needs_clarification")
                 },
             }
+
+    def inference_status(self, context):
+        """Configuration only: no store access, network probe, key or quota disclosure."""
+        self._authorize(context)
+
+        def role(provider):
+            return {
+                "model": provider.model,
+                "enabled": provider.enabled,
+                "key_configured": bool(provider._key) or not provider.live,
+                "unfamiliar_mode": provider.unfamiliar_mode,
+            }
+
+        return {
+            "extractor": role(self.extractor),
+            "responder": role(self.responder),
+            "request_ceiling": min(self.extractor.max_requests, self.responder.max_requests),
+            "token_ceiling": min(self.extractor.max_total_tokens, self.responder.max_total_tokens),
+            "provider_contacted": False,
+            "warning": (
+                "NVIDIA-hosted inference may retain/use submitted content under its terms. "
+                "Private never calls it."
+            ),
+        }
 
     def processing_report(self, context, payload):
         """Synthetic-only evidence export through the shared policy path."""

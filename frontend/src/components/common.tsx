@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "./ui/dialog";
 import type { Claim, Inspection } from "@/lib/types";
+import jarvisBird from "@/assets/jarvis-app-icon-64.png";
 
 export function Sprout({ className = "" }: { className?: string }) {
   return (
@@ -19,13 +20,7 @@ export function Sprout({ className = "" }: { className?: string }) {
       fill="none"
       aria-hidden="true"
     >
-      <path
-        d="M31 54V30M31 37C9 38 8 13 8 13s24-1 24 22M32 29C32 8 56 9 56 9s1 23-24 25"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <image href={jarvisBird} width="64" height="64" />
     </svg>
   );
 }

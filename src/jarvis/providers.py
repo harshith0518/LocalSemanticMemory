@@ -13,11 +13,30 @@ from jarvis.extraction import ExtractionPacket, messages
 MODEL = "nvidia/nemotron-3.5-lightning-30b-a3b"
 ENDPOINT = "https://integrate.api.nvidia.com/v1/chat/completions"
 BUDGET_KEY = "s07-synthetic-v1"
-MAX_REQUESTS = 96
-MAX_TOTAL_TOKENS = 1_500_000
+MAX_REQUESTS = 750
+MAX_TOTAL_TOKENS = 10_000_000
 MAX_OUTPUT_TOKENS = 4096
 MAX_INPUT_BYTES = 60_000
 MAX_RESPONSE_BYTES = 262_144
+KIMI_MODEL = "moonshotai/kimi-k3"
+REVIEWER_ACK = "I_ACCEPT_NVIDIA_DATA_TERMS"
+
+
+def unfamiliar_approved():
+    return (
+        os.environ.get("JARVIS_UNFAMILIAR_INFERENCE_APPROVED") == "true"
+        and os.environ.get("JARVIS_UNFAMILIAR_DATA_POLICY_ACK") == REVIEWER_ACK
+    )
+
+
+def configured_limit(name, ceiling):
+    try:
+        value = int(os.environ.get(name, str(ceiling)))
+        if not 1 <= value <= ceiling:
+            raise ValueError()
+        return value
+    except ValueError:
+        raise ApplicationError(ErrorCode.INVALID_INPUT) from None
 
 
 @dataclass(frozen=True)
@@ -35,16 +54,21 @@ class NvidiaExtractor:
     live = True
     timeout_seconds = 90
 
-    def __init__(self, *, approved: bool = False, key: str = "", transport=None):
+    def __init__(self, *, approved: bool = False, key: str = "", transport=None, unfamiliar=False):
         self.enabled = approved
         self._key = key
         self._transport = transport
+        self.unfamiliar_mode = unfamiliar
+        self.max_requests = configured_limit("JARVIS_MAX_REQUESTS", MAX_REQUESTS)
+        self.max_total_tokens = configured_limit("JARVIS_MAX_TOTAL_TOKENS", MAX_TOTAL_TOKENS)
 
     @classmethod
     def from_env(cls):
+        unfamiliar = unfamiliar_approved()
         return cls(
-            approved=os.environ.get("JARVIS_S07_SYNTHETIC_TRIAL_APPROVED") == "true",
-            key=os.environ.get("NEMOTRON_30B_API_KEY", ""),
+            approved=unfamiliar or os.environ.get("JARVIS_S07_SYNTHETIC_TRIAL_APPROVED") == "true",
+            key=os.environ.get("NVIDIA_API_KEY" if unfamiliar else "NEMOTRON_30B_API_KEY", ""),
+            unfamiliar=unfamiliar,
         )
 
     def prepare(self, packet: ExtractionPacket, *, repair=False) -> tuple[dict, int]:
@@ -121,16 +145,29 @@ class NvidiaExtractor:
 class NvidiaResponder(NvidiaExtractor):
     """Same bounded transport/accounting, explicitly selected response model."""
 
-    model = "moonshotai/kimi-k3"
+    model = KIMI_MODEL
     # This always-thinking responder timed out at the extractor's 90-second limit.
     # Keep a bounded wait; token/call ceilings and the release guard are unchanged.
     timeout_seconds = 180
 
+    def __init__(self, *, model=None, **kwargs):
+        model = self.model if model is None else model
+        if self.live and model not in {KIMI_MODEL, MODEL}:
+            raise ApplicationError(ErrorCode.INVALID_INPUT)
+        super().__init__(**kwargs)
+        self.model = model
+        self.timeout_seconds = 90 if model == MODEL else 180
+
     @classmethod
     def from_env(cls):
+        model = os.environ.get("JARVIS_RESPONSE_MODEL", KIMI_MODEL)
+        unfamiliar = unfamiliar_approved()
+        key_name = "KIMI_K3_API_KEY" if model == KIMI_MODEL else "NEMOTRON_30B_API_KEY"
         return cls(
-            approved=os.environ.get("JARVIS_S07_SYNTHETIC_TRIAL_APPROVED") == "true",
-            key=os.environ.get("KIMI_K3_API_KEY", ""),
+            model=model,
+            approved=unfamiliar or os.environ.get("JARVIS_S07_SYNTHETIC_TRIAL_APPROVED") == "true",
+            key=os.environ.get("NVIDIA_API_KEY" if unfamiliar else key_name, ""),
+            unfamiliar=unfamiliar,
         )
 
     def prepare(self, packet, *, repair=False):
@@ -142,13 +179,18 @@ class NvidiaResponder(NvidiaExtractor):
         size = len(json.dumps(conversation, ensure_ascii=False).encode("utf-8"))
         if size > MAX_INPUT_BYTES:
             raise ApplicationError(ErrorCode.CONTEXT_LIMIT)
+        output_tokens = MAX_OUTPUT_TOKENS if self.model == MODEL else 8192
+        settings = (
+            {"chat_template_kwargs": {"enable_thinking": False}}
+            if self.model == MODEL
+            else {"seed": 0, "reasoning_effort": "low"}
+        )
         return {
             "model": self.model,
             "messages": conversation,
-            "max_tokens": 8192,
+            "max_tokens": output_tokens,
             "temperature": 0,
-            "seed": 0,
-            "reasoning_effort": "low",
+            **settings,
             "stream": False,
             "response_format": {"type": "json_object"},
-        }, size + 8192 + 512
+        }, size + output_tokens + 512

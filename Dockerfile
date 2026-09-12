@@ -27,6 +27,11 @@ COPY eval/fixtures/s08-retrieval.json eval/fixtures/s08-retrieval.json
 COPY eval/retrieval.py eval/retrieval.py
 COPY eval/live.py eval/live.py
 COPY eval/efficiency.py eval/efficiency.py
+COPY data/synthetic/corpus-540.jsonl data/synthetic/corpus-540.jsonl
+COPY eval/fixtures/corpus-cases.json eval/fixtures/corpus-cases.json
+COPY eval/fixtures/corpus-manifest.json eval/fixtures/corpus-manifest.json
+COPY eval/corpus.py eval/corpus.py
+COPY eval/build_corpus.py eval/build_corpus.py
 RUN useradd --uid 10001 --create-home jarvis
 ENV PATH="/app/.venv/bin:$PATH"
 USER jarvis

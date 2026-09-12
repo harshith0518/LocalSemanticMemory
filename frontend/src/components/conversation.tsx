@@ -16,6 +16,23 @@ import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import { Activity, OriginalButton, Sprout } from "./common";
 import type { Workspace } from "@/lib/use-workspace";
 import type { Representation, Turn } from "@/lib/types";
+import "./conversation-help.css";
+
+type ModelSetup = {
+  responder: {
+    model: string;
+    enabled: boolean;
+    key_configured: boolean;
+    unfamiliar_mode: boolean;
+  };
+  extractor: {
+    model: string;
+    enabled: boolean;
+    key_configured: boolean;
+    unfamiliar_mode: boolean;
+  };
+  warning: string;
+};
 
 function Reply({ turn, workspace }: { turn: Turn; workspace: Workspace }) {
   const [diagnosis, setDiagnosis] = useState("unclear");
@@ -147,6 +164,11 @@ export function Conversation({
   const [representation, setRepresentation] =
     useState<Representation>("sources");
   const [saved, setSaved] = useState(false);
+  const [setup, setSetup] = useState<ModelSetup>();
+  const [helpVisible, setHelpVisible] = useState(false);
+  const [showcases, setShowcases] = useState<
+    { title: string; request: string; category: string }[]
+  >([]);
   const noteId = useRef(crypto.randomUUID());
   const questionIndex = useRef(0);
   const composer = useRef<HTMLTextAreaElement>(null);
@@ -161,6 +183,15 @@ export function Conversation({
     if (w.busy) return;
     if (intent === "ask") {
       if (!question.trim()) return;
+      if (
+        /^(?:hello|hi|hey)(?:\s+jarvis)?(?:[, ]+what (?:are you doing|can you do))?[.!?\s]*$/i.test(
+          question.trim(),
+        )
+      ) {
+        setHelpVisible(true);
+        return;
+      }
+      setHelpVisible(false);
       await w.ask({ namespace: w.namespace, question, representation });
     } else {
       if (!note.trim()) return;
@@ -209,9 +240,9 @@ export function Conversation({
             <em>Let’s connect the dots.</em>
           </h1>
           <p>
-            A place for the thoughts you want to keep,
-            <br className="desktop-break" /> and the context you want to come
-            back to.
+            Save your notes. Ask about what happened.
+            <br className="desktop-break" /> Check the original evidence behind
+            every answer.
           </p>
           <div className="starter-grid">
             <button
@@ -271,6 +302,20 @@ export function Conversation({
         </>
       )}
       <div className="composer-wrap" ref={end}>
+        {helpVisible && (
+          <section className="setup-card" role="status">
+            <strong>Hello! I help you find the details in your notes.</strong>
+            <p>
+              Save a note or import a collection, process it in Memory, then ask
+              a question. I can recall supported details and draft text; I do
+              not send messages or perform external actions.
+            </p>
+            <small>
+              Workspace help, not a generated answer. No saved notes were read
+              and no model was called.
+            </small>
+          </section>
+        )}
         <form
           className="composer"
           onSubmit={(e) => {
@@ -348,23 +393,47 @@ export function Conversation({
           )}
           <div className="composer-bottom">
             {intent === "ask" ? (
-              <label className="representation">
-                <BookOpen aria-hidden="true" />
-                <span className="sr-only">Answer evidence</span>
-                <select
-                  value={representation}
-                  onChange={(e) =>
-                    setRepresentation(e.target.value as Representation)
-                  }
-                  disabled={!!w.busy}
-                >
-                  <option value="sources">Original sources</option>
-                  <option value="sources_and_memories">
-                    Sources + memories
-                  </option>
-                  <option value="history">All permitted history</option>
-                </select>
-              </label>
+              <details className="context-options">
+                <summary>
+                  Context:{" "}
+                  {representation === "sources"
+                    ? "relevant notes"
+                    : representation === "sources_and_memories"
+                      ? "notes and memories"
+                      : "whole collection"}
+                </summary>
+                <p>
+                  Jarvis normally finds relevant original notes. These comparison
+                  options change the evidence sent to the answer model, not what
+                  gets saved.
+                </p>
+                <label className="representation">
+                  <BookOpen aria-hidden="true" />
+                  <span className="sr-only">Answer evidence</span>
+                  <select
+                    value={representation}
+                    onChange={(e) =>
+                      setRepresentation(e.target.value as Representation)
+                    }
+                    disabled={!!w.busy}
+                  >
+                    <option value="sources">
+                      Relevant notes (recommended)
+                    </option>
+                    <option value="sources_and_memories">
+                      Notes + saved memories
+                    </option>
+                    <option value="history">
+                      Whole collection (small collections only)
+                    </option>
+                  </select>
+                </label>
+                <p>
+                  Notes + memories adds learned facts and their supporting
+                  notes. Whole collection is a small-corpus baseline with a
+                  strict size limit. All options respect Forget and corrections.
+                </p>
+              </details>
             ) : (
               <span className="meta">Your words stay intact.</span>
             )}
@@ -393,9 +462,84 @@ export function Conversation({
         <p className="composer-footnote">
           Typed or pasted text stands in for a transcript. No microphone needed.
           <br />
-          Live inference is currently limited to approved synthetic samples;
-          arbitrary notes remain local.
+          Questions and replies are not automatically learned. Private stays
+          local.
         </p>
+        <details className="setup-card">
+          <summary>Model setup and 30 showcase questions</summary>
+          <p>
+            Start in Sources: import the sample or the 540-note fictional
+            corpus. In Memory, choose Process sources, then return here. A
+            question is not a saved note.
+          </p>
+          <div className="setup-actions">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!!w.busy}
+              onClick={() =>
+                void w.run("Checking model configuration", async () => {
+                  setSetup(await w.session.request<ModelSetup>("/inference"));
+                })
+              }
+            >
+              Check model setup
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!!w.busy}
+              onClick={() =>
+                void w.run("Loading showcase questions", async () => {
+                  const data = await w.session.request<{
+                    cases: typeof showcases;
+                  }>("/trial/showcase");
+                  setShowcases(data.cases);
+                })
+              }
+            >
+              Browse 30 showcase cases
+            </Button>
+          </div>
+          {setup && (
+            <div role="status">
+              <p>
+                Answer model: <b>{setup.responder.model}</b>.{" "}
+                {setup.responder.enabled && setup.responder.key_configured
+                  ? "Configured for live requests; this check does not contact or certify the provider."
+                  : "Not ready: enable inference and configure the documented key in .env, then restart the API and worker."}
+              </p>
+              <p>
+                {setup.responder.unfamiliar_mode
+                  ? "Unfamiliar opt-in is enabled for Normal-mode notes and questions."
+                  : "Synthetic-only mode: use bundled sources and showcase questions. Unfamiliar input needs explicit unfamiliar opt-in."}
+              </p>
+              <p>{setup.warning}</p>
+            </div>
+          )}
+          {!!showcases.length && (
+            <label className="showcase-picker">
+              Choose a showcase question
+              <select
+                defaultValue=""
+                onChange={(e) => {
+                  setQuestion(e.target.value);
+                  setIntent("ask");
+                  composer.current?.focus();
+                }}
+              >
+                <option value="" disabled>
+                  30 checks, not promised successes
+                </option>
+                {showcases.map((c) => (
+                  <option key={c.request} value={c.request}>
+                    {c.title} ({c.category})
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </details>
       </div>
       {!w.turns.length && (
         <div className="story-line" aria-label="How Jarvis works">
