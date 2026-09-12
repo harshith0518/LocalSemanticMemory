@@ -4,7 +4,7 @@
 
 `Service` composes `answers.py`, `controls.py`, processing and retrieval; API, optional developer CLI, worker and evaluator share authorization, policy guards and evidence validation. `POST /ask` reads current permitted evidence, reserves call allowance, performs bounded inference outside SQL locks, then rechecks the complete packet and citations while serializing the buffered response. Unknown evidence and operational failure are distinct. Generated questions/replies never become observations, claims or jobs. Normal accounting contains identifiers, usage, model/prompt versions, request hashes and fixed errors; it excludes prompts, answers and hidden reasoning. The explicit synthetic evaluator alone emits reviewed public completion content.
 
-Migration `0005_user_controls` adds owned control, feedback, source-exclusion and passage-exclusion receipts plus nullable request/policy/feedback references on model calls. Existing source strings and S03–S08 rows are preserved. All saved operations, including failures, reject Private before reading request bodies or accessing the store. Private is temporary local context here; it does not make a provider call. Browser state is transient and clears across mode, collection and navigation changes; late responses cannot restore it.
+Migration `0005_user_controls` adds owned control, feedback, source-exclusion and passage-exclusion receipts plus nullable request/policy/feedback references on model calls. Existing source strings and S03–S08 rows are preserved. All saved operations, including failures, reject Private before reading request bodies or accessing the store. Private is temporary local context here; it does not make a provider call. Browser state is transient. Normal screen navigation preserves current work; mode/collection changes, page exit/restoration and committed controls clear relevant content. Late responses cannot restore a discarded session.
 
 `POST /controls/preview` validates the latest owned active target and returns a digest of the exact proposed replacement and affected notes. `/controls/apply` revalidates under the same owner policy lock, checks an idempotency receipt, increments policy revision and atomically commits evidence, revision/relationship, exclusions and job invalidation. Correct creates a `corrected` predecessor; world change creates `superseded` history. User statements and confirmed typed content form a new observation with unknown capture time; their jobs are cancelled as `control_input`, never extracted again. Retrieval attaches mandatory amendment sources in policy order, also when searching known exact copies in another collection.
 
@@ -15,13 +15,13 @@ Forget covers all supporting observations across the selected claim's revisions,
 Live trial eligibility is backend owned: eight exact public dictations, eight fixed public questions and two full public control observations. Compare every source field and confirmed control value before network access. The approved combined allowance is 96 requests/1,500,000 tokens/$0 paid, including failures and repairs; it survives restarts. Personal inference remains blocked. [Actual results and limitations](RUN.md#s09-controls-and-synthetic-ask)
 
 
-Status: S03–S05, the browser workspace and S07 processing contracts are implemented. S08 adds lexical retrieval and browser evidence search; live extraction/answer quality and complete lifecycle controls remain open gates. Agreed behavior lives in [DECISIONS.md](DECISIONS.md), and [RUN.md](RUN.md) records actual evidence.
+Status: S03-S10 infrastructure and deterministic workflows are implemented. Live extraction/answer reliability and semantic quality remain open gates. See todo.md and RUN.md for the current evidence.
 
 ## One application, several entry points
 
 ```mermaid
 flowchart LR
-  UI[Small ordinary-user UI] --> API[FastAPI]
+  UI[React ordinary-user workspace] --> API[FastAPI]
   API --> S[Shared application services]
   CLI[Optional developer CLI] --> S
   EVAL[Evaluation harness] --> S
@@ -33,7 +33,7 @@ flowchart LR
   SEARCH --> S
 ```
 
-The API, CLI and worker are adapters around shared operations. Import, process, inspect, search and evaluation scaffolding exist; Ask and complete controls remain open. No client writes directly around policy. One Python image serves Compose `db` clients: one-shot `migrate`, `api`, `worker` and the optional `cli` profile. `compose.test.yaml` supplies a standalone test project. The minimal frontend is served by FastAPI at `/`; no separate frontend service is needed. Users work in the browser; the CLI is optional for developers.
+The API, CLI and worker are adapters around shared operations. Import, process, inspect, search, Ask and reviewed lifecycle controls exist; live answer/extraction quality remains open. No client writes directly around policy. One Python image serves Compose `db` clients: one-shot `migrate`, `api`, `worker` and the optional `cli` profile. `compose.test.yaml` supplies a standalone test project. The minimal frontend is served by FastAPI at `/`; no separate frontend service is needed. Users work in the browser; the CLI is optional for developers.
 
 Run DB migrations once, wait for DB health and successful migrations, and use named volumes. Tests get a separate database and credentials with no access to the normal data volume. Compose startup order alone does not prove readiness; use health and completion conditions. [Docker guidance](https://docs.docker.com/compose/how-tos/startup-order/)
 
@@ -81,13 +81,16 @@ Private denies import before reading API bodies/CLI stdin, and denies listing/in
 
 ## Implemented browser workspace
 
-`src/jarvis/web/` contains plain HTML/CSS/JavaScript served by FastAPI; no frontend package is needed at runtime. The UI calls existing `/sources` and `/sources/import` operations with the explicit mode header and backend-owned identity. Users select a collection/file and inspect evidence without command-line work or manually supplying policy revisions. Future Ask and controls must use this same surface and service boundary. The optional CLI remains useful for automation and readiness tests.
+The React/TypeScript source in `frontend/` produces local JS/CSS/font assets in generated `src/jarvis/web/`. A pinned Node Docker stage runs `npm ci` and type-checks/builds; the Python wheel explicitly includes its result. No Node process runs in the application container. Public shell/readiness requests do not read saved personal content.
 
-No automatic saved-data load, local/session storage, cookies, IndexedDB, service worker, analytics or remote assets. Source/metadata text is inserted with `textContent`, never as HTML. Self-only content security policy, no-store responses, no-referrer and frame/nosniff headers protect the supported page. Requests have a timeout; input is not placed in page URLs, error messages or browser history.
+`ApiSession` owns abort controllers for one ephemeral Normal mount, with stale-response checks after headers and JSON parsing. Disposing the session prevents new chained requests. Four screen components use the shared state hook and existing HTTP/service contracts. No saved reads occur on startup or mere screen navigation; Open, Refresh, Search, import and other explicit actions request them. Current conversation turns are bounded to twelve in page memory. There are no cookies, local/session storage, IndexedDB, service workers, external fonts, analytics or persistent client cache.
 
-Normal/Private switching clears the list, evidence, metadata, collection input and selected file; aborts in-flight requests; and increments a context generation checked after each response. This prevents late Normal responses from repopulating Private or a new Normal page. Page hide/restoration clears evidence too; normal page initialization reads only readiness. Existing Normal operations may already have committed when cancelled: clearing the client is not a rollback or a Forget operation. Private source operations remain gated in the backend even if a caller bypasses disabled controls. Private conversation is unavailable until a compliant provider path exists.
+Save a note converts exact typed/pasted raw and optional formatted variants into one existing JSONL observation. A stable ephemeral UUID survives a lost-response retry; successful save or input edits generate a new ID. No capture timestamp is invented. This path does not automatically request learning. Model gating remains backend-owned, including the exact synthetic allowlist.
 
-The separately locked Playwright checks use an ephemeral Chromium context and loopback test backend with the isolated PostgreSQL service. They do not authenticate to live providers, test the application database, or ship browser dependencies in the image. Scope/evidence: [browser workflow and results](RUN.md#browser-workflow).
+Correct/world-change/Forget retain typed qualifiers and explicit impact preview/commit. Success clears answers, search results, source inspection and old history. Private synchronously removes the Normal component tree, cancels pending operations, clears temporary content on exit and never backfills. Pagehide/pageshow handling prevents restored personal DOM. Private scratchpad text never reaches the API. Previously accepted Normal jobs may finish independently.
+
+Motion describes actual pending requests and reveals validated buffered answers; it does not simulate token streaming or hidden thinking. CSS and Motion respect reduced-motion preferences. shadcn/Radix dialogs provide focus containment/Escape behavior, with per-response nonces authorizing generated scroll-lock styles. Script policy remains same-origin without inline scripts; fonts are local and all responses remain no-store. Production serves only generated assets, excluding source maps and credentials. Browser checks use the isolated PostgreSQL service and deterministic providers, separately from live quality.
+
 
 ## Learning and reconciliation
 

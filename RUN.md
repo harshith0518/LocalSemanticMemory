@@ -4,7 +4,7 @@ S03-S10 local infrastructure, source import, memory contracts, Search, Ask/contr
 
 ## S10 usage and performance
 
-Open [the local application](http://127.0.0.1:8000). Choose a collection and select **Load 8 sample dictations**. This explicitly imports the eight original paired records through the same atomic service as file upload; retries preserve identity, and importing does not start model calls. Sources/Search need no provider. Processing, Ask, history and controls use the existing workflow below; live failures remain visible.
+Open [the local application](http://127.0.0.1:8000). Choose a collection and select **Sources > Try the sample**. This explicitly imports the eight original paired records through the same atomic service as file upload; retries preserve identity, and importing does not start model calls. Sources/Search need no provider. Processing, Ask, history and controls use the existing workflow below; live failures remain visible.
 
 Expand **Usage and performance**, then **Refresh usage**. The snapshot covers all the current owner's collections, including retained source/claim history, not just the open collection. It shows source/claim/passage payload bytes, revision/job counts and model attempts grouped by role/model/allowance. Known input/output tokens, unknown usage and conservative reservations are separate. New failed calls retain provider elapsed time; historical missing durations remain null. p50/p95 shows the number of timed attempts, including failures. Successful application checks are not semantic grades. Billed/estimated cost is unmeasured, and totals are not account-wide or per-key billing.
 
@@ -63,9 +63,9 @@ The user approved S09 and a synthetic-only exception to the NVIDIA training/rete
 
 Ordinary-user workflow:
 
-1. Open the application, import the bundled `data/synthetic/sample-dictations.jsonl`, then inspect Sources or Search. These actions need no model. **Process pending** requests bounded extraction when an approved worker is running; refresh and inspect failures as well as memories. Source preservation does not depend on extraction succeeding.
+1. Open the application, import the bundled `data/synthetic/sample-dictations.jsonl`, then inspect Sources or Search. These actions need no model. **Memory > Process sources** requests bounded extraction when an approved worker is running; refresh and inspect failures as well as memories. Source preservation does not depend on extraction succeeding.
 2. In **Ask Jarvis**, **Try a sample question** cycles through the eight permitted public questions. **Evidence options** selects original-source search (default), sources plus memories, or all permitted history. The backend validates citations and rechecks current evidence before release. Ask needs Kimi availability; current live attempts failed. Questions, replies and generated drafts do not become memories or jobs. Drafts are never sent.
-3. On a memory, select **Correct** for an interpretation error or **Record a change** for a real-world update. Supply your statement and replacement value; review the expandable scope, subject, attribution, uncertainty, units and time fields. Blank times stay unknown. Preview the exact affected notes, then confirm. Any edit invalidates the preview. History shows `corrected` versus `superseded` predecessors. Later evidence carries the amendment even if the original is reimported under another collection name.
+3. On a memory, select **Correct** for an interpretation error or **Record a world change** for a real-world update. Supply your statement and replacement value; review the expandable scope, subject, attribution, uncertainty, units and time fields. Blank times stay unknown. Preview the exact affected notes, then confirm. Any edit invalidates the preview. History shows `corrected` versus `superseded` predecessors. Later evidence carries the amendment even if the original is reimported under another collection name.
 4. **Forget** previews all affected notes. Confirmation excludes the selected memory family's support, dependent claims and known copies/reimports from future retrieval and learning. Originals remain visible in Sources/history. Exclusion conservatively covers whole affected observations; unrelated details in those notes can become unavailable. New paraphrases are not detected. Forget is owner-wide, including copies in other collections; renaming a collection does not undo it.
 5. Below an answer, **Review feedback** asks which layer failed. Vague, memory, world-change, style and operational feedback gives targeted guidance without silently changing memory. Generation/retrieval diagnoses permit one persisted rerun. It can fail and consume allowance; repeated feedback cannot create an unlimited retry chain.
 6. Switch to **Private** to clear source, search, answer, control editor and feedback state. Saved reads/writes and provider calls are denied before body parsing/store access. Late responses and browser back navigation cannot restore old content. No private context is backfilled on returning to Normal.
@@ -119,7 +119,7 @@ Next work is to stabilize the hosted response path and improve/re-evaluate extra
 
 ## Start from a checkout
 
-Prerequisites: Git, Docker Engine in Linux mode, Compose v2, and initial network access to Docker Hub, GHCR and PyPI. Host Python/uv are unnecessary. Run these commands in PowerShell from the repository root on `dev`:
+Prerequisites: Git, Docker Engine in Linux mode, Compose v2, and initial network access to Docker Hub, GHCR, PyPI and the npm registry. Host Python/uv are unnecessary. Run these commands in PowerShell from the repository root on `dev`:
 
 ```powershell
 git status --short --branch
@@ -147,19 +147,22 @@ The API is published only on `127.0.0.1`; PostgreSQL has no published host port.
 
 After the setup above, open **[http://127.0.0.1:8000/](http://127.0.0.1:8000/)** (use your configured port if different). Importing and inspecting sources require no CLI, Python, Node or API key. The browser is the primary ordinary-user surface; CLI/HTTP examples later in this file are optional developer diagnostics and historical acceptance commands. Initial Compose setup remains an operator step.
 
-1. Check that the top bar says **Workspace connected**. Leave **Normal** selected to work with saved sources.
-2. Choose a **Collection name**. Use `diagnostic-v1` with the bundled synthetic sample; keep the name stable on reimport. Select **Open** to browse an existing collection, or select `data/synthetic/sample-dictations.jsonl` under **Add dictations** and choose **Import to collection**. The UI handles policy revisions; the backend rechecks them atomically.
-3. Read the saved/unchanged receipt. Exact retries preserve IDs and job state. Invalid or conflicting batches show a bounded error; fix the source of a conflict instead of renaming old records. Use **Load more sources** for larger collections.
-4. Select a source. Original and formatted text belong to one observation. `dict_0008` retains the ₹15,000/₹50,000 disagreement; `dict_0007` has no capture time even though its content mentions a date. **Source details** exposes original metadata and processing status. Pending means memory extraction has not run.
-5. Switch to **Private**. The displayed collection/evidence and selected file are cleared; import/browsing are unavailable. Switching back does not restore them or import anything. Private remains temporary local context with no model call or saved reads. Ask and Correct/world-change/Forget are available in Normal; the UI distinguishes drafts, unknowns and operational failures.
+1. Check **Workspace connected** in the footer. Leave **Normal** selected for saved work. Choose a stable **Collection name**, then **Open** when you want to read existing state. Screen navigation alone does not read personal data.
+2. **Conversation** welcomes you with "hey jarvis." Choose **Save a note** to type/paste a transcript and optionally add its formatted version. **Save note** preserves both exact strings as one observation. Capture time is unknown when absent. It does not automatically run extraction. A retry of unchanged input in the same page is idempotent, including after a lost response.
+3. **Sources > Try the sample** imports the eight bundled synthetic dictations; use **Add dictations > Import to collection** for a JSONL file. Inspect originals and capture metadata; **Load more sources** handles pagination. Use **Search saved evidence** and its optional memory/history/date filters without a model call.
+4. **Memory > Refresh memories** opens current processing and claim state. **Process sources** queues eligible observations when the provider gate is enabled; **Retry failed processing** is explicit. Select a memory to inspect its revision history and exact passages. **Correct**, **Record a world change** and **Forget** lead to **Review impact**, then explicit confirmation. Editing invalidates the preview. Forget blocks supporting notes/known copies from future use while retaining inspectable original history.
+5. **Conversation > Ask with context** inserts one approved sample question; **Ask** submits it using Original sources by default, with Sources + memories or All permitted history available. Answers are buffered and shown only after backend validation, with expandable citations and feedback diagnosis. Source validation does not prove interpretation accuracy. General personal/Private inference remains blocked, and the current live provider failures are documented below.
+6. **Usage > Refresh usage** shows source/memory/passage payload sizes, jobs, per-model token accounting and provider latency. Unknown usage remains unknown; reservations are not consumption or billing. Cost and semantic accuracy are unmeasured here. Current action timing is transient and nested stages must not be summed.
+7. Switch **Private** to clear Normal drafts, source/answer/search/usage state and pending browser requests. The temporary scratchpad makes no API/model call. Returning to Normal or leaving/restoring the page clears its text and never backfills it. There is no microphone or voice permission.
 
 The supported page keeps no local/session storage, cookies, IndexedDB, service worker or analytics and loads no third-party assets. Saved data loads only after an explicit Normal action. Mode changes abort pending requests and reject late responses; page hide/restoration clears context. A Normal import accepted before the switch may still commit. Cancellation cannot undo that write; safely reopen/reimport the same collection/file if the result was interrupted. Browser extensions, OS memory and explicit user screenshots are outside this application's storage guarantee.
 
 ### Browser acceptance checks
 
-Only developers need Node/npm for these optional checks. The runtime UI has no npm dependencies. Run the backend suite first to initialize/reset the isolated test database; do not run DB reset tests concurrently with browser tests.
+Only developers need Node/npm for these optional checks. Docker builds the locked React assets; no Node process runs in the application container. Run the backend suite first to initialize/reset the isolated test database; do not run DB reset tests concurrently with browser tests.
 
 ```powershell
+docker compose -f compose.test.yaml stop web
 docker compose -f compose.test.yaml run --build --rm tests
 docker compose -f compose.test.yaml --profile browser up -d --wait --wait-timeout 120 web
 npm.cmd ci --prefix tests/browser --ignore-scripts --no-audit --no-fund
@@ -170,7 +173,7 @@ npm.cmd --prefix tests/browser test
 docker compose -f compose.test.yaml --profile browser stop web
 ```
 
-The browser suite deliberately targets only `http://127.0.0.1:8001/`, the isolated test backend. The Compose web profile receives only test runtime credentials, with no application credentials/volume or provider keys. Playwright is pinned to 1.62.1 in a separate lockfile; `node_modules` is excluded from Git and image context. Tests use fresh browser contexts and synthetic data, with no recordings/traces. Optional synthetic screenshots: set `$env:JARVIS_UI_SCREENSHOTS='1'` for the test command; files go to ignored `.tmp/ui-review/`.
+The browser suite deliberately targets only `http://127.0.0.1:8001/`, the isolated test backend. The Compose web profile receives only test runtime credentials, with no application credentials/volume or provider keys. Playwright is pinned to 1.62.1 in a separate lockfile; `node_modules` is excluded from Git and image context. Tests use fresh browser contexts and synthetic data, with no recordings/traces. Synthetic acceptance screenshots are written to ignored `.tmp/react-review/`. Source/model doubles are explicitly labeled, and those screenshots are not live-model evidence.
 
 Actual results for this slice are recorded in [the UI evidence record](eval/reports/ui-foundation.json). A first browser run passed six of seven checks; the navigation test exposed a test-harness assumption that service workers exist on `about:blank`. The harness now instruments that API only where available. No application failure was concealed. Review also added bounded network timeouts and processing details, and excluded newly installed browser dependencies from the Docker build context. The original application source/job schema and provider configuration are unchanged.
 
@@ -178,7 +181,7 @@ Final results on 11 September: **112 isolated PostgreSQL checks passed in 10.22 
 
 ## S07 memory processing
 
-The approved pipeline preserves original sources and writes source-linked claim revisions through the shared service. The browser adds **Process pending**, **Refresh memories**, **Retry failed**, a Memories list and expandable evidence/history. No CLI is required for these user actions. Open a collection before processing; refresh to see completed/failed jobs and zero-memory or clarification outcomes. Conditions, uncertainty and scope are visible on each memory. **View original source** opens the existing source inspector. Switching Private clears sources, memories, history and pending UI responses. Previously accepted Normal imports/jobs may finish; Private input never enters them.
+The approved pipeline preserves original sources and writes source-linked claim revisions through the shared service. The browser adds **Memory > Process sources**, **Refresh memories**, **Retry failed**, a Memories list and expandable evidence/history. No CLI is required for these user actions. Open a collection before processing; refresh to see completed/failed jobs and zero-memory or clarification outcomes. Conditions, uncertainty and scope are visible on each memory. **View original source** opens the existing source inspector. Switching Private clears sources, memories, history and pending UI responses. Previously accepted Normal imports/jobs may finish; Private input never enters them.
 
 **Unattended inference remains off in the delivered configuration after the S09 live failures.** Synthetic-only one-off evaluations used the approved flag and existing keys. Nemotron returned authenticated completions, some contract-valid but semantically incomplete; Kimi returned no completed answer. Imports, inspection, Search and local controls work without provider access. The isolated browser backend injects labeled deterministic providers and cannot start against the application database.
 
@@ -192,7 +195,7 @@ docker compose run --rm --no-deps cli memories --namespace diagnostic-v1 --mode 
 docker compose run --rm --no-deps worker jarvis worker --once
 ```
 
-Use the current policy revision from source listing, not an assumed zero after controls change it. The first/third commands require the live gate; a failure returns a fixed category. Ordinary use is **Process pending** in the browser, with the long-running Compose worker. Failed jobs can be explicitly retried at most three lease attempts; stale/expired workers are fenced. There is at most one schema-repair call per attempt. Unknown provider usage retains its conservative token reservation. Empty/invalid model output, database failures and stale packets never silently become successful zero-memory decisions.
+Use the current policy revision from source listing, not an assumed zero after controls change it. The first/third commands require the live gate; a failure returns a fixed category. Ordinary use is **Memory > Process sources** in the browser, with the long-running Compose worker. Failed jobs can be explicitly retried at most three lease attempts; stale/expired workers are fenced. There is at most one schema-repair call per attempt. Unknown provider usage retains its conservative token reservation. Empty/invalid model output, database failures and stale packets never silently become successful zero-memory decisions.
 
 The older extraction-only command below remains available. S09 actually used `python eval/live.py` for the diagnostic; the [live attempts](eval/reports/s09-live-attempts.json) and [semantic review](eval/reports/s09-live-review.json) retain every call. The full three-repeat extraction/answer matrix has not passed and was not continued after the smoke failures.
 
@@ -514,3 +517,58 @@ The existing local audit helper passed: 10 UTF-8 Markdown files, 141 local links
 Complete the missing S06 source-history answer baseline through Kimi K3 after the provider decision, connecting Ask to the browser. S07 processing and S08 evidence search already use the shared backend; full S09 controls remain next. Keep CLI commands optional. Provider access, retention/no-training settings and a spend ceiling must be explicit before live inference. Final submission still requires the complete clean-checkout import/UI/live-evaluation/reset walkthrough and exact tested release commit; local contract/retrieval checks do not close that product gate.
 
 Implementation references: [uv Docker integration](https://docs.astral.sh/uv/guides/integration/docker/), [pgvector installation](https://github.com/pgvector/pgvector#docker), [Compose startup ordering](https://docs.docker.com/compose/how-tos/startup-order/), [FastAPI containers](https://fastapi.tiangolo.com/deployment/docker/).
+
+
+## React workspace refinement
+
+The approved React redesign replaces the legacy plain client. Its source is `frontend/`; `src/jarvis/web/` is ignored build output. The Docker build runs locked npm installation, TypeScript checking and Vite in a pinned Node 24 stage, then includes generated assets and font notices in the Python wheel. End users need Docker only. FastAPI remains the sole runtime server; existing databases, provider selection, allowance and migration head are unchanged.
+
+Frontend-only developer checks from the repository root (Node 24, npm; Windows uses `npm.cmd`):
+
+```powershell
+npm.cmd ci --prefix frontend --no-fund
+npm.cmd --prefix frontend run format:check
+npm.cmd --prefix frontend run build
+```
+
+The supported integrated preview is the Compose application, not a second development server. Rebuild after frontend edits:
+
+```powershell
+docker compose build api
+docker compose up -d --wait --wait-timeout 120 api
+Invoke-RestMethod http://127.0.0.1:8000/ready
+```
+
+For deterministic browser verification, follow [Browser acceptance checks](#browser-acceptance-checks). Do not run database-reset tests while the isolated browser backend is serving. The full application regression suite and the browser suite use separate test credentials/volume from the application; no live provider call is needed to validate this interface. Hosted inference failures from S09/S10 remain open.
+
+
+Actual results on 12 September 2026:
+
+| Check | Result |
+| --- | --- |
+| Existing backend regression | 232 passed in 129.23 s, isolated PostgreSQL. |
+| Final shell/nonce policy check | 1 passed in 1.49 s after the additional per-response nonce/font assertions. |
+| Full Chromium suite | 22/22 passed in 37.71 s; no page errors, CSP violations, external requests, browser storage writes or cookies. Includes real PostgreSQL and deterministic providers. |
+| Locked frontend install | `npm.cmd ci --no-fund`: 96 packages audited, zero reported vulnerabilities. |
+| Formatting/build | `npm.cmd run format:check`, TypeScript and Vite production builds pass. Ruff lint and formatting pass for 45 Python files. |
+| Bundle | JS 471.66 kB, CSS 42.08 kB; Vite gzip estimates 151.17/10.03 kB. These are build statistics, not a measured HTTP latency/compression benchmark. |
+| Actual application restart | `docker compose down` without volumes, then `docker compose up -d --wait --wait-timeout 120 api` succeeded. All fields in all 14 application tables match the ignored before/after snapshots. |
+| Database/runtime | Alembic check reports no new upgrade operations. API/CLI ready on `0005_user_controls`, pgvector 0.8.6. Application image contains no Node executable, node_modules or .env file. |
+| Deployed browser | Actual port 8000 shell, local assets/font notices, zero personal startup reads and a 320-pixel viewport pass. Desktop/mobile synthetic screenshots were visually reviewed. |
+| Live models | Zero new calls. Existing 19 requests/179,786 accounted tokens and provider/extraction failures are unchanged. |
+
+Exact additional Python verification commands:
+
+```powershell
+docker compose -f compose.test.yaml run --rm tests ruff check --no-cache src migrations tests eval
+docker compose -f compose.test.yaml run --rm tests ruff format --check --no-cache src migrations tests eval
+docker compose -f compose.test.yaml run --rm tests pytest -q -p no:cacheprovider tests/integration/test_web.py
+```
+
+Stop the isolated web service before any database test. Initial frontend checks found the TypeScript 7 removal of `baseUrl` and missing Vite CSS declarations; both were fixed. An initial 517.83-kB JS bundle was reduced with Motion's smaller feature set. Two browser attempts failed only a case-sensitive assertion against CSS-uppercase history text (20/21, then 21/22); the actual assertion was corrected and the final full suite passed. Review added clearing for already-Private history restoration and revoked content after a successful control whose refresh fails; those failure paths pass. A package formatting check was corrected. Ruff initially attempted to create a cache in the unprivileged image; `--no-cache` is the supported check, and the API handler's formatting was fixed. These resolved checks are not hidden live-model successes.
+
+[Machine-readable acceptance](eval/reports/react-workspace.json). The connected in-app browser was unavailable after its documented recovery check, so visual/interactive validation used the existing Playwright Chromium setup. No provider setting, key, budget, schema or Phase One original changed. This is a tested React interface, not a successful live-model demonstration or completion of S11/S12.
+
+Final documentation/staging review passed for 11 UTF-8 Markdown files and 180 local links/anchors. Phase One notes/drafts are unchanged; no local credentials or runtime artifacts are staged. Frontend/test formatting and staged whitespace checks pass.
+
+Final visual refinement brings selected memory history into view with keyboard focus and resets screen navigation scroll. After that change, the two affected memory/history/mobile-control journeys passed in 15.89 s, in addition to the preceding 22/22 full browser run. TypeScript/Vite and formatting passed again; the final local application image was recreated.

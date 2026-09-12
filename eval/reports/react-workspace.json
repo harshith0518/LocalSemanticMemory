@@ -1,0 +1,130 @@
+{
+  "milestone": "React workspace refinement after S10",
+  "date": "2026-09-12",
+  "base_commit": "d8fdfdb227803873638fbd6d0a78e8aa60aecf95",
+  "branch": "dev",
+  "implementation": {
+    "react": "19.3.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.0",
+    "motion": "13.2.0",
+    "components": "shadcn/Radix",
+    "icons": "lucide-react",
+    "screens": [
+      "conversation",
+      "sources",
+      "memory",
+      "usage"
+    ],
+    "speech_capture": false,
+    "schema_change": false,
+    "runtime_node": false,
+    "private_provider_calls": false
+  },
+  "checks": {
+    "backend": {
+      "passed": 232,
+      "seconds": 129.23
+    },
+    "final_shell_policy": {
+      "passed": 1,
+      "seconds": 1.49
+    },
+    "browser": {
+      "passed": 22,
+      "failed": 0,
+      "seconds": 37.7095382,
+      "database": "isolated PostgreSQL",
+      "providers": "deterministic fixture doubles",
+      "page_errors": 0,
+      "csp_violations": 0,
+      "external_requests": 0,
+      "browser_storage_writes": 0,
+      "cookies": 0
+    },
+    "python_lint_format_files": 45,
+    "frontend_clean_install": true,
+    "npm_audit": {
+      "audited_packages": 96,
+      "reported_vulnerabilities": 0
+    },
+    "typescript_build": true,
+    "prettier_check": true,
+    "docker_build": true,
+    "schema": "0005_user_controls",
+    "pgvector": "0.8.6",
+    "application_state": {
+      "tables_compared": 14,
+      "all_fields_preserved": true,
+      "source_rows": 33,
+      "job_rows": 33,
+      "claim_rows": 3,
+      "call_rows": 19
+    },
+    "deployed_shell": {
+      "port": 8000,
+      "personal_startup_reads": 0,
+      "smallest_viewport_pixels": 320,
+      "font_notices": true,
+      "page_errors": 0
+    },
+    "documentation": {
+      "markdown_files": 11,
+      "local_links_and_anchors": 180,
+      "part_one_unchanged": true,
+      "credential_and_artifact_scan": "passed"
+    },
+    "final_memory_ui_targets": {
+      "passed": 2,
+      "seconds": 15.8906978,
+      "scope": "memory history focus/visibility and mobile correction/change/Forget after navigation refinement"
+    }
+  },
+  "build_statistics": {
+    "javascript_kb": 471.66,
+    "css_kb": 42.08,
+    "estimated_gzip_javascript_kb": 151.17,
+    "estimated_gzip_css_kb": 10.03,
+    "scope": "Vite build statistics; not measured wire compression or user latency"
+  },
+  "visual_review": [
+    "desktop and mobile home",
+    "typed source dialog",
+    "sources and search",
+    "memory history",
+    "cited answer",
+    "pending answer",
+    "usage desktop and mobile",
+    "Private",
+    "Forget preview mobile"
+  ],
+  "resolved_findings": [
+    "TypeScript 7 removed baseUrl; configured relative paths and Vite CSS types",
+    "Reduced Motion bundle from 517.83 to 471.66 kB",
+    "Two browser attempts retained a case-sensitive uppercase history assertion; corrected before 22/22 pass",
+    "Private pagehide must remount and clear an already-Private scratchpad",
+    "A committed lifecycle control clears cached personal content even when its refresh fails",
+    "Unprivileged Ruff checks use --no-cache; Python and package formatting corrected",
+    "Selecting memory now reveals and focuses its history; screen navigation returns to the top"
+  ],
+  "live_inference": {
+    "new_calls": 0,
+    "lifetime_calls": 19,
+    "lifetime_accounted_tokens": 179786,
+    "provider_or_allowance_change": false
+  },
+  "limitations": [
+    "Existing Kimi failures and extraction semantic misses remain open",
+    "Private generation unavailable; scratchpad only",
+    "Chromium tested; no cross-browser certification",
+    "500-observation S11 corpus and repeated live semantic comparison remain pending",
+    "Author Phase One finals remain outside checkout and unverified"
+  ],
+  "references": [
+    "https://heyjarvis.ai/",
+    "https://21st.dev/community/components/explore/ai-chat-design",
+    "https://21st.dev/@kokonutd/components/ai-input-with-loading",
+    "https://ui.shadcn.com/docs/installation/vite",
+    "https://motion.dev/docs/react-accessibility"
+  ]
+}

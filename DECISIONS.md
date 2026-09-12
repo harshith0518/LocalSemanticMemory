@@ -1,5 +1,15 @@
 # Decisions and hypotheses
 
+## React interface decision
+
+The latest user instruction approves the React/component/build dependencies for a more expressive browser workspace. Use React 19.3 with TypeScript and Vite, shadcn/Radix primitives, Lucide and Motion. Node is a build dependency only; FastAPI remains the sole application server. PostgreSQL records, model behavior, live allowance and privacy semantics do not change.
+
+The [official Hey Jarvis website](https://heyjarvis.ai/) supplies the forest/cream, serif and botanical direction. [21st's chat references](https://21st.dev/community/components/explore/ai-chat-design), especially [Kokonut's input with loading](https://21st.dev/@kokonutd/components/ai-input-with-loading), informed composer hierarchy; we did not copy its simulated wait or add fake thinking stages. Build on the [official shadcn Vite approach](https://ui.shadcn.com/docs/installation/vite) with locally bundled fonts. Use [Motion's reduced-motion support](https://motion.dev/docs/react-accessibility); only a real pending operation animates, and validated buffered answers reveal without claiming token streaming or hidden reasoning.
+
+The design tells the source-to-memory story through four working screens and explicit controls. Typed/pasted text substitutes for ASR; there is no microphone. Ask is a current request; Save a note is a durable Normal import. Missing capture time stays unknown. Collection/page state is ephemeral; screen navigation within Normal retains the current work, while collection changes, Private, page exit/restoration and successful lifecycle controls clear the relevant content. Private offers only a temporary scratchpad because the existing provider contract does not support Private inference.
+
+Use a per-response nonce for Radix's generated scroll-lock styles and same-origin fonts. Preserve strict script policy, no-store responses, no analytics, no external assets and no browser persistence. This adds a frontend toolchain, not a second runtime service or client authorization layer. Package versions and licenses are recorded in frontend/package-lock.json and frontend/LICENSE-shadcn.md. Actual acceptance belongs in RUN.md.
+
 ## S09 decisions — 12 September 2026
 
 The user approved dummy-data use under the NVIDIA trial terms and the S09 milestone. This is a **synthetic-only exception**, not a claim that NVIDIA provides no training or retention. The shared persisted `s07-synthetic-v1` allowance is 96 requests and 1,500,000 total input/output tokens including repairs, retries, failures and conservative unknown-usage reservations; $0 paid spend, no reset. Keys alone never authorize calls. Personal and Private inference stay blocked. Earlier proposed 32-call limits and pending-approval notes below are historical and superseded.

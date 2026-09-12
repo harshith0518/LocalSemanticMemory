@@ -1,5 +1,11 @@
 # Minimal evaluation plan for Hey Jarvis
 
+## React workspace acceptance
+
+The React migration preserves the established backend gates and extends real Chromium journeys against isolated PostgreSQL. The browser suite covers typed/pasted exact Unicode/whitespace and raw/formatted pairing, stable-ID retries after committed-response loss, file import/reimport/errors/pagination, literal markup, search/date/uncertainty behavior, memory history, reviewed controls, citations/feedback, usage and failure states. It also checks Private cancellation for five delayed endpoint classes, no chained requests/backfill, scratchpad clearing on history restoration, stale-result clearing after Forget even if refresh fails, keyboard/dialog behavior and mobile overflow. Storage APIs, cookies, outside requests and CSP violations are instrumented.
+
+Design review uses screenshots of desktop/mobile home, sources, memories, answers, loading, usage and controls. These are synthetic fixtures, with an explicitly named deterministic extractor/responder in the isolated server. They establish UI/service behavior and accessibility checks within Chromium, not a cross-browser certification or live semantic score. Actual commands, outcomes and resolved failures are recorded in [RUN.md](RUN.md#react-workspace-refinement).
+
 ## S09 contract checks and live evidence
 
 The current acceptance record is [RUN.md](RUN.md#s09-controls-and-synthetic-ask). Deterministic backend/browser tests establish contracts and lifecycle behavior, not model accuracy. Public trial calls are now explicitly approved up to 96 requests/1,500,000 tokens/$0 paid including repairs and unknown-usage reservations. Personal and Private model use remains blocked. Earlier pending-trial notes are superseded; historical results remain dated evidence.

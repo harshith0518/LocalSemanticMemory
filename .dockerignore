@@ -5,6 +5,9 @@
 !alembic.ini
 !src/
 !src/**
+src/jarvis/web/
+!frontend/
+!frontend/**
 !migrations/
 !migrations/**
 !tests/
@@ -12,9 +15,14 @@
 !data/
 !data/synthetic/
 !data/synthetic/sample-dictations.jsonl
+!data/synthetic/control-observations.json
 !eval/
 !eval/fixtures/
 !eval/fixtures/sample-evaluation-cases.json
+!eval/fixtures/s08-retrieval.json
+!eval/retrieval.py
+!eval/live.py
+!eval/efficiency.py
 **/__pycache__/
 **/*.pyc
 **/node_modules/

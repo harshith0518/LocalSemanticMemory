@@ -55,6 +55,10 @@ async function pageFor(t, viewport = { width: 1440, height: 1100 }) {
   });
   await page.addInitScript(() => {
     window.storageWrites = [];
+    window.cspViolations = [];
+    document.addEventListener("securitypolicyviolation", (e) =>
+      window.cspViolations.push(e.violatedDirective),
+    );
     for (const method of ["setItem", "removeItem", "clear"]) {
       Storage.prototype[method] = () => {
         window.storageWrites.push(method);
@@ -77,6 +81,7 @@ async function pageFor(t, viewport = { width: 1440, height: 1100 }) {
     try {
       assert.deepEqual(errors, []);
       assert.deepEqual(external, []);
+      assert.deepEqual(await page.evaluate(() => window.cspViolations), []);
       assert.deepEqual(await page.evaluate(() => window.storageWrites), []);
       assert.deepEqual(await context.cookies(), []);
     } finally {
@@ -86,167 +91,56 @@ async function pageFor(t, viewport = { width: 1440, height: 1100 }) {
   return page;
 }
 
-async function importFile(page, namespace, content = fixture) {
-  await page.getByLabel("Collection name", { exact: true }).fill(namespace);
-  await page.getByLabel("Add dictations", { exact: true }).setInputFiles({
-    name: "synthetic.jsonl",
-    mimeType: "application/x-ndjson",
-    buffer: content,
-  });
-  await page.getByRole("button", { name: "Import to collection" }).click();
-  await eventually(async () =>
-    assert.match(await page.locator("#feedback").innerText(), /Saved \d+ new/),
-  );
-  await eventually(async () =>
+const nav = (page, name) =>
+  page
+    .getByRole("navigation", { name: "Workspace pages" })
+    .getByRole("button", { name, exact: true })
+    .click();
+const button = (page, name) => page.getByRole("button", { name, exact: true });
+const idle = (page) =>
+  eventually(async () =>
     assert.equal(
       await page.locator("#normal-panel").getAttribute("aria-busy"),
       "false",
     ),
   );
+const notice = (page, pattern) =>
+  eventually(async () =>
+    assert.match(await page.locator("#feedback").innerText(), pattern),
+  );
+const normal = (page) =>
+  page.getByRole("radio", { name: "Normal", exact: true }).check();
+const privateMode = (page) =>
+  page.getByRole("radio", { name: "Private", exact: true }).check();
+async function closeDialog(page) {
+  if (await page.getByRole("dialog").count())
+    await button(page, "Close").click();
 }
-
-test("S08 searches original pairs without a model and clears search on Private", async (t) => {
-  const page = await pageFor(t);
-  await importFile(page, `search-${randomUUID()}`);
-  const requests = [];
-  page.on("request", (request) => {
-    if (request.url().endsWith("/search")) requests.push(request);
+async function screenshot(page, name) {
+  const directory = new URL("../../.tmp/react-review/", import.meta.url);
+  await mkdir(directory, { recursive: true });
+  await page.screenshot({
+    path: fileURLToPath(new URL(`${name}.png`, directory)),
+    fullPage: !(await page.getByRole("dialog").count()),
   });
-  await page
-    .getByLabel("Search saved evidence", { exact: true })
-    .fill("spending limit");
-  await page.getByRole("button", { name: "Search", exact: true }).click();
-  await eventually(async () =>
-    assert.match(
-      await page.locator("#search-results").innerText(),
-      /fifteen thousand/,
-    ),
-  );
-  assert.match(await page.locator("#search-results").innerText(), /50,000/);
-  assert.equal(await page.locator("#search-results article").count(), 1);
-  assert.equal(requests[0].method(), "POST");
-  assert.equal(new URL(requests[0].url()).search, "");
-  if (process.env.JARVIS_UI_SCREENSHOTS === "1") {
-    const directory = new URL("../../.tmp/ui-review/", import.meta.url);
-    await mkdir(directory, { recursive: true });
-    await page.locator('[aria-labelledby="search-title"]').screenshot({
-      path: new URL("s08-search.png", directory).pathname.replace(
-        /^\/(\w:)/,
-        "$1",
-      ),
-    });
-  }
-  await page
-    .getByRole("button", { name: "Inspect original", exact: true })
-    .click();
-  await eventually(async () =>
-    assert.match(
-      await page.locator("#raw-text").innerText(),
-      /fifteen thousand/,
-    ),
-  );
-  await page.getByRole("radio", { name: "Private", exact: true }).check();
-  assert.equal(await page.locator("#search-results").innerText(), "");
-  assert.equal(await page.locator("#search-query").inputValue(), "");
-  assert.equal(requests.length, 1);
-  await page.getByRole("radio", { name: "Normal", exact: true }).check();
-  assert.equal(await page.locator("#search-results").innerText(), "");
-});
-
-test("S08 distinguishes search outage from no matches and ignores late results", async (t) => {
-  const page = await pageFor(t, { width: 390, height: 844 });
-  await importFile(page, `search-failure-${randomUUID()}`);
-  await page.getByText("Search options", { exact: true }).click();
-  await page.locator("#search-from").fill("2030-01-01");
-  await page.getByLabel("Search saved evidence", { exact: true }).fill("Orion");
-  await page.getByRole("button", { name: "Search", exact: true }).click();
-  await eventually(async () =>
-    assert.match(
-      await page.locator("#search-results").innerText(),
-      /Captured: Not provided/,
-    ),
-  );
-  assert.equal(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth,
-    ),
-    true,
-  );
-  if (process.env.JARVIS_UI_SCREENSHOTS === "1") {
-    const directory = new URL("../../.tmp/ui-review/", import.meta.url);
-    await mkdir(directory, { recursive: true });
-    await page.locator('[aria-labelledby="search-title"]').screenshot({
-      path: new URL("s08-mobile.png", directory).pathname.replace(
-        /^\/(\w:)/,
-        "$1",
-      ),
-    });
-  }
-  await page.locator("#search-undated").uncheck();
-  await page.getByRole("button", { name: "Search", exact: true }).click();
-  await eventually(async () =>
-    assert.match(
-      await page.locator("#search-state").innerText(),
-      /No matching evidence/,
-    ),
-  );
-  await page.locator("#search-from").fill("");
-  await page.locator("#search-undated").check();
-  await page
-    .getByLabel("Search saved evidence", { exact: true })
-    .fill("Quasar passport");
-  await page.getByRole("button", { name: "Search", exact: true }).click();
-  await eventually(async () =>
-    assert.match(
-      await page.locator("#search-state").innerText(),
-      /No matching evidence/,
-    ),
-  );
-  await page.route("**/search", (route) => route.abort());
-  await page.getByRole("button", { name: "Search", exact: true }).click();
-  await eventually(async () =>
-    assert.match(
-      await page.locator("#search-state").innerText(),
-      /Search could not finish/,
-    ),
-  );
-  await page.unroute("**/search");
-  let release, intercepted;
-  const arrived = new Promise((resolve) => {
-    intercepted = resolve;
+}
+async function importFile(page, namespace, content = fixture) {
+  await closeDialog(page);
+  await page.getByLabel("Collection name", { exact: true }).fill(namespace);
+  await nav(page, "Sources");
+  await page.getByLabel("Add dictations", { exact: true }).setInputFiles({
+    name: "synthetic.jsonl",
+    mimeType: "application/x-ndjson",
+    buffer: content,
   });
-  const held = new Promise((resolve) => {
-    release = resolve;
-  });
-  await page.route("**/search", async (route) => {
-    const response = await route.fetch();
-    intercepted();
-    await held;
-    await route.fulfill({ response }).catch(() => {});
-  });
-  await page.getByLabel("Search saved evidence", { exact: true }).fill("Atlas");
-  await page.getByRole("button", { name: "Search", exact: true }).click();
-  await arrived;
-  await page.getByRole("radio", { name: "Private", exact: true }).check();
-  release();
-  await page.getByRole("radio", { name: "Normal", exact: true }).check();
-  assert.equal(await page.locator("#search-results").innerText(), "");
-  assert.equal(await page.locator("#search-query").inputValue(), "");
-  assert.equal(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth,
-    ),
-    true,
-  );
-});
-
-test("S07 processes synthetic fixtures and exposes memory history through the real backend", async (t) => {
-  const page = await pageFor(t);
-  const namespace = `memory-${randomUUID()}`;
-  await importFile(page, namespace);
-  await page
-    .getByRole("button", { name: "Process pending", exact: true })
-    .click();
+  await button(page, "Import to collection").click();
+  await notice(page, /Saved \d+ new/);
+  await idle(page);
+}
+async function processFixture(page, namespace) {
+  await nav(page, "Memory");
+  await button(page, "Process sources").click();
+  await idle(page);
   await eventually(async () => {
     const response = await fetch(
       `${origin}/processing?namespace=${namespace}`,
@@ -254,213 +148,170 @@ test("S07 processes synthetic fixtures and exposes memory history through the re
     );
     assert.equal((await response.json()).counts.succeeded, 8);
   });
-  await page
-    .getByRole("button", { name: "Refresh memories", exact: true })
-    .click();
-  await eventually(async () =>
-    assert.equal(
-      await page.locator("#memory-list > li > .source-button").count(),
-      11,
-    ),
-  );
-  await page
-    .getByRole("button", { name: /Atlas · launch date: 2026-09-21/ })
-    .click();
-  await eventually(async () =>
-    assert.match(
-      await page.locator("#memory-history").innerText(),
-      /2026-09-18/,
-    ),
-  );
-  const history = await page.locator("#memory-history").innerText();
-  assert.match(history, /superseded/);
-  assert.match(history, /legal review needs more time/);
-  assert.match(history, /Applies from: Unknown/);
-  const ownerButton = page.getByRole("button", {
-    name: /Atlas · budget owner: Ravi/,
+  await button(page, "Refresh memories").click();
+  await idle(page);
+}
+async function hold(page, pattern) {
+  let release, reached;
+  const gate = new Promise((resolve) => {
+    release = resolve;
   });
-  assert.match(await ownerButton.innerText(), /tentative.*conditional/s);
-  assert.match(await ownerButton.innerText(), /Only if: Finance signs off/);
-  await ownerButton.click();
-  await eventually(async () =>
-    assert.match(
-      await page.locator("#memory-history").innerText(),
-      /tentative/,
-    ),
-  );
-  assert.match(
-    await page.locator("#memory-history").innerText(),
-    /Finance signs off/,
-  );
-  await page.getByText("Search options", { exact: true }).click();
-  await page.locator("#search-memories").check();
-  await page.getByLabel("Search saved evidence", { exact: true }).fill("Ravi");
-  await page.getByRole("button", { name: "Search", exact: true }).click();
-  await eventually(async () =>
-    assert.match(
-      await page.locator("#search-results").innerText(),
-      /Only if: Finance signs off/,
-    ),
-  );
-  assert.match(
-    await page.locator("#search-results").innerText(),
-    /tentative.*conditional.*Scope: Atlas/,
-  );
-  if (process.env.JARVIS_UI_SCREENSHOTS === "1") {
-    const path = new URL("../../.tmp/ui-review/", import.meta.url);
-    await mkdir(path, { recursive: true });
-    await page.screenshot({
-      path: new URL("s07-memories.png", path).pathname.replace(
-        /^\/(\w:)/,
-        "$1",
-      ),
-      fullPage: true,
-    });
-  }
-  await page.getByRole("radio", { name: "Private", exact: true }).check();
-  assert.equal(
-    await page.locator("#memory-list > li > .source-button").count(),
-    0,
-  );
-  assert.equal(await page.locator("#memory-history").textContent(), "");
-  await page.getByRole("radio", { name: "Normal", exact: true }).check();
-  assert.equal(
-    await page.locator("#memory-list > li > .source-button").count(),
-    0,
-  );
-});
-
-test("Private drops late memory responses and makes no processing request", async (t) => {
-  const page = await pageFor(t);
-  await importFile(page, `late-memory-${randomUUID()}`);
-  let release;
-  let reached;
   const arrived = new Promise((resolve) => {
     reached = resolve;
   });
-  const blocked = new Promise((resolve) => {
-    release = resolve;
-  });
-  await page.route("**/memories?*", async (route) => {
+  await page.route(pattern, async (route) => {
+    const response = await route.fetch();
     reached();
-    await blocked;
-    try {
-      await route.fulfill({
-        json: {
-          memories: [{ content: "SYNTHETIC_LATE_MEMORY" }],
-          next_after: null,
-        },
-      });
-    } catch {}
+    await gate;
+    await route.fulfill({ response }).catch(() => {});
   });
-  await page
-    .getByRole("button", { name: "Refresh memories", exact: true })
-    .click();
-  await arrived;
-  await page.getByRole("radio", { name: "Private", exact: true }).check();
-  const requests = [];
-  page.on("request", (r) => requests.push(r.url()));
-  release();
-  await page.waitForTimeout(100);
-  assert.doesNotMatch(
-    await page.locator("body").textContent(),
-    /SYNTHETIC_LATE_MEMORY/,
+  return {
+    arrived,
+    release: async () => {
+      release();
+      await page.unroute(pattern, undefined, { behavior: "wait" });
+    },
+  };
+}
+
+test("React shell has local assets, accessible navigation, no personal startup reads or microphone", async (t) => {
+  const page = await pageFor(t);
+  const calls = [];
+  page.on("request", (request) => calls.push(request.url()));
+  await page.getByRole("heading", { name: /hey jarvis/ }).waitFor();
+  assert.equal(
+    await page
+      .getByRole("button", { name: /microphone|record audio|speak/i })
+      .count(),
+    0,
   );
-  assert.deepEqual(requests, []);
+  assert.equal(await page.locator("audio,video").count(), 0);
+  for (const name of ["Sources", "Memory", "Usage", "Conversation"])
+    await nav(page, name);
+  assert.deepEqual(calls, []);
+  await page.evaluate(() => document.fonts.ready);
+  await screenshot(page, "home-desktop");
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.equal(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+    true,
+  );
+  await screenshot(page, "home-mobile");
 });
 
-test("browser imports, reimports and inspects exact paired evidence through PostgreSQL", async (t) => {
+test("typed note preserves whitespace, Unicode and raw/formatted pairing, without capture-time invention", async (t) => {
   const page = await pageFor(t);
-  const namespace = `ui-${randomUUID()}`;
-  assert.equal(await page.locator(".source-button").count(), 0);
-  await importFile(page, namespace);
+  const namespace = `typed-${randomUUID()}`;
+  const raw = "  Ravi might own Atlas\nif Finance approves. नमस्ते ₹ 👋  ";
+  const formatted = "Ravi might own Atlas if Finance approves.";
+  await page.getByLabel("Collection name").fill(namespace);
+  await page.getByRole("tab", { name: "Save a note" }).click();
+  await page.getByLabel("Original transcript", { exact: true }).fill(raw);
+  await page.getByText("Add a formatted version", { exact: false }).click();
+  await page.getByLabel("Formatted transcript").fill(formatted);
+  await button(page, "Save note").click();
+  await notice(page, /Saved 1 new/);
+  await idle(page);
+  await button(page, "View source").click();
+  assert.equal(await page.locator("#source-list li").count(), 1);
+  await page.locator("#source-list button").click();
+  await page.getByRole("dialog").waitFor();
+  assert.equal(await page.locator("#raw-text").textContent(), raw);
+  assert.equal(await page.locator("#formatted-text").textContent(), formatted);
   assert.equal(
-    await page.locator("#feedback").innerText(),
-    "Saved 8 new · 0 unchanged.",
+    await page.locator("#captured-at").textContent(),
+    "Not provided",
   );
-  assert.equal(await page.locator(".source-button").count(), 8);
+  await screenshot(page, "typed-evidence");
+  await page.keyboard.press("Escape");
+  assert.equal(await page.getByRole("dialog").count(), 0);
+});
+
+test("a committed typed-note response lost in transit can be retried without duplicate observation", async (t) => {
+  const page = await pageFor(t);
+  await page.getByLabel("Collection name").fill(`retry-${randomUUID()}`);
+  await page.getByRole("tab", { name: "Save a note" }).click();
+  await page
+    .getByLabel("Original transcript", { exact: true })
+    .fill("Synthetic retry-safe note");
+  await page.route("**/sources/import?*", async (route) => {
+    await route.fetch();
+    await route.abort();
+  });
+  await button(page, "Save note").click();
+  await notice(page, /may have completed/);
+  await idle(page);
+  await page.unroute("**/sources/import?*");
+  await button(page, "Save note").click();
+  await notice(page, /Saved 0 new.*1 unchanged/);
+  await idle(page);
+  assert.equal(
+    await page.getByLabel("Original transcript", { exact: true }).inputValue(),
+    "",
+  );
+});
+
+test("imports and reimports exact paired evidence through isolated PostgreSQL", async (t) => {
+  const page = await pageFor(t);
+  const namespace = `source-${randomUUID()}`;
+  await importFile(page, namespace);
+  assert.equal(await page.locator("#source-list li").count(), 8);
   await page.getByRole("button", { name: /dict_0008/ }).click();
-  await page.locator("#evidence").waitFor({ state: "visible" });
+  await page.getByRole("dialog").waitFor();
   assert.match(
-    await page.locator("#raw-text").innerText(),
+    await page.locator("#raw-text").textContent(),
     /fifteen thousand rupees/,
   );
-  assert.match(await page.locator("#formatted-text").innerText(), /₹50,000/);
-  const first = await page.locator("#source-id").innerText();
+  assert.match(await page.locator("#formatted-text").textContent(), /₹50,000/);
   await importFile(page, namespace);
-  assert.equal(
-    await page.locator("#feedback").innerText(),
-    "Saved 0 new · 8 unchanged.",
-  );
-  await page.getByRole("button", { name: /dict_0008/ }).click();
-  await eventually(async () =>
-    assert.equal(await page.locator("#source-id").innerText(), first),
-  );
+  await notice(page, /Saved 0 new.*8 unchanged/);
   await page.getByRole("button", { name: /dict_0007/ }).click();
-  await eventually(async () =>
-    assert.equal(await page.locator("#record-title").innerText(), "dict_0007"),
+  await page.getByRole("dialog").waitFor();
+  assert.equal(
+    await page.locator("#captured-at").textContent(),
+    "Not provided",
   );
-  assert.equal(await page.locator("#captured-at").innerText(), "Not provided");
   assert.match(
-    await page.locator("#formatted-text").innerText(),
+    await page.locator("#formatted-text").textContent(),
     /25 September 2026/,
   );
-  if (process.env.JARVIS_UI_SCREENSHOTS === "1") {
-    const path = new URL("../../.tmp/ui-review/", import.meta.url);
-    await mkdir(path, { recursive: true });
-    await page.screenshot({
-      path: new URL("desktop.png", path).pathname.replace(/^\/(\w:)/, "$1"),
-      fullPage: true,
+});
+
+test("invalid and conflicting imports fail atomically without echoing driver/input errors", async (t) => {
+  const page = await pageFor(t);
+  await importFile(page, `conflict-${randomUUID()}`);
+  const rows = fixture.toString().trim().split("\n").map(JSON.parse);
+  rows[0].raw_transcript = "SYNTHETIC_CONFLICT_DO_NOT_ECHO";
+  rows.push({ record_id: "extra", raw_transcript: "Should not be committed" });
+  for (const [content, message] of [
+    [rows.map(JSON.stringify).join("\n"), /No records.*changed/],
+    ["INVALID_SYNTHETIC_CONTENT", /Check the input/],
+  ]) {
+    await page.getByLabel("Add dictations").setInputFiles({
+      name: "invalid.jsonl",
+      mimeType: "application/x-ndjson",
+      buffer: Buffer.from(content),
     });
+    await button(page, "Import to collection").click();
+    await notice(page, message);
+    await idle(page);
+    assert.equal(await page.locator("#source-list li").count(), 8);
+    assert.doesNotMatch(
+      await page.locator("body").innerText(),
+      /SYNTHETIC_CONFLICT_DO_NOT_ECHO|INVALID_SYNTHETIC_CONTENT/,
+    );
   }
 });
 
-test("invalid/conflicting imports show bounded failures without partial records", async (t) => {
-  const page = await pageFor(t);
-  const namespace = `ui-${randomUUID()}`;
-  await importFile(page, namespace);
-  const rows = fixture.toString("utf8").trim().split("\n").map(JSON.parse);
-  rows[0].raw_transcript = "SYNTHETIC_CONFLICT_DO_NOT_ECHO";
-  rows.push({ record_id: "extra", raw_transcript: "Should not be committed" });
-  await page.getByLabel("Add dictations").setInputFiles({
-    name: "conflict.jsonl",
-    mimeType: "application/x-ndjson",
-    buffer: Buffer.from(rows.map(JSON.stringify).join("\n")),
-  });
-  await page.getByRole("button", { name: "Import to collection" }).click();
-  await eventually(async () =>
-    assert.match(await page.locator("#feedback").innerText(), /Import stopped/),
-  );
-  assert.doesNotMatch(
-    await page.locator("body").innerText(),
-    /SYNTHETIC_CONFLICT_DO_NOT_ECHO/,
-  );
-  assert.equal(await page.locator(".source-button").count(), 8);
-  await page.getByLabel("Add dictations").setInputFiles({
-    name: "invalid.jsonl",
-    mimeType: "application/x-ndjson",
-    buffer: Buffer.from("INVALID_SYNTHETIC_CONTENT"),
-  });
-  await page.getByRole("button", { name: "Import to collection" }).click();
-  await eventually(async () =>
-    assert.match(
-      await page.locator("#feedback").innerText(),
-      /Check the collection name and file format/,
-    ),
-  );
-  assert.doesNotMatch(
-    await page.locator("body").innerText(),
-    /INVALID_SYNTHETIC_CONTENT/,
-  );
-});
-
-test("source markup remains text and never executes", async (t) => {
+test("source markup remains literal text with no executable element or outside request", async (t) => {
   const page = await pageFor(t);
   const markup =
     '<img src="/unexpected-image" onerror="window.xss=1"><script>window.xss=2</script> ₹ नमस्ते';
   await importFile(
     page,
-    `ui-${randomUUID()}`,
+    `markup-${randomUUID()}`,
     Buffer.from(
       JSON.stringify({
         record_id: "markup",
@@ -471,276 +322,342 @@ test("source markup remains text and never executes", async (t) => {
     ),
   );
   await page.getByRole("button", { name: /markup/ }).click();
-  await page.locator("#evidence").waitFor({ state: "visible" });
+  await page.getByRole("dialog").waitFor();
   assert.equal(await page.locator("#raw-text").textContent(), markup);
   assert.equal(
-    await page.locator("#formatted-text img, #raw-text script").count(),
+    await page.locator("#raw-text img,#formatted-text script").count(),
     0,
   );
   assert.equal(await page.evaluate(() => window.xss), undefined);
 });
 
-test("large-file rejection avoids store access and pagination reaches every source", async (t) => {
+test("large file is rejected before reads; pagination reaches every original", async (t) => {
   const page = await pageFor(t);
-  const requests = [];
+  await nav(page, "Sources");
+  const calls = [];
   page.on("request", (request) => {
-    if (request.url().includes("/sources")) requests.push(request.url());
+    if (request.url().includes("/sources")) calls.push(request.url());
   });
   await page.getByLabel("Add dictations").setInputFiles({
-    name: "oversized.jsonl",
+    name: "large.jsonl",
     mimeType: "application/x-ndjson",
     buffer: Buffer.alloc(1024 * 1024 + 1, "x"),
   });
-  await page.getByRole("button", { name: "Import to collection" }).click();
-  assert.match(
-    await page.locator("#feedback").innerText(),
-    /no larger than 1 MB/,
-  );
-  assert.deepEqual(requests, []);
+  await button(page, "Import to collection").click();
+  await notice(page, /no larger than 1 MB/);
+  assert.deepEqual(calls, []);
   const rows = Array.from({ length: 55 }, (_, i) =>
     JSON.stringify({
-      record_id: `record_${String(i).padStart(3, "0")}`,
-      raw_transcript: `Synthetic pagination record ${i}`,
+      record_id: `record_${i}`,
+      raw_transcript: `Synthetic pagination ${i}`,
     }),
   );
-  await importFile(page, `ui-${randomUUID()}`, Buffer.from(rows.join("\n")));
-  assert.equal(await page.locator(".source-button").count(), 50);
-  await page.getByRole("button", { name: "Load more sources" }).click();
-  await eventually(async () =>
-    assert.equal(await page.locator(".source-button").count(), 55),
-  );
+  await importFile(page, `pages-${randomUUID()}`, Buffer.from(rows.join("\n")));
+  assert.equal(await page.locator("#source-list li").count(), 50);
+  await button(page, "Load more sources").click();
+  await idle(page);
+  assert.equal(await page.locator("#source-list li").count(), 55);
   assert.equal(
-    await page.getByRole("button", { name: "Load more sources" }).isVisible(),
-    false,
-  );
-  assert.equal(
-    new Set(await page.locator(".source-button strong").allTextContents()).size,
+    new Set(await page.locator("#source-list strong").allTextContents()).size,
     55,
+  );
+  assert.equal(await button(page, "Load more sources").count(), 0);
+});
+
+test("search keeps conflicting variants and distinguishes undated, absent evidence and outage", async (t) => {
+  const page = await pageFor(t, { width: 390, height: 844 });
+  await importFile(page, `search-${randomUUID()}`);
+  await page
+    .getByLabel("Search saved evidence", { exact: true })
+    .fill("spending limit");
+  await button(page, "Search").click();
+  await idle(page);
+  assert.match(
+    await page.locator("#search-results").innerText(),
+    /fifteen thousand/,
+  );
+  assert.match(await page.locator("#search-results").innerText(), /50,000/);
+  assert.equal(await page.locator("#search-results article").count(), 1);
+  await button(page, "Inspect original").click();
+  await page.getByRole("dialog").waitFor();
+  await closeDialog(page);
+  await page.getByText("Search options", { exact: true }).click();
+  await page.locator("#search-from").fill("2030-01-01");
+  await page.getByLabel("Search saved evidence", { exact: true }).fill("Orion");
+  await button(page, "Search").click();
+  await idle(page);
+  assert.match(
+    await page.locator("#search-results").innerText(),
+    /Captured: Not provided/,
+  );
+  await page.locator("#search-undated").uncheck();
+  await button(page, "Search").click();
+  await idle(page);
+  assert.match(
+    await page.locator("#search-state").innerText(),
+    /No matching evidence/,
+  );
+  await page.route("**/search", (route) => route.abort());
+  await button(page, "Search").click();
+  await idle(page);
+  assert.match(
+    await page.locator("#search-state").innerText(),
+    /Search could not finish/,
+  );
+  assert.equal(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+    true,
+  );
+  await screenshot(page, "sources-mobile");
+});
+
+test("learned memories retain conditional meaning, unknown times and superseded history", async (t) => {
+  const page = await pageFor(t);
+  const namespace = `memory-${randomUUID()}`;
+  await importFile(page, namespace);
+  await processFixture(page, namespace);
+  assert.equal(await page.locator("#memory-list li").count(), 11);
+  await page
+    .getByRole("button", { name: /Atlas · launch date: 2026-09-21/ })
+    .click();
+  await idle(page);
+  assert.match(await page.locator("#memory-history").innerText(), /2026-09-18/);
+  assert.match(
+    await page.locator("#memory-history").innerText(),
+    /superseded/i,
+  );
+  await eventually(async () =>
+    assert.equal(
+      await page
+        .locator("#memory-history")
+        .evaluate(
+          (element) =>
+            document.activeElement === element &&
+            element.getBoundingClientRect().top >= 0 &&
+            element.getBoundingClientRect().top < innerHeight,
+        ),
+      true,
+    ),
+  );
+  const owner = page
+    .locator("#memory-list li")
+    .filter({ hasText: /budget owner: Ravi/ });
+  assert.match(await owner.innerText(), /tentative.*conditional/s);
+  assert.match(await owner.innerText(), /Only if: Finance signs off/);
+  await owner.getByRole("button").click();
+  await idle(page);
+  assert.match(
+    await page.locator("#memory-history").innerText(),
+    /Applies from: Unknown/,
+  );
+  await screenshot(page, "memory-desktop");
+  await nav(page, "Sources");
+  await page.getByText("Search options", { exact: true }).click();
+  await page.getByLabel("Include learned memories", { exact: true }).check();
+  await page.getByLabel("Search saved evidence", { exact: true }).fill("Ravi");
+  await button(page, "Search").click();
+  await idle(page);
+  assert.match(
+    await page.locator("#search-results").innerText(),
+    /Only if: Finance signs off/,
   );
 });
 
-test("Private clears source/file/form state and never reads saved data or backfills", async (t) => {
+test("Ask cites original evidence, diagnoses feedback and permits only one explicit retry", async (t) => {
   const page = await pageFor(t);
-  await importFile(page, `ui-${randomUUID()}`);
-  await page.getByRole("button", { name: /dict_0008/ }).click();
-  await page.locator("#evidence").waitFor({ state: "visible" });
+  await importFile(page, `ask-${randomUUID()}`);
+  await nav(page, "Conversation");
+  await page.getByRole("button", { name: /Ask with context/ }).click();
+  await idle(page);
+  assert.match(
+    await page.getByLabel("Ask a question").inputValue(),
+    /Atlas launch/,
+  );
+  await button(page, "Ask").click();
+  await idle(page);
+  assert.match(
+    await page.locator("#ask-result").innerText(),
+    /Synthetic contract answer/,
+  );
+  await page.locator(".citations summary").first().click();
+  await button(page, "Inspect cited source").first().click();
+  await page.getByRole("dialog").waitFor();
+  await closeDialog(page);
+  await page
+    .getByText("Something off? Review this answer", { exact: true })
+    .click();
+  await button(page, "Review feedback").click();
+  await notice(page, /Which source/);
+  await idle(page);
+  await page.getByLabel("What needs attention?").selectOption("generation");
+  await button(page, "Review feedback").click();
+  await notice(page, /One new answer/);
+  await idle(page);
+  await button(page, "Review feedback").click();
+  await idle(page);
+  assert.match(
+    await page.locator("#feedback").innerText(),
+    /retry|already|limit/i,
+  );
+  await screenshot(page, "conversation-desktop");
+  await privateMode(page);
+  assert.equal(await page.locator("#ask-result").count(), 0);
+  await normal(page);
+  assert.equal(await page.getByLabel("Ask a question").inputValue(), "");
+});
+
+test("Ask failure is not an unknown answer, and retry is explicit", async (t) => {
+  const page = await pageFor(t);
+  await page.getByLabel("Ask a question").fill("Atlas launch");
+  await page.route("**/ask", (route) => route.abort());
+  await button(page, "Ask").click();
+  await idle(page);
+  assert.match(
+    await page.locator("#ask-result").innerText(),
+    /The answer could not finish/,
+  );
+  assert.match(
+    await page.locator("#ask-result").innerText(),
+    /service failure does not establish/,
+  );
+  assert.equal(await button(page, "Try question again").count(), 1);
+  assert.equal(await page.locator(".activity").count(), 0);
+});
+
+test("Private unmounts all content, file state and scratchpad without reads or backfill", async (t) => {
+  const page = await pageFor(t);
+  await importFile(page, `private-${randomUUID()}`);
   await page.getByLabel("Add dictations").setInputFiles({
-    name: "private.jsonl",
+    name: "pending.jsonl",
     mimeType: "application/x-ndjson",
     buffer: fixture,
   });
-  const requests = [];
-  page.on("request", (request) => {
-    if (request.url().includes("/sources")) requests.push(request.url());
-  });
-  await page.getByRole("radio", { name: "Private", exact: true }).check();
-  await page.locator("#private-panel").waitFor({ state: "visible" });
-  assert.equal(await page.locator("#raw-text").textContent(), "");
-  assert.equal(await page.locator("#source-list").textContent(), "");
+  await nav(page, "Conversation");
+  await page.getByLabel("Ask a question").fill("SYNTHETIC_NORMAL_DRAFT");
+  const calls = [];
+  page.on("request", (request) => calls.push(request.url()));
+  await privateMode(page);
+  assert.equal(await page.locator("#normal-panel").count(), 0);
+  assert.doesNotMatch(
+    await page.locator("body").textContent(),
+    /SYNTHETIC_NORMAL_DRAFT|dict_0008/,
+  );
+  await page.getByLabel("Temporary text").fill("SYNTHETIC_PRIVATE_DRAFT");
+  await screenshot(page, "private-desktop");
+  await normal(page);
+  assert.doesNotMatch(
+    await page.locator("body").textContent(),
+    /SYNTHETIC_PRIVATE_DRAFT/,
+  );
   assert.equal(await page.locator("#import-file").inputValue(), "");
-  assert.equal(await page.locator("#namespace").inputValue(), "diagnostic-v1");
-  await page.getByRole("radio", { name: "Normal", exact: true }).check();
-  assert.equal(await page.locator(".source-button").count(), 0);
-  assert.equal(await page.locator("#import-file").inputValue(), "");
-  assert.deepEqual(requests, []);
+  assert.equal(
+    await page.getByLabel("Collection name").inputValue(),
+    "my-notes",
+  );
+  assert.equal(await page.locator("#source-list li").count(), 0);
+  assert.deepEqual(calls, []);
 });
 
-test("late Normal response cannot repopulate Private or the next Normal context", async (t) => {
-  const page = await pageFor(t);
-  await importFile(page, `ui-${randomUUID()}`);
-  let release;
-  const gate = new Promise((resolve) => {
-    release = resolve;
+for (const target of ["source", "search", "memory", "ask", "usage"]) {
+  test(`Private cancels pending ${target}, ignores the late result and prevents follow-up reads`, async (t) => {
+    const page = await pageFor(t);
+    await importFile(page, `late-${target}-${randomUUID()}`);
+    const patterns = {
+      source: "**/sources/*",
+      search: "**/search",
+      memory: "**/memories?*",
+      ask: "**/ask",
+      usage: "**/usage",
+    };
+    const pending = await hold(page, patterns[target]);
+    if (target === "source")
+      await page.getByRole("button", { name: /dict_0008/ }).click();
+    if (target === "search") {
+      await page
+        .getByLabel("Search saved evidence", { exact: true })
+        .fill("Atlas");
+      await button(page, "Search").click();
+    }
+    if (target === "memory") {
+      await nav(page, "Memory");
+      await button(page, "Refresh memories").click();
+    }
+    if (target === "ask") {
+      await nav(page, "Conversation");
+      await page.getByLabel("Ask a question").fill("Atlas launch");
+      await button(page, "Ask").click();
+    }
+    if (target === "usage") {
+      await nav(page, "Usage");
+      await button(page, "Refresh usage").click();
+    }
+    await pending.arrived;
+    assert.ok(await page.locator(".activity").count());
+    if (target === "ask") {
+      await screenshot(page, "answer-pending");
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      assert.equal(
+        await page
+          .locator(".activity-orbit svg")
+          .evaluate((element) => getComputedStyle(element).animationName),
+        "none",
+      );
+    }
+    await privateMode(page);
+    const calls = [];
+    page.on("request", (request) => calls.push(request.url()));
+    await normal(page);
+    await pending.release();
+    await page.waitForTimeout(80);
+    assert.equal(
+      await page
+        .locator(
+          "#source-list li,#memory-list li,#ask-result,#usage-results,#evidence",
+        )
+        .count(),
+      0,
+    );
+    assert.equal(await page.locator("#search-results").textContent(), "");
+    assert.equal(await page.locator(".activity").count(), 0);
+    assert.deepEqual(calls, []);
   });
-  let arrived;
-  const seen = new Promise((resolve) => {
-    arrived = resolve;
-  });
-  await page.route("**/sources/*", async (route) => {
-    const response = await route.fetch();
-    arrived();
-    await gate;
-    await route.fulfill({ response }).catch(() => {}); // An aborted request is expected.
-  });
-  await page.getByRole("button", { name: /dict_0008/ }).click();
-  await seen;
-  await page.getByRole("radio", { name: "Private", exact: true }).check();
-  await page.getByRole("radio", { name: "Normal", exact: true }).check();
-  release();
-  await page.unrouteAll({ behavior: "wait" });
-  assert.equal(await page.locator("#raw-text").textContent(), "");
-  assert.equal(await page.locator(".source-button").count(), 0);
-  assert.equal(await page.locator("#feedback").textContent(), "");
-});
+}
 
-test("network failure is distinct from an empty collection and errors never echo content", async (t) => {
+test("unknown backend errors stay bounded; loading a collection is not mistaken for empty on failure", async (t) => {
   const page = await pageFor(t);
   await page.route("**/sources?*", (route) =>
     route.fulfill({
       status: 503,
-      contentType: "application/json",
-      body: JSON.stringify({ reason: "DATABASE_SECRET_SYNTHETIC_FAILURE" }),
+      json: { reason: "DATABASE_SECRET_SYNTHETIC_FAILURE" },
     }),
   );
-  await page.getByRole("button", { name: "Open", exact: true }).click();
-  await eventually(async () =>
-    assert.match(
-      await page.locator("#feedback").innerText(),
-      /could not be completed/,
-    ),
-  );
+  await button(page, "Open").click();
+  await idle(page);
+  assert.match(await page.locator("#feedback").innerText(), /could not finish/);
   assert.doesNotMatch(
     await page.locator("body").innerText(),
-    /DATABASE_SECRET_SYNTHETIC_FAILURE|This collection is empty/,
+    /DATABASE_SECRET_SYNTHETIC_FAILURE|Room for your first thought/,
   );
 });
 
-test("mobile keyboard journey fits viewport; navigation never restores prior evidence", async (t) => {
-  const page = await pageFor(t, { width: 390, height: 844 });
-  await page
-    .getByLabel("Collection name", { exact: true })
-    .fill(`empty-${randomUUID()}`);
-  await page.getByLabel("Collection name", { exact: true }).press("Enter");
-  await eventually(async () =>
-    assert.equal(
-      await page.locator("#feedback").innerText(),
-      "Collection opened.",
-    ),
-  );
-  await importFile(page, `ui-${randomUUID()}`);
-  await page.getByRole("button", { name: /dict_0008/ }).click();
-  await page.locator("#evidence").waitFor({ state: "visible" });
-  assert.equal(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= window.innerWidth,
-    ),
-    true,
-  );
-  if (process.env.JARVIS_UI_SCREENSHOTS === "1") {
-    const path = new URL(
-      "../../.tmp/ui-review/mobile.png",
-      import.meta.url,
-    ).pathname.replace(/^\/(\w:)/, "$1");
-    await page.screenshot({ path, fullPage: true });
-  }
-  await page.goto("about:blank");
-  await page.goBack();
-  await page.getByRole("heading", { name: "Start with the source." }).waitFor();
-  assert.equal(await page.locator("#raw-text").textContent(), "");
-  assert.equal(await page.locator(".source-button").count(), 0);
-});
-
-test("S06 Ask cites stored evidence, diagnoses feedback, and clears all reply state in Private", async (t) => {
+test("sample import is idempotent; usage reports measured payloads, timings and unknown billing", async (t) => {
   const page = await pageFor(t);
-  await importFile(page, `ask-${randomUUID()}`);
-  await page.getByRole("button", { name: "Try a sample question" }).click();
-  await eventually(async () =>
-    assert.match(
-      await page.locator("#ask-question").inputValue(),
-      /Atlas launch/,
-    ),
-  );
-  await page.getByRole("button", { name: "Ask from my sources" }).click();
-  await eventually(async () =>
-    assert.match(
-      await page.locator("#ask-result").innerText(),
-      /Synthetic contract answer/,
-    ),
-  );
-  assert.ok(await page.locator("#ask-result details").count());
-  await page.getByRole("button", { name: "Review feedback" }).click();
-  await eventually(async () =>
-    assert.match(
-      await page.locator("#feedback-guidance").innerText(),
-      /Which source/,
-    ),
-  );
-  await page.locator("#feedback-kind").selectOption("generation");
-  await page.getByRole("button", { name: "Review feedback" }).click();
-  await eventually(async () =>
-    assert.match(
-      await page.locator("#feedback-guidance").innerText(),
-      /One new answer/,
-    ),
-  );
-  if (process.env.JARVIS_UI_SCREENSHOTS === "1")
-    await page.screenshot({
-      path: new URL(
-        "../../.tmp/ui-review/s09-ask.png",
-        import.meta.url,
-      ).pathname.replace(/^\/(\w:)/, "$1"),
-      fullPage: true,
-    });
-  await page.getByLabel("Private", { exact: true }).check();
-  assert.equal(await page.locator("#ask-question").inputValue(), "");
-  assert.equal(await page.locator("#ask-result").textContent(), "");
-  assert.equal(await page.locator("#feedback-guidance").textContent(), "");
-  await page.getByLabel("Normal", { exact: true }).check();
-  assert.equal(await page.locator("#ask-result").textContent(), "");
-});
-
-test("Ask distinguishes transport failure and rejects a late reply after Private", async (t) => {
-  const page = await pageFor(t);
-  await importFile(page, `late-ask-${randomUUID()}`);
-  await page.locator("#ask-question").fill("Atlas launch");
-  await page.route("**/ask", (route) => route.abort());
-  await page.getByRole("button", { name: "Ask from my sources" }).click();
-  await eventually(async () =>
-    assert.match(
-      await page.locator("#ask-state").innerText(),
-      /could not|failed/i,
-    ),
-  );
-  assert.equal(await page.locator("#ask-result").textContent(), "");
-  await page.unroute("**/ask");
-  let release, intercepted;
-  const arrived = new Promise((resolve) => {
-    intercepted = resolve;
-  });
-  const held = new Promise((resolve) => {
-    release = resolve;
-  });
-  await page.route("**/ask", async (route) => {
-    const response = await route.fetch();
-    intercepted();
-    await held;
-    await route.fulfill({ response }).catch(() => {});
-  });
-  await page.getByRole("button", { name: "Ask from my sources" }).click();
-  await arrived;
-  await page.getByLabel("Private", { exact: true }).check();
-  release();
-  await page.getByLabel("Normal", { exact: true }).check();
-  assert.equal(await page.locator("#ask-result").textContent(), "");
-  assert.equal(await page.locator("#ask-question").inputValue(), "");
-  assert.equal(await page.locator("#feedback-guidance").textContent(), "");
-});
-
-test("S10 sample import and usage show real storage without browser persistence", async (t) => {
-  const page = await pageFor(t);
-  const namespace = `s10-${randomUUID()}`;
-  await page.getByLabel("Collection name", { exact: true }).fill(namespace);
-  await page.getByRole("button", { name: "Load 8 sample dictations" }).click();
-  await eventually(async () =>
-    assert.match(await page.locator("#feedback").innerText(), /Saved 8 new/),
-  );
-  await eventually(async () =>
-    assert.equal(await page.locator("#source-list li").count(), 8),
-  );
-  await page.getByRole("button", { name: "Load 8 sample dictations" }).click();
-  await eventually(async () =>
-    assert.match(
-      await page.locator("#feedback").innerText(),
-      /Saved 0 new.*8 unchanged/,
-    ),
-  );
-  await page.getByText("Usage and performance", { exact: true }).click();
-  await page.getByRole("button", { name: "Refresh usage" }).click();
-  await eventually(async () =>
-    assert.match(
-      await page.locator("#usage-results").innerText(),
-      /Original source text/,
-    ),
+  await page.getByLabel("Collection name").fill(`sample-${randomUUID()}`);
+  await nav(page, "Sources");
+  await button(page, "Try the sample").click();
+  await notice(page, /Saved 8 new/);
+  await idle(page);
+  await button(page, "Try the sample").click();
+  await notice(page, /Saved 0 new.*8 unchanged/);
+  await idle(page);
+  await nav(page, "Usage");
+  await button(page, "Refresh usage").click();
+  await idle(page);
+  assert.match(
+    await page.locator("#usage-results").innerText(),
+    /Original sources/,
   );
   assert.match(
     await page.locator("#usage-results").innerText(),
@@ -748,14 +665,9 @@ test("S10 sample import and usage show real storage without browser persistence"
   );
   assert.match(
     await page.locator("#operation-timing").innerText(),
-    /usage snapshot:.*ms/,
+    /usage_snapshot;dur=/,
   );
-  await mkdir(new URL("../../.tmp/s10/", import.meta.url), { recursive: true });
-  await page.locator(".usage-card").screenshot({
-    path: fileURLToPath(
-      new URL("../../.tmp/s10/usage-desktop.png", import.meta.url),
-    ),
-  });
+  await screenshot(page, "usage-desktop");
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(
     await page.evaluate(
@@ -763,116 +675,24 @@ test("S10 sample import and usage show real storage without browser persistence"
     ),
     true,
   );
-  await page.locator(".usage-card").screenshot({
-    path: fileURLToPath(
-      new URL("../../.tmp/s10/usage-mobile.png", import.meta.url),
-    ),
-  });
-  await page.getByRole("radio", { name: "Private", exact: true }).check();
-  assert.equal(await page.locator("#usage-results").textContent(), "");
-  assert.equal(
-    await page.locator("#operation-timing").textContent(),
-    "No action measured in this view.",
-  );
-  await page.getByRole("radio", { name: "Normal", exact: true }).check();
-  assert.equal(await page.locator("#usage-results").textContent(), "");
+  await screenshot(page, "usage-mobile");
 });
 
-test("S10 Private rejects a late usage snapshot and does not backfill", async (t) => {
-  const page = await pageFor(t);
-  let finish;
-  let entered;
-  const started = new Promise((resolve) => {
-    entered = resolve;
-  });
-  const gate = new Promise((resolve) => {
-    finish = resolve;
-  });
-  await page.route("**/usage", async (route) => {
-    const response = await route.fetch();
-    entered();
-    await gate;
-    await route.fulfill({ response }).catch(() => {});
-  });
-  await page.getByText("Usage and performance", { exact: true }).click();
-  await page.getByRole("button", { name: "Refresh usage" }).click();
-  await started;
-  await page.getByRole("radio", { name: "Private", exact: true }).check();
-  finish();
-  await page.getByRole("radio", { name: "Normal", exact: true }).check();
-  await page.waitForTimeout(100);
-  assert.equal(await page.locator("#usage-results").textContent(), "");
-  assert.equal(
-    await page.locator("#operation-timing").textContent(),
-    "No action measured in this view.",
-  );
-});
-
-test("S09 mobile correction, world change, Forget and renamed reimport use the real backend", async (t) => {
+test("mobile keyboard, dialog focus and back navigation do not restore personal text", async (t) => {
   const page = await pageFor(t, { width: 390, height: 844 });
-  await importFile(page, `controls-${randomUUID()}`);
-  await page
-    .getByRole("button", { name: "Process pending", exact: true })
-    .click();
-  await eventually(async () => {
-    if (
-      (await page.locator("#normal-panel").getAttribute("aria-busy")) ===
-      "false"
-    )
-      await page.getByRole("button", { name: "Refresh memories" }).click();
-    assert.match(
-      await page.locator("#processing-state").innerText(),
-      /8 succeeded/,
-    );
-  });
-  const launch = () =>
-    page
-      .locator("#memory-list > li")
-      .filter({ hasText: /launch date/ })
-      .first();
-  for (const [button, date] of [
-    ["Correct", "2026-09-23"],
-    ["Record a change", "2026-09-25"],
-  ]) {
-    await launch().getByRole("button", { name: button, exact: true }).click();
-    await page
-      .locator("#control-statement")
-      .fill(`The Atlas launch plan is ${date}.`);
-    await page.locator("#control-value").fill(date);
-    await page
-      .getByRole("button", { name: "Preview change", exact: true })
-      .click();
-    await page.locator("#confirm-control").waitFor({ state: "visible" });
-    assert.match(
-      await page.locator("#control-preview").innerText(),
-      new RegExp(date),
-    );
-    await page
-      .getByRole("button", { name: "Confirm this change", exact: true })
-      .click();
-    await eventually(async () =>
-      assert.match(await page.locator("#feedback").innerText(), /Change saved/),
-    );
-    await eventually(async () =>
-      assert.match(await launch().innerText(), new RegExp(date)),
-    );
-  }
-  await page.locator("#search-query").fill("legal review launch");
-  await page.getByRole("button", { name: "Search", exact: true }).click();
-  await eventually(async () =>
-    assert.match(
-      await page.locator("#search-results").innerText(),
-      /2026-09-25/,
+  await page.getByLabel("Collection name").fill(`keyboard-${randomUUID()}`);
+  await page.getByLabel("Collection name").press("Enter");
+  await notice(page, /Collection opened/);
+  await idle(page);
+  await importFile(page, `mobile-${randomUUID()}`);
+  await page.getByRole("button", { name: /dict_0008/ }).click();
+  await page.getByRole("dialog").waitFor();
+  await page.keyboard.press("Tab");
+  assert.equal(
+    await page.evaluate(
+      () => !!document.activeElement.closest('[role="dialog"]'),
     ),
-  );
-  await launch().getByRole("button", { name: "Forget", exact: true }).click();
-  await page
-    .getByRole("button", { name: "Preview change", exact: true })
-    .click();
-  await page.locator("#confirm-control").waitFor({ state: "visible" });
-  assert.match(
-    await page.locator("#forget-explanation").innerText(),
-    /known copies/,
+    true,
   );
   assert.equal(
     await page.evaluate(
@@ -880,46 +700,130 @@ test("S09 mobile correction, world change, Forget and renamed reimport use the r
     ),
     true,
   );
-  if (process.env.JARVIS_UI_SCREENSHOTS === "1")
-    await page.screenshot({
-      path: new URL(
-        "../../.tmp/ui-review/s09-controls-mobile.png",
-        import.meta.url,
-      ).pathname.replace(/^\/(\w:)/, "$1"),
-      fullPage: true,
-    });
+  await page.keyboard.press("Escape");
+  assert.equal(await page.getByRole("dialog").count(), 0);
+  await page.goto("about:blank");
+  await page.goBack();
+  await page.locator("#workspace").waitFor();
+  assert.equal(await page.locator("#source-list li,#evidence").count(), 0);
+});
+
+test("Private scratchpad is cleared before browser-history restoration", async (t) => {
+  const page = await pageFor(t);
+  await privateMode(page);
   await page
-    .getByRole("button", { name: "Confirm this change", exact: true })
-    .click();
-  await eventually(async () =>
-    assert.match(
-      await page.locator("#feedback").innerText(),
-      /Forgotten for future use/,
+    .getByLabel("Temporary text")
+    .fill("SYNTHETIC_PRIVATE_HISTORY_SENTINEL");
+  // Also exercise the persisted pageshow branch deterministically; real history follows.
+  await page.evaluate(() =>
+    window.dispatchEvent(
+      new PageTransitionEvent("pagehide", { persisted: true }),
     ),
   );
-  assert.equal(
-    await page
-      .locator("#memory-list > li")
+  assert.equal(await page.getByLabel("Temporary text").inputValue(), "");
+  await page
+    .getByLabel("Temporary text")
+    .fill("SYNTHETIC_PRIVATE_HISTORY_SENTINEL");
+  await page.goto("about:blank");
+  await page.goBack();
+  await page.locator("#workspace").waitFor();
+  assert.doesNotMatch(
+    await page.locator("body").textContent(),
+    /SYNTHETIC_PRIVATE_HISTORY_SENTINEL/,
+  );
+  if (await page.locator("#private-draft").count())
+    assert.equal(await page.locator("#private-draft").inputValue(), "");
+});
+
+// Last: Forget intentionally excludes known sample copies across this isolated owner.
+test("mobile Correct, world change and Forget review effects and clear revoked cached results", async (t) => {
+  const page = await pageFor(t, { width: 390, height: 844 });
+  const namespace = `controls-${randomUUID()}`;
+  await importFile(page, namespace);
+  await processFixture(page, namespace);
+  const launch = () =>
+    page
+      .locator("#memory-list li")
       .filter({ hasText: /launch date/ })
-      .count(),
-    0,
-  );
-  await page.getByRole("button", { name: /dict_0003/ }).click();
-  await eventually(async () =>
+      .first();
+  for (const [name, date] of [
+    ["Correct", "2026-09-23"],
+    ["Record a world change", "2026-09-25"],
+  ]) {
+    await launch().getByRole("button").click();
+    await idle(page);
+    await page
+      .locator("#memory-history")
+      .getByRole("button", { name, exact: true })
+      .click();
+    await page
+      .getByLabel("Your exact statement")
+      .fill(`The Atlas launch plan is ${date}.`);
+    await page.getByLabel("New value", { exact: true }).fill(date);
+    await button(page, "Review impact").click();
+    await idle(page);
     assert.match(
-      await page.locator("#raw-text").innerText(),
-      /september twenty first/,
+      await page.locator("#control-preview").innerText(),
+      new RegExp(date),
+    );
+    // Editing after preview must invalidate the confirmation.
+    await page.getByLabel("New value", { exact: true }).fill(date + "x");
+    assert.equal(await button(page, "Confirm change").count(), 0);
+    await page.getByLabel("New value", { exact: true }).fill(date);
+    await button(page, "Review impact").click();
+    await idle(page);
+    await button(page, "Confirm change").click();
+    await notice(page, /Change saved/);
+    await idle(page);
+    assert.match(await launch().innerText(), new RegExp(date));
+  }
+  await nav(page, "Sources");
+  await page
+    .getByLabel("Search saved evidence", { exact: true })
+    .fill("legal review launch");
+  await button(page, "Search").click();
+  await idle(page);
+  assert.match(await page.locator("#search-results").innerText(), /2026-09-25/);
+  await nav(page, "Memory");
+  await launch().getByRole("button").click();
+  await idle(page);
+  await page
+    .locator("#memory-history")
+    .getByRole("button", { name: "Forget", exact: true })
+    .click();
+  await button(page, "Review impact").click();
+  await idle(page);
+  assert.match(await page.getByRole("dialog").innerText(), /known copies/);
+  assert.equal(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
     ),
+    true,
+  );
+  await screenshot(page, "forget-mobile");
+  await page.route("**/sources?*", (route) => route.abort());
+  await button(page, "Confirm Forget").click();
+  await notice(page, /Forgotten for future use/);
+  await idle(page);
+  assert.equal(await launch().count(), 0);
+  assert.equal(await page.locator("#search-results").textContent(), "");
+  assert.equal(await page.locator("#source-list li").count(), 0);
+  await page.unroute("**/sources?*");
+  await nav(page, "Sources");
+  await button(page, "Open collection").click();
+  await idle(page);
+  await page.getByRole("button", { name: /dict_0003/ }).click();
+  await page.getByRole("dialog").waitFor();
+  assert.match(
+    await page.locator("#raw-text").textContent(),
+    /september twenty first/,
   );
   await importFile(page, `renamed-${randomUUID()}`);
-  await page.locator("#search-query").fill("eighteenth twenty first launch");
-  await page.getByRole("button", { name: "Search", exact: true }).click();
-  await eventually(async () =>
-    assert.match(
-      await page.locator("#search-state").innerText(),
-      /No matching|matching source/,
-    ),
-  );
+  await page
+    .getByLabel("Search saved evidence", { exact: true })
+    .fill("eighteenth twenty first launch");
+  await button(page, "Search").click();
+  await idle(page);
   assert.doesNotMatch(
     await page.locator("#search-results").innerText(),
     /dict_0001|dict_0003/,

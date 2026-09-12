@@ -1,6 +1,7 @@
 """The browser shell is public, inert, local-only and independent of personal state."""
 
 import asyncio
+import re
 
 import httpx
 from test_private import no_store_access, snapshot
@@ -35,6 +36,13 @@ def test_web_shell_assets_do_not_read_or_change_saved_state(service, engine, mon
                 assert "frame-ancestors 'none'" in result.headers["Content-Security-Policy"]
                 assert "unsafe-inline" not in result.headers["Content-Security-Policy"]
                 assert "set-cookie" not in result.headers
+                if path == "/":
+                    nonce = re.search(r'content="([\w-]{32})"', result.text)
+                    assert nonce is not None
+                    assert f"'nonce-{nonce[1]}'" in result.headers["Content-Security-Policy"]
+                    assert "font-src 'self'" in result.headers["Content-Security-Policy"]
+                    second = await client.get("/")
+                    assert nonce[1] not in second.text
             for path in ("/assets/.env", "/assets/%2e%2e/config.py"):
                 assert (await client.get(path)).status_code == 404
 

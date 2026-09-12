@@ -1,9 +1,10 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
+from secrets import token_urlsafe
 
 from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
@@ -35,11 +36,17 @@ def create_app(service: Service | None = None) -> FastAPI:
     app.mount("/assets", StaticFiles(directory=WEB_ROOT), name="assets")
 
     @app.get("/", include_in_schema=False)
-    def interface() -> FileResponse:
-        return FileResponse(WEB_ROOT / "index.html")
+    def interface(request: Request) -> HTMLResponse:
+        return HTMLResponse(
+            (WEB_ROOT / "index.html")
+            .read_text(encoding="utf-8")
+            .replace("__JARVIS_STYLE_NONCE__", request.state.style_nonce)
+        )
 
     @app.middleware("http")
     async def input_boundary(request: Request, call_next):
+        # Radix's scroll lock uses a generated style tag, authorized per response.
+        request.state.style_nonce = token_urlsafe(24)
         with capture_timings(enabled=request.headers.get("X-Jarvis-Mode") == "normal") as timings:
             with stage("request"):
                 try:
@@ -60,8 +67,9 @@ def create_app(service: Service | None = None) -> FastAPI:
         response.headers["X-Frame-Options"] = "DENY"
         if request.url.path == "/" or request.url.path.startswith("/assets/"):
             response.headers["Content-Security-Policy"] = (
-                "default-src 'none'; script-src 'self'; style-src 'self'; "
-                "connect-src 'self'; img-src 'self'; base-uri 'none'; "
+                "default-src 'none'; script-src 'self'; "
+                f"style-src 'self' 'nonce-{request.state.style_nonce}'; "
+                "font-src 'self'; connect-src 'self'; img-src 'self'; base-uri 'none'; "
                 "form-action 'none'; frame-ancestors 'none'; object-src 'none'"
             )
         if response.headers.get("Content-Type") == "application/json":

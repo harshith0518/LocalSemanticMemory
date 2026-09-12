@@ -1,3 +1,10 @@
+FROM node:24-bookworm-slim@sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553 AS frontend
+WORKDIR /build/frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY frontend/ ./
+RUN npm run build
+
 FROM ghcr.io/astral-sh/uv:0.12.13@sha256:b485bd65cc2cf1c9a93b3554012c9c3778cf7b1b5fd3d3096ce9e1226c97e1e6 AS uv
 FROM python:3.12-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254 AS tooling
 COPY --from=uv /uv /uvx /bin/
@@ -8,6 +15,7 @@ FROM tooling AS application
 COPY pyproject.toml uv.lock .python-version ./
 RUN uv sync --locked --no-install-project
 COPY src/ src/
+COPY --from=frontend /build/src/jarvis/web/ src/jarvis/web/
 RUN uv sync --locked --no-editable --no-build-isolation
 COPY alembic.ini ./
 COPY migrations/ migrations/
