@@ -1,0 +1,1888 @@
+{
+  "kind": "isolated_retrieval_diagnostic",
+  "owner_isolation": "fresh synthetic owner per run",
+  "search_version": "s08-lexical-v2",
+  "corpus_records": 500,
+  "cases": 17,
+  "repeats": 3,
+  "core_sha256": "021ba1318952de4d5f1caf4b84fafea32c314c42c6b46bf26e30d7b5316a4cfc",
+  "challenge_sha256": "596471d161b4e21a5407dfbbad8d6c8e9b93341f01f6accbb8ccb6c837c4685b",
+  "labels_sha256": "c4789c51086706c709f41cc36312619baabfea671d19d68658e47fa6bdc1b054",
+  "proposal_origin": "explicit_deterministic_fixtures",
+  "live_model_calls": 0,
+  "limits": {
+    "primary_sources": 5,
+    "evidence_bytes": 24000,
+    "candidates_per_branch": 100
+  },
+  "summary": {
+    "sources": {
+      "attempts": 51,
+      "answerable_attempts": 45,
+      "all_evidence_found": 45,
+      "passage_coverage": 1.0,
+      "mean_evidence_bytes": 2368.94,
+      "p50_ms": 136.582,
+      "p95_ms": 177.664
+    },
+    "sources_and_memories": {
+      "attempts": 51,
+      "answerable_attempts": 45,
+      "all_evidence_found": 45,
+      "passage_coverage": 1.0,
+      "mean_evidence_bytes": 5440.88,
+      "p50_ms": 286.972,
+      "p95_ms": 470.808
+    }
+  },
+  "runs": [
+    {
+      "repeat": 1,
+      "representation": "sources",
+      "case_id": "latest_plan",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0001",
+        "dict_0003",
+        "dict_0006",
+        "noise_0000",
+        "noise_0007"
+      ],
+      "evidence_bytes": 3172,
+      "budget_limited": false,
+      "elapsed_ms": 160.583
+    },
+    {
+      "repeat": 1,
+      "representation": "sources",
+      "case_id": "change_with_original_source",
+      "status": "matched",
+      "required_passages": 2,
+      "covered_passages": 2,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0003",
+        "dict_0001",
+        "dict_0005",
+        "noise_0000",
+        "noise_0007"
+      ],
+      "evidence_bytes": 3156,
+      "budget_limited": false,
+      "elapsed_ms": 179.243
+    },
+    {
+      "repeat": 1,
+      "representation": "sources",
+      "case_id": "grounded_personalized_draft",
+      "status": "matched",
+      "required_passages": 3,
+      "covered_passages": 3,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0006",
+        "dict_0002",
+        "dict_0001",
+        "s08_boreal",
+        "dict_0003"
+      ],
+      "evidence_bytes": 3210,
+      "budget_limited": false,
+      "elapsed_ms": 177.018
+    },
+    {
+      "repeat": 1,
+      "representation": "sources",
+      "case_id": "hypothetical_owner",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0004",
+        "s08_ravi",
+        "dict_0001",
+        "dict_0002",
+        "dict_0003"
+      ],
+      "evidence_bytes": 3253,
+      "budget_limited": false,
+      "elapsed_ms": 151.541
+    },
+    {
+      "repeat": 1,
+      "representation": "sources",
+      "case_id": "reported_action",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0005",
+        "dict_0002",
+        "dict_0003",
+        "dict_0006",
+        "s08_boreal"
+      ],
+      "evidence_bytes": 3238,
+      "budget_limited": false,
+      "elapsed_ms": 182.592
+    },
+    {
+      "repeat": 1,
+      "representation": "sources",
+      "case_id": "raw_formatted_conflict",
+      "status": "matched",
+      "required_passages": 2,
+      "covered_passages": 2,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0008",
+        "dict_0001",
+        "dict_0002",
+        "dict_0003",
+        "dict_0004"
+      ],
+      "evidence_bytes": 3293,
+      "budget_limited": false,
+      "elapsed_ms": 138.511
+    },
+    {
+      "repeat": 1,
+      "representation": "sources",
+      "case_id": "missing_metadata",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0007",
+        "noise_0001",
+        "noise_0008",
+        "noise_0015",
+        "noise_0022"
+      ],
+      "evidence_bytes": 2809,
+      "budget_limited": false,
+      "elapsed_ms": 136.582
+    },
+    {
+      "repeat": 1,
+      "representation": "sources",
+      "case_id": "unknown_fact",
+      "status": "matched",
+      "required_passages": 0,
+      "covered_passages": 0,
+      "all_required_found": null,
+      "selected_records": [
+        "dict_0002",
+        "dict_0005",
+        "s08_boreal"
+      ],
+      "evidence_bytes": 1844,
+      "budget_limited": false,
+      "elapsed_ms": 121.672
+    },
+    {
+      "repeat": 1,
+      "representation": "sources",
+      "case_id": "vehicle_paraphrase",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_vehicle"
+      ],
+      "evidence_bytes": 579,
+      "budget_limited": false,
+      "elapsed_ms": 106.749
+    },
+    {
+      "repeat": 1,
+      "representation": "sources",
+      "case_id": "source_detail_not_in_claims",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_vehicle"
+      ],
+      "evidence_bytes": 579,
+      "budget_limited": false,
+      "elapsed_ms": 122.612
+    },
+    {
+      "repeat": 1,
+      "representation": "sources",
+      "case_id": "negation",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_maple",
+        "noise_0003",
+        "noise_0010",
+        "noise_0017",
+        "noise_0024"
+      ],
+      "evidence_bytes": 2773,
+      "budget_limited": false,
+      "elapsed_ms": 120.192
+    },
+    {
+      "repeat": 1,
+      "representation": "sources",
+      "case_id": "hindi",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_hindi"
+      ],
+      "evidence_bytes": 558,
+      "budget_limited": false,
+      "elapsed_ms": 144.175
+    },
+    {
+      "repeat": 1,
+      "representation": "sources",
+      "case_id": "scoped_preference",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_boreal",
+        "dict_0002",
+        "dict_0005",
+        "noise_0004",
+        "noise_0011"
+      ],
+      "evidence_bytes": 2973,
+      "budget_limited": false,
+      "elapsed_ms": 137.926
+    },
+    {
+      "repeat": 1,
+      "representation": "sources",
+      "case_id": "unresolved_identity",
+      "status": "matched",
+      "required_passages": 2,
+      "covered_passages": 2,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_ravi",
+        "dict_0004",
+        "dict_0001",
+        "dict_0002",
+        "dict_0003"
+      ],
+      "evidence_bytes": 3253,
+      "budget_limited": false,
+      "elapsed_ms": 120.537
+    },
+    {
+      "repeat": 1,
+      "representation": "sources",
+      "case_id": "quoted_example",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_zephyr",
+        "noise_0005",
+        "noise_0012",
+        "noise_0019",
+        "noise_0026"
+      ],
+      "evidence_bytes": 2796,
+      "budget_limited": false,
+      "elapsed_ms": 174.084
+    },
+    {
+      "repeat": 1,
+      "representation": "sources",
+      "case_id": "unfamiliar_source_fallback",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_lyra",
+        "noise_0006",
+        "noise_0013",
+        "noise_0020",
+        "noise_0027"
+      ],
+      "evidence_bytes": 2786,
+      "budget_limited": false,
+      "elapsed_ms": 117.901
+    },
+    {
+      "repeat": 1,
+      "representation": "sources",
+      "case_id": "absent_topic",
+      "status": "no_matches",
+      "required_passages": 0,
+      "covered_passages": 0,
+      "all_required_found": null,
+      "selected_records": [],
+      "evidence_bytes": 0,
+      "budget_limited": false,
+      "elapsed_ms": 103.109
+    },
+    {
+      "repeat": 1,
+      "representation": "sources_and_memories",
+      "case_id": "latest_plan",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0001",
+        "dict_0003",
+        "dict_0006",
+        "dict_0005",
+        "dict_0008"
+      ],
+      "evidence_bytes": 10815,
+      "budget_limited": false,
+      "elapsed_ms": 418.54
+    },
+    {
+      "repeat": 1,
+      "representation": "sources_and_memories",
+      "case_id": "change_with_original_source",
+      "status": "matched",
+      "required_passages": 2,
+      "covered_passages": 2,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0003",
+        "dict_0001",
+        "dict_0005",
+        "dict_0008",
+        "dict_0006"
+      ],
+      "evidence_bytes": 10815,
+      "budget_limited": false,
+      "elapsed_ms": 410.948
+    },
+    {
+      "repeat": 1,
+      "representation": "sources_and_memories",
+      "case_id": "grounded_personalized_draft",
+      "status": "matched",
+      "required_passages": 3,
+      "covered_passages": 3,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0006",
+        "dict_0001",
+        "dict_0002",
+        "dict_0003",
+        "dict_0005"
+      ],
+      "evidence_bytes": 10122,
+      "budget_limited": false,
+      "elapsed_ms": 421.822
+    },
+    {
+      "repeat": 1,
+      "representation": "sources_and_memories",
+      "case_id": "hypothetical_owner",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0004",
+        "dict_0001",
+        "dict_0005",
+        "dict_0003",
+        "dict_0002"
+      ],
+      "evidence_bytes": 9348,
+      "budget_limited": false,
+      "elapsed_ms": 377.183
+    },
+    {
+      "repeat": 1,
+      "representation": "sources_and_memories",
+      "case_id": "reported_action",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0005",
+        "dict_0002",
+        "dict_0003",
+        "dict_0006",
+        "s08_boreal"
+      ],
+      "evidence_bytes": 7493,
+      "budget_limited": false,
+      "elapsed_ms": 305.502
+    },
+    {
+      "repeat": 1,
+      "representation": "sources_and_memories",
+      "case_id": "raw_formatted_conflict",
+      "status": "matched",
+      "required_passages": 2,
+      "covered_passages": 2,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0008",
+        "dict_0001",
+        "dict_0005",
+        "dict_0003",
+        "dict_0002"
+      ],
+      "evidence_bytes": 9961,
+      "budget_limited": false,
+      "elapsed_ms": 362.516
+    },
+    {
+      "repeat": 1,
+      "representation": "sources_and_memories",
+      "case_id": "missing_metadata",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0007",
+        "noise_0001",
+        "noise_0008",
+        "noise_0015",
+        "noise_0022"
+      ],
+      "evidence_bytes": 3620,
+      "budget_limited": false,
+      "elapsed_ms": 207.915
+    },
+    {
+      "repeat": 1,
+      "representation": "sources_and_memories",
+      "case_id": "unknown_fact",
+      "status": "matched",
+      "required_passages": 0,
+      "covered_passages": 0,
+      "all_required_found": null,
+      "selected_records": [
+        "dict_0002",
+        "dict_0005",
+        "s08_boreal"
+      ],
+      "evidence_bytes": 3533,
+      "budget_limited": false,
+      "elapsed_ms": 216.986
+    },
+    {
+      "repeat": 1,
+      "representation": "sources_and_memories",
+      "case_id": "vehicle_paraphrase",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_vehicle"
+      ],
+      "evidence_bytes": 1418,
+      "budget_limited": false,
+      "elapsed_ms": 286.972
+    },
+    {
+      "repeat": 1,
+      "representation": "sources_and_memories",
+      "case_id": "source_detail_not_in_claims",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_vehicle"
+      ],
+      "evidence_bytes": 579,
+      "budget_limited": false,
+      "elapsed_ms": 184.757
+    },
+    {
+      "repeat": 1,
+      "representation": "sources_and_memories",
+      "case_id": "negation",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_maple",
+        "noise_0003",
+        "noise_0010",
+        "noise_0017",
+        "noise_0024"
+      ],
+      "evidence_bytes": 2773,
+      "budget_limited": false,
+      "elapsed_ms": 218.121
+    },
+    {
+      "repeat": 1,
+      "representation": "sources_and_memories",
+      "case_id": "hindi",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_hindi"
+      ],
+      "evidence_bytes": 558,
+      "budget_limited": false,
+      "elapsed_ms": 290.805
+    },
+    {
+      "repeat": 1,
+      "representation": "sources_and_memories",
+      "case_id": "scoped_preference",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_boreal",
+        "dict_0002",
+        "dict_0005",
+        "noise_0004",
+        "noise_0011"
+      ],
+      "evidence_bytes": 4662,
+      "budget_limited": false,
+      "elapsed_ms": 238.769
+    },
+    {
+      "repeat": 1,
+      "representation": "sources_and_memories",
+      "case_id": "unresolved_identity",
+      "status": "matched",
+      "required_passages": 2,
+      "covered_passages": 2,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_ravi",
+        "dict_0004",
+        "dict_0001",
+        "dict_0005",
+        "dict_0003"
+      ],
+      "evidence_bytes": 8400,
+      "budget_limited": false,
+      "elapsed_ms": 315.873
+    },
+    {
+      "repeat": 1,
+      "representation": "sources_and_memories",
+      "case_id": "quoted_example",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_zephyr",
+        "dict_0001",
+        "dict_0003",
+        "noise_0005",
+        "noise_0012"
+      ],
+      "evidence_bytes": 5612,
+      "budget_limited": false,
+      "elapsed_ms": 346.1
+    },
+    {
+      "repeat": 1,
+      "representation": "sources_and_memories",
+      "case_id": "unfamiliar_source_fallback",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_lyra",
+        "noise_0006",
+        "noise_0013",
+        "noise_0020",
+        "noise_0027"
+      ],
+      "evidence_bytes": 2786,
+      "budget_limited": false,
+      "elapsed_ms": 234.669
+    },
+    {
+      "repeat": 1,
+      "representation": "sources_and_memories",
+      "case_id": "absent_topic",
+      "status": "no_matches",
+      "required_passages": 0,
+      "covered_passages": 0,
+      "all_required_found": null,
+      "selected_records": [],
+      "evidence_bytes": 0,
+      "budget_limited": false,
+      "elapsed_ms": 190.702
+    },
+    {
+      "repeat": 2,
+      "representation": "sources_and_memories",
+      "case_id": "latest_plan",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0001",
+        "dict_0003",
+        "dict_0006",
+        "dict_0005",
+        "dict_0008"
+      ],
+      "evidence_bytes": 10815,
+      "budget_limited": false,
+      "elapsed_ms": 494.956
+    },
+    {
+      "repeat": 2,
+      "representation": "sources_and_memories",
+      "case_id": "change_with_original_source",
+      "status": "matched",
+      "required_passages": 2,
+      "covered_passages": 2,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0003",
+        "dict_0001",
+        "dict_0005",
+        "dict_0008",
+        "dict_0006"
+      ],
+      "evidence_bytes": 10815,
+      "budget_limited": false,
+      "elapsed_ms": 459.34
+    },
+    {
+      "repeat": 2,
+      "representation": "sources_and_memories",
+      "case_id": "grounded_personalized_draft",
+      "status": "matched",
+      "required_passages": 3,
+      "covered_passages": 3,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0006",
+        "dict_0001",
+        "dict_0002",
+        "dict_0003",
+        "dict_0005"
+      ],
+      "evidence_bytes": 10122,
+      "budget_limited": false,
+      "elapsed_ms": 470.808
+    },
+    {
+      "repeat": 2,
+      "representation": "sources_and_memories",
+      "case_id": "hypothetical_owner",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0004",
+        "dict_0001",
+        "dict_0005",
+        "dict_0003",
+        "dict_0002"
+      ],
+      "evidence_bytes": 9348,
+      "budget_limited": false,
+      "elapsed_ms": 351.579
+    },
+    {
+      "repeat": 2,
+      "representation": "sources_and_memories",
+      "case_id": "reported_action",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0005",
+        "dict_0002",
+        "dict_0003",
+        "dict_0006",
+        "s08_boreal"
+      ],
+      "evidence_bytes": 7493,
+      "budget_limited": false,
+      "elapsed_ms": 353.6
+    },
+    {
+      "repeat": 2,
+      "representation": "sources_and_memories",
+      "case_id": "raw_formatted_conflict",
+      "status": "matched",
+      "required_passages": 2,
+      "covered_passages": 2,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0008",
+        "dict_0001",
+        "dict_0005",
+        "dict_0003",
+        "dict_0002"
+      ],
+      "evidence_bytes": 9961,
+      "budget_limited": false,
+      "elapsed_ms": 343.591
+    },
+    {
+      "repeat": 2,
+      "representation": "sources_and_memories",
+      "case_id": "missing_metadata",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0007",
+        "noise_0001",
+        "noise_0008",
+        "noise_0015",
+        "noise_0022"
+      ],
+      "evidence_bytes": 3620,
+      "budget_limited": false,
+      "elapsed_ms": 223.891
+    },
+    {
+      "repeat": 2,
+      "representation": "sources_and_memories",
+      "case_id": "unknown_fact",
+      "status": "matched",
+      "required_passages": 0,
+      "covered_passages": 0,
+      "all_required_found": null,
+      "selected_records": [
+        "dict_0002",
+        "dict_0005",
+        "s08_boreal"
+      ],
+      "evidence_bytes": 3533,
+      "budget_limited": false,
+      "elapsed_ms": 242.316
+    },
+    {
+      "repeat": 2,
+      "representation": "sources_and_memories",
+      "case_id": "vehicle_paraphrase",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_vehicle"
+      ],
+      "evidence_bytes": 1418,
+      "budget_limited": false,
+      "elapsed_ms": 229.195
+    },
+    {
+      "repeat": 2,
+      "representation": "sources_and_memories",
+      "case_id": "source_detail_not_in_claims",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_vehicle"
+      ],
+      "evidence_bytes": 579,
+      "budget_limited": false,
+      "elapsed_ms": 199.499
+    },
+    {
+      "repeat": 2,
+      "representation": "sources_and_memories",
+      "case_id": "negation",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_maple",
+        "noise_0003",
+        "noise_0010",
+        "noise_0017",
+        "noise_0024"
+      ],
+      "evidence_bytes": 2773,
+      "budget_limited": false,
+      "elapsed_ms": 218.189
+    },
+    {
+      "repeat": 2,
+      "representation": "sources_and_memories",
+      "case_id": "hindi",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_hindi"
+      ],
+      "evidence_bytes": 558,
+      "budget_limited": false,
+      "elapsed_ms": 220.046
+    },
+    {
+      "repeat": 2,
+      "representation": "sources_and_memories",
+      "case_id": "scoped_preference",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_boreal",
+        "dict_0002",
+        "dict_0005",
+        "noise_0004",
+        "noise_0011"
+      ],
+      "evidence_bytes": 4662,
+      "budget_limited": false,
+      "elapsed_ms": 253.693
+    },
+    {
+      "repeat": 2,
+      "representation": "sources_and_memories",
+      "case_id": "unresolved_identity",
+      "status": "matched",
+      "required_passages": 2,
+      "covered_passages": 2,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_ravi",
+        "dict_0004",
+        "dict_0001",
+        "dict_0005",
+        "dict_0003"
+      ],
+      "evidence_bytes": 8400,
+      "budget_limited": false,
+      "elapsed_ms": 390.966
+    },
+    {
+      "repeat": 2,
+      "representation": "sources_and_memories",
+      "case_id": "quoted_example",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_zephyr",
+        "dict_0001",
+        "dict_0003",
+        "noise_0005",
+        "noise_0012"
+      ],
+      "evidence_bytes": 5612,
+      "budget_limited": false,
+      "elapsed_ms": 288.697
+    },
+    {
+      "repeat": 2,
+      "representation": "sources_and_memories",
+      "case_id": "unfamiliar_source_fallback",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_lyra",
+        "noise_0006",
+        "noise_0013",
+        "noise_0020",
+        "noise_0027"
+      ],
+      "evidence_bytes": 2786,
+      "budget_limited": false,
+      "elapsed_ms": 200.681
+    },
+    {
+      "repeat": 2,
+      "representation": "sources_and_memories",
+      "case_id": "absent_topic",
+      "status": "no_matches",
+      "required_passages": 0,
+      "covered_passages": 0,
+      "all_required_found": null,
+      "selected_records": [],
+      "evidence_bytes": 0,
+      "budget_limited": false,
+      "elapsed_ms": 224.935
+    },
+    {
+      "repeat": 2,
+      "representation": "sources",
+      "case_id": "latest_plan",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0001",
+        "dict_0003",
+        "dict_0006",
+        "noise_0000",
+        "noise_0007"
+      ],
+      "evidence_bytes": 3172,
+      "budget_limited": false,
+      "elapsed_ms": 159.095
+    },
+    {
+      "repeat": 2,
+      "representation": "sources",
+      "case_id": "change_with_original_source",
+      "status": "matched",
+      "required_passages": 2,
+      "covered_passages": 2,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0003",
+        "dict_0001",
+        "dict_0005",
+        "noise_0000",
+        "noise_0007"
+      ],
+      "evidence_bytes": 3156,
+      "budget_limited": false,
+      "elapsed_ms": 163.357
+    },
+    {
+      "repeat": 2,
+      "representation": "sources",
+      "case_id": "grounded_personalized_draft",
+      "status": "matched",
+      "required_passages": 3,
+      "covered_passages": 3,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0006",
+        "dict_0002",
+        "dict_0001",
+        "s08_boreal",
+        "dict_0003"
+      ],
+      "evidence_bytes": 3210,
+      "budget_limited": false,
+      "elapsed_ms": 160.822
+    },
+    {
+      "repeat": 2,
+      "representation": "sources",
+      "case_id": "hypothetical_owner",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0004",
+        "s08_ravi",
+        "dict_0001",
+        "dict_0002",
+        "dict_0003"
+      ],
+      "evidence_bytes": 3253,
+      "budget_limited": false,
+      "elapsed_ms": 138.835
+    },
+    {
+      "repeat": 2,
+      "representation": "sources",
+      "case_id": "reported_action",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0005",
+        "dict_0002",
+        "dict_0003",
+        "dict_0006",
+        "s08_boreal"
+      ],
+      "evidence_bytes": 3238,
+      "budget_limited": false,
+      "elapsed_ms": 150.297
+    },
+    {
+      "repeat": 2,
+      "representation": "sources",
+      "case_id": "raw_formatted_conflict",
+      "status": "matched",
+      "required_passages": 2,
+      "covered_passages": 2,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0008",
+        "dict_0001",
+        "dict_0002",
+        "dict_0003",
+        "dict_0004"
+      ],
+      "evidence_bytes": 3293,
+      "budget_limited": false,
+      "elapsed_ms": 117.857
+    },
+    {
+      "repeat": 2,
+      "representation": "sources",
+      "case_id": "missing_metadata",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0007",
+        "noise_0001",
+        "noise_0008",
+        "noise_0015",
+        "noise_0022"
+      ],
+      "evidence_bytes": 2809,
+      "budget_limited": false,
+      "elapsed_ms": 157.652
+    },
+    {
+      "repeat": 2,
+      "representation": "sources",
+      "case_id": "unknown_fact",
+      "status": "matched",
+      "required_passages": 0,
+      "covered_passages": 0,
+      "all_required_found": null,
+      "selected_records": [
+        "dict_0002",
+        "dict_0005",
+        "s08_boreal"
+      ],
+      "evidence_bytes": 1844,
+      "budget_limited": false,
+      "elapsed_ms": 116.767
+    },
+    {
+      "repeat": 2,
+      "representation": "sources",
+      "case_id": "vehicle_paraphrase",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_vehicle"
+      ],
+      "evidence_bytes": 579,
+      "budget_limited": false,
+      "elapsed_ms": 131.038
+    },
+    {
+      "repeat": 2,
+      "representation": "sources",
+      "case_id": "source_detail_not_in_claims",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_vehicle"
+      ],
+      "evidence_bytes": 579,
+      "budget_limited": false,
+      "elapsed_ms": 108.89
+    },
+    {
+      "repeat": 2,
+      "representation": "sources",
+      "case_id": "negation",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_maple",
+        "noise_0003",
+        "noise_0010",
+        "noise_0017",
+        "noise_0024"
+      ],
+      "evidence_bytes": 2773,
+      "budget_limited": false,
+      "elapsed_ms": 137.532
+    },
+    {
+      "repeat": 2,
+      "representation": "sources",
+      "case_id": "hindi",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_hindi"
+      ],
+      "evidence_bytes": 558,
+      "budget_limited": false,
+      "elapsed_ms": 131.465
+    },
+    {
+      "repeat": 2,
+      "representation": "sources",
+      "case_id": "scoped_preference",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_boreal",
+        "dict_0002",
+        "dict_0005",
+        "noise_0004",
+        "noise_0011"
+      ],
+      "evidence_bytes": 2973,
+      "budget_limited": false,
+      "elapsed_ms": 123.568
+    },
+    {
+      "repeat": 2,
+      "representation": "sources",
+      "case_id": "unresolved_identity",
+      "status": "matched",
+      "required_passages": 2,
+      "covered_passages": 2,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_ravi",
+        "dict_0004",
+        "dict_0001",
+        "dict_0002",
+        "dict_0003"
+      ],
+      "evidence_bytes": 3253,
+      "budget_limited": false,
+      "elapsed_ms": 125.859
+    },
+    {
+      "repeat": 2,
+      "representation": "sources",
+      "case_id": "quoted_example",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_zephyr",
+        "noise_0005",
+        "noise_0012",
+        "noise_0019",
+        "noise_0026"
+      ],
+      "evidence_bytes": 2796,
+      "budget_limited": false,
+      "elapsed_ms": 171.0
+    },
+    {
+      "repeat": 2,
+      "representation": "sources",
+      "case_id": "unfamiliar_source_fallback",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_lyra",
+        "noise_0006",
+        "noise_0013",
+        "noise_0020",
+        "noise_0027"
+      ],
+      "evidence_bytes": 2786,
+      "budget_limited": false,
+      "elapsed_ms": 125.392
+    },
+    {
+      "repeat": 2,
+      "representation": "sources",
+      "case_id": "absent_topic",
+      "status": "no_matches",
+      "required_passages": 0,
+      "covered_passages": 0,
+      "all_required_found": null,
+      "selected_records": [],
+      "evidence_bytes": 0,
+      "budget_limited": false,
+      "elapsed_ms": 107.461
+    },
+    {
+      "repeat": 3,
+      "representation": "sources",
+      "case_id": "latest_plan",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0001",
+        "dict_0003",
+        "dict_0006",
+        "noise_0000",
+        "noise_0007"
+      ],
+      "evidence_bytes": 3172,
+      "budget_limited": false,
+      "elapsed_ms": 154.841
+    },
+    {
+      "repeat": 3,
+      "representation": "sources",
+      "case_id": "change_with_original_source",
+      "status": "matched",
+      "required_passages": 2,
+      "covered_passages": 2,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0003",
+        "dict_0001",
+        "dict_0005",
+        "noise_0000",
+        "noise_0007"
+      ],
+      "evidence_bytes": 3156,
+      "budget_limited": false,
+      "elapsed_ms": 164.914
+    },
+    {
+      "repeat": 3,
+      "representation": "sources",
+      "case_id": "grounded_personalized_draft",
+      "status": "matched",
+      "required_passages": 3,
+      "covered_passages": 3,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0006",
+        "dict_0002",
+        "dict_0001",
+        "s08_boreal",
+        "dict_0003"
+      ],
+      "evidence_bytes": 3210,
+      "budget_limited": false,
+      "elapsed_ms": 160.212
+    },
+    {
+      "repeat": 3,
+      "representation": "sources",
+      "case_id": "hypothetical_owner",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0004",
+        "s08_ravi",
+        "dict_0001",
+        "dict_0002",
+        "dict_0003"
+      ],
+      "evidence_bytes": 3253,
+      "budget_limited": false,
+      "elapsed_ms": 123.037
+    },
+    {
+      "repeat": 3,
+      "representation": "sources",
+      "case_id": "reported_action",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0005",
+        "dict_0002",
+        "dict_0003",
+        "dict_0006",
+        "s08_boreal"
+      ],
+      "evidence_bytes": 3238,
+      "budget_limited": false,
+      "elapsed_ms": 153.712
+    },
+    {
+      "repeat": 3,
+      "representation": "sources",
+      "case_id": "raw_formatted_conflict",
+      "status": "matched",
+      "required_passages": 2,
+      "covered_passages": 2,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0008",
+        "dict_0001",
+        "dict_0002",
+        "dict_0003",
+        "dict_0004"
+      ],
+      "evidence_bytes": 3293,
+      "budget_limited": false,
+      "elapsed_ms": 122.515
+    },
+    {
+      "repeat": 3,
+      "representation": "sources",
+      "case_id": "missing_metadata",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0007",
+        "noise_0001",
+        "noise_0008",
+        "noise_0015",
+        "noise_0022"
+      ],
+      "evidence_bytes": 2809,
+      "budget_limited": false,
+      "elapsed_ms": 132.686
+    },
+    {
+      "repeat": 3,
+      "representation": "sources",
+      "case_id": "unknown_fact",
+      "status": "matched",
+      "required_passages": 0,
+      "covered_passages": 0,
+      "all_required_found": null,
+      "selected_records": [
+        "dict_0002",
+        "dict_0005",
+        "s08_boreal"
+      ],
+      "evidence_bytes": 1844,
+      "budget_limited": false,
+      "elapsed_ms": 114.507
+    },
+    {
+      "repeat": 3,
+      "representation": "sources",
+      "case_id": "vehicle_paraphrase",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_vehicle"
+      ],
+      "evidence_bytes": 579,
+      "budget_limited": false,
+      "elapsed_ms": 131.28
+    },
+    {
+      "repeat": 3,
+      "representation": "sources",
+      "case_id": "source_detail_not_in_claims",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_vehicle"
+      ],
+      "evidence_bytes": 579,
+      "budget_limited": false,
+      "elapsed_ms": 141.755
+    },
+    {
+      "repeat": 3,
+      "representation": "sources",
+      "case_id": "negation",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_maple",
+        "noise_0003",
+        "noise_0010",
+        "noise_0017",
+        "noise_0024"
+      ],
+      "evidence_bytes": 2773,
+      "budget_limited": false,
+      "elapsed_ms": 156.526
+    },
+    {
+      "repeat": 3,
+      "representation": "sources",
+      "case_id": "hindi",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_hindi"
+      ],
+      "evidence_bytes": 558,
+      "budget_limited": false,
+      "elapsed_ms": 126.412
+    },
+    {
+      "repeat": 3,
+      "representation": "sources",
+      "case_id": "scoped_preference",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_boreal",
+        "dict_0002",
+        "dict_0005",
+        "noise_0004",
+        "noise_0011"
+      ],
+      "evidence_bytes": 2973,
+      "budget_limited": false,
+      "elapsed_ms": 133.151
+    },
+    {
+      "repeat": 3,
+      "representation": "sources",
+      "case_id": "unresolved_identity",
+      "status": "matched",
+      "required_passages": 2,
+      "covered_passages": 2,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_ravi",
+        "dict_0004",
+        "dict_0001",
+        "dict_0002",
+        "dict_0003"
+      ],
+      "evidence_bytes": 3253,
+      "budget_limited": false,
+      "elapsed_ms": 136.815
+    },
+    {
+      "repeat": 3,
+      "representation": "sources",
+      "case_id": "quoted_example",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_zephyr",
+        "noise_0005",
+        "noise_0012",
+        "noise_0019",
+        "noise_0026"
+      ],
+      "evidence_bytes": 2796,
+      "budget_limited": false,
+      "elapsed_ms": 177.664
+    },
+    {
+      "repeat": 3,
+      "representation": "sources",
+      "case_id": "unfamiliar_source_fallback",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_lyra",
+        "noise_0006",
+        "noise_0013",
+        "noise_0020",
+        "noise_0027"
+      ],
+      "evidence_bytes": 2786,
+      "budget_limited": false,
+      "elapsed_ms": 123.768
+    },
+    {
+      "repeat": 3,
+      "representation": "sources",
+      "case_id": "absent_topic",
+      "status": "no_matches",
+      "required_passages": 0,
+      "covered_passages": 0,
+      "all_required_found": null,
+      "selected_records": [],
+      "evidence_bytes": 0,
+      "budget_limited": false,
+      "elapsed_ms": 110.193
+    },
+    {
+      "repeat": 3,
+      "representation": "sources_and_memories",
+      "case_id": "latest_plan",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0001",
+        "dict_0003",
+        "dict_0006",
+        "dict_0005",
+        "dict_0008"
+      ],
+      "evidence_bytes": 10815,
+      "budget_limited": false,
+      "elapsed_ms": 371.287
+    },
+    {
+      "repeat": 3,
+      "representation": "sources_and_memories",
+      "case_id": "change_with_original_source",
+      "status": "matched",
+      "required_passages": 2,
+      "covered_passages": 2,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0003",
+        "dict_0001",
+        "dict_0005",
+        "dict_0008",
+        "dict_0006"
+      ],
+      "evidence_bytes": 10815,
+      "budget_limited": false,
+      "elapsed_ms": 483.802
+    },
+    {
+      "repeat": 3,
+      "representation": "sources_and_memories",
+      "case_id": "grounded_personalized_draft",
+      "status": "matched",
+      "required_passages": 3,
+      "covered_passages": 3,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0006",
+        "dict_0001",
+        "dict_0002",
+        "dict_0003",
+        "dict_0005"
+      ],
+      "evidence_bytes": 10122,
+      "budget_limited": false,
+      "elapsed_ms": 404.855
+    },
+    {
+      "repeat": 3,
+      "representation": "sources_and_memories",
+      "case_id": "hypothetical_owner",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0004",
+        "dict_0001",
+        "dict_0005",
+        "dict_0003",
+        "dict_0002"
+      ],
+      "evidence_bytes": 9348,
+      "budget_limited": false,
+      "elapsed_ms": 365.537
+    },
+    {
+      "repeat": 3,
+      "representation": "sources_and_memories",
+      "case_id": "reported_action",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0005",
+        "dict_0002",
+        "dict_0003",
+        "dict_0006",
+        "s08_boreal"
+      ],
+      "evidence_bytes": 7493,
+      "budget_limited": false,
+      "elapsed_ms": 342.076
+    },
+    {
+      "repeat": 3,
+      "representation": "sources_and_memories",
+      "case_id": "raw_formatted_conflict",
+      "status": "matched",
+      "required_passages": 2,
+      "covered_passages": 2,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0008",
+        "dict_0001",
+        "dict_0005",
+        "dict_0003",
+        "dict_0002"
+      ],
+      "evidence_bytes": 9961,
+      "budget_limited": false,
+      "elapsed_ms": 365.206
+    },
+    {
+      "repeat": 3,
+      "representation": "sources_and_memories",
+      "case_id": "missing_metadata",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "dict_0007",
+        "noise_0001",
+        "noise_0008",
+        "noise_0015",
+        "noise_0022"
+      ],
+      "evidence_bytes": 3620,
+      "budget_limited": false,
+      "elapsed_ms": 262.87
+    },
+    {
+      "repeat": 3,
+      "representation": "sources_and_memories",
+      "case_id": "unknown_fact",
+      "status": "matched",
+      "required_passages": 0,
+      "covered_passages": 0,
+      "all_required_found": null,
+      "selected_records": [
+        "dict_0002",
+        "dict_0005",
+        "s08_boreal"
+      ],
+      "evidence_bytes": 3533,
+      "budget_limited": false,
+      "elapsed_ms": 220.255
+    },
+    {
+      "repeat": 3,
+      "representation": "sources_and_memories",
+      "case_id": "vehicle_paraphrase",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_vehicle"
+      ],
+      "evidence_bytes": 1418,
+      "budget_limited": false,
+      "elapsed_ms": 227.732
+    },
+    {
+      "repeat": 3,
+      "representation": "sources_and_memories",
+      "case_id": "source_detail_not_in_claims",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_vehicle"
+      ],
+      "evidence_bytes": 579,
+      "budget_limited": false,
+      "elapsed_ms": 221.783
+    },
+    {
+      "repeat": 3,
+      "representation": "sources_and_memories",
+      "case_id": "negation",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_maple",
+        "noise_0003",
+        "noise_0010",
+        "noise_0017",
+        "noise_0024"
+      ],
+      "evidence_bytes": 2773,
+      "budget_limited": false,
+      "elapsed_ms": 222.627
+    },
+    {
+      "repeat": 3,
+      "representation": "sources_and_memories",
+      "case_id": "hindi",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_hindi"
+      ],
+      "evidence_bytes": 558,
+      "budget_limited": false,
+      "elapsed_ms": 214.071
+    },
+    {
+      "repeat": 3,
+      "representation": "sources_and_memories",
+      "case_id": "scoped_preference",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_boreal",
+        "dict_0002",
+        "dict_0005",
+        "noise_0004",
+        "noise_0011"
+      ],
+      "evidence_bytes": 4662,
+      "budget_limited": false,
+      "elapsed_ms": 256.239
+    },
+    {
+      "repeat": 3,
+      "representation": "sources_and_memories",
+      "case_id": "unresolved_identity",
+      "status": "matched",
+      "required_passages": 2,
+      "covered_passages": 2,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_ravi",
+        "dict_0004",
+        "dict_0001",
+        "dict_0005",
+        "dict_0003"
+      ],
+      "evidence_bytes": 8400,
+      "budget_limited": false,
+      "elapsed_ms": 365.101
+    },
+    {
+      "repeat": 3,
+      "representation": "sources_and_memories",
+      "case_id": "quoted_example",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_zephyr",
+        "dict_0001",
+        "dict_0003",
+        "noise_0005",
+        "noise_0012"
+      ],
+      "evidence_bytes": 5612,
+      "budget_limited": false,
+      "elapsed_ms": 310.644
+    },
+    {
+      "repeat": 3,
+      "representation": "sources_and_memories",
+      "case_id": "unfamiliar_source_fallback",
+      "status": "matched",
+      "required_passages": 1,
+      "covered_passages": 1,
+      "all_required_found": true,
+      "selected_records": [
+        "s08_lyra",
+        "noise_0006",
+        "noise_0013",
+        "noise_0020",
+        "noise_0027"
+      ],
+      "evidence_bytes": 2786,
+      "budget_limited": false,
+      "elapsed_ms": 238.733
+    },
+    {
+      "repeat": 3,
+      "representation": "sources_and_memories",
+      "case_id": "absent_topic",
+      "status": "no_matches",
+      "required_passages": 0,
+      "covered_passages": 0,
+      "all_required_found": null,
+      "selected_records": [],
+      "evidence_bytes": 0,
+      "budget_limited": false,
+      "elapsed_ms": 205.629
+    }
+  ],
+  "index_bytes": {
+    "claims_search_idx": 32768,
+    "sources_search_idx": 466944
+  },
+  "database_rows": {
+    "model_budgets": 1,
+    "policies": 3,
+    "claim_revisions": 61,
+    "sources": 1188,
+    "control_receipts": 3,
+    "jobs": 1188,
+    "passages": 47,
+    "claim_evidence": 61,
+    "claim_relations": 6,
+    "model_calls": 41,
+    "passage_exclusions": 4,
+    "processing_receipts": 38,
+    "source_exclusions": 30,
+    "feedback_receipts": 1
+  },
+  "limitations": [
+    "Authored diagnostics and templated distractors, not a blind/generalization benchmark.",
+    "Coverage checks exact gold passages, not semantic entailment or answer correctness.",
+    "Repeated retrieval uses frozen deterministic claims; not repeated live extraction.",
+    "Evidence budgets count serialized UTF-8 bytes, not model tokens.",
+    "Dense retrieval, live Kimi answers and S06 all-history answer comparison not run.",
+    "Indexes may be warm; this is not a cold-start or general latency benchmark.",
+    "Lifecycle correctness is tested separately; this diagnostic scores retrieval only.",
+    "Database row and index totals include other retained isolated test owners."
+  ]
+}

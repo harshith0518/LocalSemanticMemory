@@ -1,6 +1,48 @@
 # Run and verify Hey Jarvis
 
-S03-S10 local infrastructure, source import, memory contracts, Search, Ask/controls and usage inspection are implemented in the Windows checkout with Docker Linux containers. The browser is the primary workflow. Current acceptance: **232 backend tests and 17 browser checks pass**, followed by two passing targeted S10 checks after a display/test-wait correction. **Live quality is not passed:** Nemotron's recorded outputs lose meaning; five Kimi attempts have completed no answer. Unattended inference remains off. The S10 section supersedes historical status/usage notes below.
+S03-S10 local infrastructure, source import, memory contracts, Search, Ask/controls and usage inspection are implemented in the Windows checkout with Docker Linux containers. The browser is the primary workflow. Tonight's recheck passed **232 backend tests and 22 browser journeys**. **Live quality is not passed:** Nemotron's recorded outputs lose meaning; seven Kimi attempts have completed no answer. Unattended inference remains off. The tonight section below supersedes historical status/usage notes. The user confirmed the submission deadline as **Saturday, 12 September 2026, 23:30 IST**.
+
+## Tonight readiness check
+
+The user requested restoring the whole project and assessing readiness before tonight's deadline. Baseline checkout: `7a6b03683575e86b5950a529538d1ac4513274a0` on clean dev. Docker Desktop Linux was stopped; after starting it under the host account, Docker 28.4.0 became available. Rebuilt the pinned image, retained the existing application volume and restored API/database readiness on `0005_user_controls`, pgvector 0.8.6. The application was opened at [http://127.0.0.1:8000/](http://127.0.0.1:8000/). Initial aggregate state: 33 source/job rows and three claim revisions; this was not a fresh complete-field persistence comparison.
+
+Actual checks: 232 isolated PostgreSQL tests passed in 127.65 s; 22 Chromium journeys passed in 42.603 s; Python lint/format passed for 45 files; frontend formatting, TypeScript and Vite production build passed (13.92 s Vite build); application migration drift returned no new operations and API/CLI readiness agreed. The full backend/browser suites preceded the evaluator-only fix below; application code did not change. Updated evaluator lint/format passed separately.
+
+```powershell
+docker compose build api
+$env:JARVIS_S07_SYNTHETIC_TRIAL_APPROVED = 'false'
+docker compose up -d --wait --wait-timeout 120 api
+docker compose -f compose.test.yaml stop web
+docker compose -f compose.test.yaml run --rm tests
+docker compose -f compose.test.yaml run --rm --no-deps tests ruff check --no-cache src migrations tests eval
+docker compose -f compose.test.yaml run --rm --no-deps tests ruff format --check --no-cache src migrations tests eval
+npm.cmd --prefix frontend run format:check
+npm.cmd --prefix frontend run build
+docker compose run --rm --no-deps migrate alembic check
+docker compose run --rm --no-deps cli ready
+docker compose -f compose.test.yaml --profile browser up -d --wait --wait-timeout 120 web
+npm.cmd --prefix tests/browser test
+```
+
+The first post-browser retrieval diagnostic failed during deterministic preparation. It reused the default synthetic owner while the browser worker was active; that owner also retained 30 source exclusions, four passage exclusions, three controls and policy revision 3. A collection namespace does not isolate owner-wide Forget or worker leases. `eval/retrieval.py` now uses a fresh backend-issued synthetic owner per run, matching `eval/efficiency.py`. It still refuses the application DB, uses the same fixtures/questions/budgets and changes no runtime authorization or exclusions. The report clarifies that global isolated-DB totals include other test owners and removes a stale pre-S09 limitation.
+
+Both corrected 500-record diagnostics found all required evidence in 45/45 answerable attempts per representation, with 100% exact required-passage coverage. The first ran with the browser worker stopped; the second ran with it active and the old owner's exclusions retained. Source-only stayed smaller and faster in these samples. The first had p50 125.577 ms versus 243.481 ms; the active-worker run had 136.582 ms versus 286.972 ms. These are authored retrieval diagnostics with deterministic claims and warm/shared test allocation, not the varied S11 corpus or a live semantic score. The source patch was mounted read-only into the existing image for those two runs, then packaged by rebuilding the image.
+
+```powershell
+docker compose -f compose.test.yaml run --rm --no-deps tests python eval/retrieval.py
+```
+
+Three new live requests were made within the existing synthetic-only allowance. The first repeated the unchanged Kimi answer smoke against the recorded eight-source collection and failed at 180.344 s model-stage time. The second used the identical service/settings/accounting path with an evaluator-only HTTPX transport observer; it recorded **ReadTimeout while waiting for response headers**, 180.187 s. It recorded exception class/status only, never request headers, keys, prompts or hidden reasoning. No HTTP 202 was observed. NVIDIA documents [202 status polling](https://docs.api.nvidia.com/nim/reference/moonshotai-kimi-k3-statuspolling), but that protocol path is not established as the cause or cure of these observed timeouts.
+
+```powershell
+docker compose run --rm --no-deps --entrypoint python -e JARVIS_S07_SYNTHETIC_TRIAL_APPROVED=true cli eval/live.py --stage answer-smoke --namespace live-279608e17b0b435fa46977d3bfe61f79 --repeats 1
+```
+
+The third request imported only the exact public `dict_0001` into a new diagnostic collection, explicitly processed one job through the normal service/worker, and disabled the responder in that one-off evaluator. Nemotron returned a structurally accepted claim in **14.546 s**, using 2,290 input and 322 output tokens. Manual semantic review: the planned date, Atlas scope and user attribution survived, but `time.event` was incorrectly set to the planned launch date without separate support. This is another semantic miss, not a passed extraction repeat. The new source/claim remains inspectable in `tonight-extractor-a8694e2fb1754074bd14f2eb48096bf3`; no personal input was used.
+
+Lifetime state after these probes: **22 requests; 27,850 known input + 2,266 known output tokens; 211,424 accounted tokens including unknown reservations**. Kimi has seven failures and no completed answer. The allowance remains 96 requests/1,500,000 tokens/$0 paid, with no reset, fallback or persistent live-enable change. The current synthetic allowlist and 64-active-claim/60,000-byte extraction context caps must be addressed in reviewed S11 work before claiming complete larger-corpus processing.
+
+[Readiness and semantic review](eval/reports/tonight-readiness.json), [raw Kimi smoke](eval/reports/tonight-live-smoke.jsonl), [transport probe](eval/reports/tonight-transport-probe.jsonl), [Nemotron probe](eval/reports/tonight-extractor-probe.jsonl), [retrieval rerun](eval/reports/tonight-retrieval.json), [active-worker rerun](eval/reports/tonight-retrieval-concurrent.json). Setup is complete; live-quality and acceptance gates remain open. The [next repair proposal](PLAN.md#tonight-bounded-repair-proposal) requires approval before changing model/provider behavior. No main merge, application-volume reset or final S12 clean-checkout rehearsal was performed.
 
 ## S10 usage and performance
 

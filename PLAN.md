@@ -1,6 +1,6 @@
 # Implementation plan
 
-Status: proposed implementation sequence, 11 September 2026. Deadline: 12 September afternoon IST. See [todo.md](todo.md) for completed, ongoing and pending work. The user requested beginning with Phase One preservation and then progressing step by step. **Ask before substantial implementation changes outside already approved scope.** After each meaningful completed milestone, test, update the tracker, commit and push.
+Status: implementation sequence with dated historical scopes below. Updated deadline, confirmed by the user: **Saturday, 12 September 2026, 11:30 pm IST**. See [todo.md](todo.md) for completed, ongoing and pending work. The user requested beginning with Phase One preservation and then progressing step by step. **Ask before substantial implementation changes outside already approved scope.** After each meaningful completed milestone, test, update the tracker, commit and push.
 
 ## Delivery strategy
 
@@ -209,6 +209,8 @@ Compare original-source history/search with sources plus memories under fixed mo
 
 Before live processing of the expanded corpus, review the exact additional synthetic allowlist, aggregate request/token budget and provider settings: the existing 96-request allowance cannot process 500 records and repeated comparisons. Do not reset it or remove the personal-data gate. No automatic Ultra fallback. S12 is the clean-checkout acceptance rehearsal; it cannot pass while unfamiliar inference or live quality remains unavailable.
 
+The tonight audit also confirmed an implemented scale boundary: S07 fails when its collection has more than 64 active context claims, and the serialized model-input cap is 60,000 bytes. It includes the current source plus sources supporting those active claims, not all unprocessed observations. S11 must review bounded relevant-claim/source selection and its lifecycle checks before claiming the varied corpus can be fully processed. Raising limits or silently dropping required evidence is not an approved workaround.
+
 
 ## Approved React workspace refinement
 
@@ -221,3 +223,15 @@ The four screens are Conversation, Sources, Memory and Usage. Normal input has e
 Alternatives: retaining the plain client would avoid a frontend build but would not meet the requested React/component direction. A separate Node server, persistent client cache, analytics, fake progress, automatic live calls or voice capture are unnecessary. Prefer a single static production bundle, backend-owned policy and a restrained, accessible visual system. References and tradeoffs are in DECISIONS.md.
 
 Acceptance: locked production build and formatting; unchanged PostgreSQL regression gates; actual Chromium checks for every existing flow plus typed-note exactness/idempotency, asynchronous failure/Private races, reduced motion, keyboard/dialog behavior, mobile overflow, literal source rendering and zero browser persistence or outside asset requests. Visually inspect desktop/mobile, loading, answers and controls. Preserve application state on container replacement, update RUN/todo with actual outcomes, commit and push dev. Live provider reliability and semantic evaluation remain separate open gates.
+
+## Tonight bounded repair proposal
+
+Pending user approval after the readiness checkpoint. The deadline is 23:30 IST; reserve 22:30-23:15 for the final demonstration, reproducibility/packaging checks and 23:15-23:30 for submission buffer. Earlier morning/afternoon stop times in historical planning sections are superseded by this confirmed deadline. These are work timeboxes, not a promise that live-quality gates will pass.
+
+**Proposed next scope:** make Nemotron Lightning an explicitly selectable response candidate while retaining Kimi as an available configured option; never switch automatically after failure. In parallel, revise the extraction prompt around the observed qualifier, time and reconciliation failures. The fresh Lightning probe demonstrates endpoint availability, not that it is a good responder or that its extraction is faithful. The seven Kimi failures make another unchanged retry a poor use of this repair window.
+
+**Files and effects:** `src/jarvis/providers.py` for validated explicit responder selection and model-appropriate request settings; `src/jarvis/extraction.py` for a new generic prompt version; `compose.yaml` and `.env.example` for the operator configuration; corresponding provider/answer/processing tests under `tests/` and existing evaluators/reports. No schema migration, dependency addition, client-owned authorization, source rewriting, expanded live allowlist, personal/Private inference or automatic fallback. Existing observations/claims remain intact; only new approved synthetic attempts may create new evidence-backed revisions and accounting. Do not silently correct old live failures or tune source labels to match outputs.
+
+**Acceptance and bound:** existing relevant backend/browser contracts remain passing. Use at most 12 additional live requests including repairs for this first checkpoint, inside the unchanged lifetime 96-request / 1,500,000-token / $0-paid allowance; stop earlier on a failed smoke or exhausted allocation. Inspect the original eight-source obligations, prioritizing date changes, attribution, conditions and variant conflict, then require at least three supported cited answers across core questions before calling the candidate useful for a demo. Incomplete repeats remain incomplete. A larger corpus, altered context selection or expanded allowance requires its own bounded approval after this small path works.
+
+**Alternatives:** retain Kimi only and investigate its wire transport further, with uncertain deadline benefit; or separately approve a stronger response/extraction comparison. Neither advertised size nor one completion selects a quality winner. Do not implement a provider/model choice until the user approves this proposed scope.

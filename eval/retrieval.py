@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from jarvis.config import Settings
 from jarvis.db import make_engine
 from jarvis.models import Base
+from jarvis.policy import LocalIdentity
 from jarvis.retrieval import SEARCH_VERSION
 from jarvis.services import Service
 from jarvis.worker import process_one
@@ -26,7 +27,8 @@ def run():
     from memory_double import FixtureExtractor, passage
 
     engine = make_engine(settings)
-    service = Service(engine, extractor=FixtureExtractor())
+    # A namespace cannot isolate owner-wide exclusions or the browser worker's lease.
+    service = Service(engine, LocalIdentity(uuid4()), extractor=FixtureExtractor())
     context = service.identity.context("normal")
     namespace = f"s08-eval-{uuid4()}"
     core_bytes = Path("data/synthetic/sample-dictations.jsonl").read_bytes()
@@ -169,6 +171,7 @@ def run():
     engine.dispose()
     return {
         "kind": "isolated_retrieval_diagnostic",
+        "owner_isolation": "fresh synthetic owner per run",
         "search_version": SEARCH_VERSION,
         "corpus_records": 500,
         "cases": len(cases),
@@ -190,7 +193,8 @@ def run():
             "Evidence budgets count serialized UTF-8 bytes, not model tokens.",
             "Dense retrieval, live Kimi answers and S06 all-history answer comparison not run.",
             "Indexes may be warm; this is not a cold-start or general latency benchmark.",
-            "Full Forget/known-duplicate/reimport controls remain S09 work.",
+            "Lifecycle correctness is tested separately; this diagnostic scores retrieval only.",
+            "Database row and index totals include other retained isolated test owners.",
         ],
     }
 

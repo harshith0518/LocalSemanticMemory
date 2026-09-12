@@ -1,0 +1,97 @@
+{
+  "kind": "deadline_readiness_audit",
+  "date": "2026-09-12",
+  "deadline": "2026-09-12T23:30:00+05:30",
+  "baseline_commit": "7a6b03683575e86b5950a529538d1ac4513274a0",
+  "branch": "dev",
+  "environment": {
+    "initial_state": "Docker Desktop Linux stopped; application containers down",
+    "restored": true,
+    "docker_server": "linux 28.4.0",
+    "application_url": "http://127.0.0.1:8000/",
+    "schema": "0005_user_controls",
+    "pgvector": "0.8.6",
+    "application_volume_reset": false,
+    "initial_source_rows": 33,
+    "initial_job_rows": 33,
+    "initial_claim_revisions": 3,
+    "complete_field_persistence_comparison_repeated": false
+  },
+  "checks": {
+    "backend": {"passed": 232, "seconds": 127.65, "database": "isolated PostgreSQL"},
+    "browser": {"passed": 22, "failed": 0, "seconds": 42.6031237, "providers": "explicit deterministic doubles"},
+    "suite_timing": "Full backend/browser suites preceded the evaluator-only patch; application code was unchanged.",
+    "python_lint_and_format_files": 45,
+    "frontend_format": "passed",
+    "typescript": "passed",
+    "vite_build": "passed",
+    "vite_build_seconds": 13.92,
+    "migration_drift": "no new operations",
+    "api_cli_readiness": "passed",
+    "pinned_image_build": "passed before and after evaluator patch",
+    "changed_evaluator_lint_format": "passed"
+  },
+  "retrieval_evaluator": {
+    "initial_attempt": "failed",
+    "initial_exception": "RuntimeError: Deterministic preparation failed",
+    "initial_context": "Browser-test worker active; evaluator reused its default owner.",
+    "retained_default_test_owner": {"policy_revision": 3, "source_exclusions": 30, "passage_exclusions": 4, "control_receipts": 3},
+    "fix": "Fresh synthetic LocalIdentity per run, matching the efficiency evaluator; no application policy/exclusion change.",
+    "source_sha256": "43d640a31868093481850ba29a15f7b9e66e59b657e250e5acbd59ae11acf05e",
+    "runs": [
+      {"report": "tonight-retrieval.json", "browser_worker_active": false, "records": 500, "all_evidence_found_per_representation": "45/45", "passage_coverage": 1.0},
+      {"report": "tonight-retrieval-concurrent.json", "browser_worker_active": true, "records": 500, "all_evidence_found_per_representation": "45/45", "passage_coverage": 1.0}
+    ],
+    "labels_or_search_algorithm_changed": false,
+    "live_calls": 0
+  },
+  "live": {
+    "new_requests": 3,
+    "kimi": {
+      "new_requests": 2,
+      "completed_answers": 0,
+      "lifetime_failed_attempts": 7,
+      "observed_transport_category": "ReadTimeout",
+      "observed_phase": "connect_or_response_headers",
+      "observed_elapsed_ms": 180187,
+      "http_status_observed_in_probe": null,
+      "new_model_settings": false
+    },
+    "nemotron": {
+      "new_requests": 1,
+      "source_record_id": "dict_0001",
+      "scope": "one source only; not a full extraction repeat",
+      "contract": "accepted",
+      "provider_elapsed_ms": 14546,
+      "input_tokens": 2290,
+      "output_tokens": 322,
+      "manual_semantic_review": "failed time obligation: planned date 2026-09-18 was also assigned to time.event without separate support",
+      "reviewed_by": "coding assistant",
+      "passed_obligations": ["planned date value", "Atlas project scope", "user attribution", "exact source passage"],
+      "namespace": "tonight-extractor-a8694e2fb1754074bd14f2eb48096bf3"
+    },
+    "lifetime_requests": 22,
+    "known_input_tokens": 27850,
+    "known_output_tokens": 2266,
+    "accounted_tokens_including_unknown_reservations": 211424,
+    "request_cap": 96,
+    "token_cap": 1500000,
+    "paid_spend_authorized_usd": 0,
+    "billed_cost": null,
+    "budget_reset": false,
+    "automatic_fallback": false,
+    "personal_or_private_inference": false
+  },
+  "scale_findings": {
+    "current_extraction_active_claim_cap": 64,
+    "current_serialized_model_input_cap_bytes": 60000,
+    "varied_500_record_corpus": "pending",
+    "context_selection_and_expanded_live_allowance": "require reviewed S11 scope"
+  },
+  "limits": [
+    "No completed live answer, full repeated semantic evaluation or S12 final acceptance rehearsal.",
+    "Authored 500-record retrieval diagnostics are not the varied acceptance corpus or a semantic score.",
+    "Fresh synthetic probes add one source/job/claim and three accounted calls to the retained application database.",
+    "The future explicit responder-selection/prompt-repair proposal is not implemented by this checkpoint."
+  ]
+}

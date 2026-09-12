@@ -1,6 +1,8 @@
 # Hey Jarvis — semantic memory
 
-Technical implementation plan for the Jarvis early notes project. Target review: **12 September 2026, afternoon IST**. Primary delivery method: a local application and PostgreSQL database through Docker Compose; hosted model inference may require provider credentials and network access.
+Technical implementation plan for the Jarvis early notes project. User-confirmed submission deadline: **Saturday, 12 September 2026, 11:30 pm IST**. Primary delivery method: a local application and PostgreSQL database through Docker Compose; hosted model inference may require provider credentials and network access.
+
+**Tonight's readiness check:** the application is restored, 232 backend tests and 22 Chromium journeys passed again, and the retrieval evaluator now isolates each run from browser-test workers and Forget state. Two new Kimi attempts failed; a fresh Nemotron probe responded but repeated the planned-date/event-time error. [Actual results](RUN.md#tonight-readiness-check) and [the bounded next repair proposal](PLAN.md#tonight-bounded-repair-proposal) distinguish setup completion from the remaining live-quality work.
 
 **Current state: an integrated synthetic prototype.** The React browser supports typed/pasted notes, import, source inspection, Search, processing, Memories/history, Ask with citations, Correct, Record a change, Forget, feedback diagnosis, one-click sample import, usage/performance inspection and Private clearing. API, optional CLI, workers and evaluators share the same backend services. Live NVIDIA use is approved only for exact public fixtures, with a persisted ceiling of 96 requests / 1,500,000 total tokens including retries and $0 paid. A working transport or a passing contract test does not establish model accuracy. See [React acceptance](RUN.md#react-workspace-refinement) and [S10 live limitations](RUN.md#s10-usage-and-performance) before testing live inference.
 
