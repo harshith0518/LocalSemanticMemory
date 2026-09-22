@@ -17,6 +17,7 @@ import { Activity, OriginalButton, Sprout } from "./common";
 import type { Workspace } from "@/lib/use-workspace";
 import type { Representation, Turn } from "@/lib/types";
 import { errors } from "@/lib/api";
+import { formatBytes } from "@/lib/utils";
 import "./conversation-help.css";
 
 type ModelSetup = {
@@ -162,8 +163,10 @@ function Reply({ turn, workspace }: { turn: Turn; workspace: Workspace }) {
             <p>
               {answer.sources.length} evidence sources;{" "}
               {answer.citations.length} citations;{" "}
-              {answer.evidence_bytes.toLocaleString()} evidence bytes. Context:{" "}
-              {answer.representation}.
+              <span title={`${answer.evidence_bytes.toLocaleString()} bytes`}>
+                {formatBytes(answer.evidence_bytes)}
+              </span>{" "}
+              of evidence. Context: {answer.representation}.
             </p>
             <p>
               {turn.timing

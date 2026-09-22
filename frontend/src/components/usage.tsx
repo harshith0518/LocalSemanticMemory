@@ -2,6 +2,7 @@ import { Activity as ActivityIcon, Database, RefreshCw } from "lucide-react";
 import { Button } from "./ui/button";
 import { Empty, Heading } from "./common";
 import type { Workspace } from "@/lib/use-workspace";
+import { formatBytes } from "@/lib/utils";
 
 const number = (value: number) => value.toLocaleString();
 export function Usage({ workspace: w }: { workspace: Workspace }) {
@@ -35,33 +36,34 @@ export function Usage({ workspace: w }: { workspace: Workspace }) {
             <article className="metric-card">
               <Database />
               <span>Original sources</span>
-              <strong>
-                {number(s.source_text_utf8_bytes)}
-                <small>UTF-8 bytes</small>
+              <strong title={`${number(s.source_text_utf8_bytes)} bytes`}>
+                {formatBytes(s.source_text_utf8_bytes)}
+                <small>UTF-8 text</small>
               </strong>
               <p>{s.source_revisions} revisions · raw + formatted</p>
             </article>
             <article className="metric-card">
               <span>Structured memories</span>
-              <strong>
-                {number(s.claim_json_utf8_bytes)}
-                <small>UTF-8 JSON bytes</small>
+              <strong title={`${number(s.claim_json_utf8_bytes)} bytes`}>
+                {formatBytes(s.claim_json_utf8_bytes)}
+                <small>UTF-8 JSON</small>
               </strong>
               <p>{s.claim_revisions} revisions</p>
             </article>
             <article className="metric-card">
               <span>Supporting passages</span>
-              <strong>
-                {number(s.passage_text_utf8_bytes)}
-                <small>UTF-8 bytes</small>
+              <strong title={`${number(s.passage_text_utf8_bytes)} bytes`}>
+                {formatBytes(s.passage_text_utf8_bytes)}
+                <small>UTF-8 text</small>
               </strong>
               <p>{s.supporting_passages} exact passages</p>
             </article>
           </div>
           <p className="meta">
-            Payload sizes, not physical database allocation or compression
-            savings. RAM and table/index allocation are measured separately in
-            the isolated evaluator report.
+            Sizes use decimal units: 1 KB = 1,000 bytes. Hover over a size for
+            the exact byte count. Payload sizes, not physical database
+            allocation or compression savings. RAM and table/index allocation
+            are measured separately in the isolated evaluator report.
           </p>
           <section className="panel">
             <h2>Processing & history</h2>

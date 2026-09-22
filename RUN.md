@@ -1,5 +1,9 @@
 # Run and verify Hey Jarvis
 
+## Readable data sizes (22 September 2026)
+
+Usage storage cards and each answer's evidence metrics now show decimal units: bytes below 1,000, then KB, MB and GB, rounded to at most two decimal places. Rounding at a unit boundary promotes the displayed unit; hover to inspect the exact byte count. These remain source/JSON/passage payload measurements. Verification: ten formatter examples covering zero, singular bytes, each unit threshold and rounding; TypeScript, Prettier, production and Docker builds passed. The replaced API is healthy and the live Usage page displays 119.5 KB originals, 169.54 KB structured memories and 30.69 KB passages. No new model call was needed. The first ad hoc check used an unavailable TypeScript compiler API; it was replaced by a passing native Node import of the actual formatter.
+
 ## Current walkthrough demo: learning while chatting (22 September 2026)
 
 Open **http://127.0.0.1:18000/** in Normal mode. Ask Jarvis now saves each user message automatically, checks its assertions against existing memories, then answers from eligible originals and learned context. No separate Save note or Process sources click is required for ordinary Ask submissions. Each turn shows Message saved and its learning outcome, a link to the original, separate learning-call metrics and answer-call metrics. Repeats remain original sources without requiring another semantic memory. Save a note/import retains its separate manual-processing path.
