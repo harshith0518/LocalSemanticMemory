@@ -153,6 +153,26 @@ export type Turn = {
   answer?: Answer;
   error?: string;
   timing?: Timing;
+  conversation_id?: string;
+  learning?: MessageLearning;
+  learningError?: string;
+};
+export type MessageLearning = {
+  source_id: string;
+  status: "pending" | "running" | "succeeded" | "failed" | "cancelled";
+  decision:
+    "extracted" | "no_memory" | "duplicate" | "needs_clarification" | null;
+  revision_ids: string[];
+  error_code: string | null;
+  attempts: number;
+  calls: {
+    id: string;
+    status: string;
+    input_tokens: number | null;
+    output_tokens: number | null;
+    elapsed_ms: number | null;
+    error_code: string | null;
+  }[];
 };
 export type ImportReceipt = {
   created: number;

@@ -1,0 +1,649 @@
+{
+  "date": "2026-09-22",
+  "scope": "User-approved automatic Normal Ask capture and selective learning; synthetic live checks, not a full-corpus quality evaluation.",
+  "provider": "google",
+  "model": "gemini-3.5-flash-lite",
+  "extraction_prompt": "conversation-learning-v2",
+  "research": [
+    "https://github.com/mem0ai/mem0/blob/main/mem0/configs/prompts.py",
+    "https://github.com/langchain-ai/langmem/blob/main/docs/docs/concepts/conceptual_guide.md"
+  ],
+  "implementation": {
+    "capture": "Original user_message plus durable Job, stable message/conversation UUIDs; independent source for repeated turns.",
+    "learning": "Existing source-scoped worker and revision reconciler; up to six earlier eligible user messages; at most 16 selected active memories.",
+    "answer": "Read-only /ask after the learning receipt; original text remains usable if learning fails.",
+    "assistant_output_saved": false,
+    "private_capture": false,
+    "new_dependencies": false,
+    "new_migrations": false
+  },
+  "verification": {
+    "backend": {
+      "passed": 295,
+      "elapsed_seconds": 182.62
+    },
+    "browser": {
+      "status": "passed",
+      "passed": 32,
+      "total": 32,
+      "elapsed_seconds": 63.6902552,
+      "initial_passed": 31,
+      "initial_total": 32,
+      "initial_failure": "Old metrics locator matched both newly separate learning and answer panels; selector narrowed and both metrics now asserted."
+    },
+    "targeted_repair_checks": {
+      "passed": 38,
+      "elapsed_seconds": 14.42
+    },
+    "lint_scope": "src migrations tests eval",
+    "python_format_files": 53,
+    "host_python_format_files": 54,
+    "frontend": "TypeScript, production build and Prettier passed; final packaged browser suite passed.",
+    "scoped_test_reset": "Stopped isolated web worker, used the guarded PostgreSQL fixture and passed the public-shell check (1 test, 2.81 seconds), then restarted the browser server. Demo data and budget remained intact.",
+    "initial_test_failures": [
+      "The first new-test run had 9 failures and 6 passes: a prompt-version label exceeded VARCHAR(32). The label was shortened; all targeted tests then passed.",
+      "The first full run had 293 passes and one failure: an obsolete assertion required the S11 prompt prefix. Replaced it with the actual database-size/payload bound; final full run passed 295 tests."
+    ],
+    "runtime": "Final API/database healthy at http://127.0.0.1:18000; six synthetic originals, two active memories and their four revisions survive API replacement."
+  },
+  "budget": {
+    "before": {
+      "requests": 879,
+      "accounted_tokens": 6682352
+    },
+    "after": {
+      "key": "s07-synthetic-v1",
+      "requests": 902,
+      "accounted_tokens": 6776496
+    },
+    "new_requests": 23,
+    "new_accounted_tokens": 94144,
+    "limits_unchanged": true,
+    "billing_measured": false
+  },
+  "initial_live_review": {
+    "namespace": "chat-demo-20260922",
+    "sources": [
+      {
+        "source_id": "677c7f05-be79-4b47-a150-71a36fbf70c4",
+        "kind": "user_message",
+        "user_message": "Cedar project's backend owner is Mira, and its database is PostgreSQL. Summarize what you know about Cedar.",
+        "learning": {
+          "source_id": "677c7f05-be79-4b47-a150-71a36fbf70c4",
+          "status": "succeeded",
+          "decision": "extracted",
+          "revision_ids": [
+            "43dc581a-28d1-4aa1-9731-46643b810645",
+            "3789228e-bad7-41fb-bd11-d31ea79a2c46"
+          ],
+          "error_code": null,
+          "attempts": 1,
+          "calls": [
+            {
+              "id": "bcede561-8128-4b3e-a75d-955784872630",
+              "status": "succeeded",
+              "input_tokens": 2659,
+              "output_tokens": 626,
+              "elapsed_ms": 2572,
+              "error_code": null
+            }
+          ]
+        }
+      },
+      {
+        "source_id": "d0b3b517-b68f-405d-8792-6b605ab1f1b2",
+        "kind": "user_message",
+        "user_message": "Cedar project's backend owner is Mira, and its database is PostgreSQL. Summarize what you know about Cedar.",
+        "learning": {
+          "source_id": "d0b3b517-b68f-405d-8792-6b605ab1f1b2",
+          "status": "succeeded",
+          "decision": "duplicate",
+          "revision_ids": [],
+          "error_code": null,
+          "attempts": 1,
+          "calls": [
+            {
+              "id": "b2565195-9c70-45ea-bb18-b29643c8fb70",
+              "status": "succeeded",
+              "input_tokens": 3472,
+              "output_tokens": 8,
+              "elapsed_ms": 1423,
+              "error_code": null
+            }
+          ]
+        }
+      },
+      {
+        "source_id": "66377769-9303-4685-a73a-25c7e7f8673a",
+        "kind": "user_message",
+        "user_message": "Cedar's database has changed from PostgreSQL to SQLite for the prototype. What database are we using now?",
+        "learning": {
+          "source_id": "66377769-9303-4685-a73a-25c7e7f8673a",
+          "status": "failed",
+          "decision": null,
+          "revision_ids": [],
+          "error_code": "provider_failed",
+          "attempts": 3,
+          "calls": [
+            {
+              "id": "9a0b1faf-a89f-49a3-8dd0-687738dcd27b",
+              "status": "failed",
+              "input_tokens": 3873,
+              "output_tokens": 271,
+              "elapsed_ms": 1922,
+              "error_code": "invalid_passage"
+            },
+            {
+              "id": "9ad46ddb-e83d-4078-a350-9bfcbbf3010b",
+              "status": "failed",
+              "input_tokens": 3859,
+              "output_tokens": 274,
+              "elapsed_ms": 2244,
+              "error_code": "invalid_input"
+            },
+            {
+              "id": "9b43dd0e-b4ef-4777-84fd-6e5b00412732",
+              "status": "failed",
+              "input_tokens": 3859,
+              "output_tokens": 218,
+              "elapsed_ms": 1532,
+              "error_code": "invalid_input"
+            },
+            {
+              "id": "a9c697e1-36aa-489b-a9b9-df241e3b84ca",
+              "status": "failed",
+              "input_tokens": 3873,
+              "output_tokens": 366,
+              "elapsed_ms": 2228,
+              "error_code": "invalid_input"
+            },
+            {
+              "id": "ab34ae05-b9ce-46ef-8415-1e695e74d945",
+              "status": "failed",
+              "input_tokens": null,
+              "output_tokens": null,
+              "elapsed_ms": 2155,
+              "error_code": "provider_failed"
+            }
+          ]
+        }
+      },
+      {
+        "source_id": "bdf705d5-2231-4836-8881-fb4ff0445159",
+        "kind": "user_message",
+        "user_message": "The Cedar project now uses SQLite as its database, replacing PostgreSQL.",
+        "learning": {
+          "source_id": "bdf705d5-2231-4836-8881-fb4ff0445159",
+          "status": "succeeded",
+          "decision": "extracted",
+          "revision_ids": [
+            "7757685c-8e14-4f91-9fbb-2f14ce36ef60"
+          ],
+          "error_code": null,
+          "attempts": 1,
+          "calls": [
+            {
+              "id": "38e5e31d-3bc1-4885-af3d-110557dcf5d0",
+              "status": "succeeded",
+              "input_tokens": 4307,
+              "output_tokens": 359,
+              "elapsed_ms": 2230,
+              "error_code": null
+            }
+          ]
+        }
+      }
+    ],
+    "findings": [
+      "New-fact capture and duplicate recognition worked.",
+      "The first update exhausted three job attempts: invalid quote positions, schema failures, then a provider failure. Message preserved; answer succeeded from original evidence.",
+      "A separately worded explicit update succeeded without resetting any retry counter.",
+      "Refined prompts show quote-only memory examples and structural repair feedback; final original-phrasing retest succeeded."
+    ]
+  },
+  "final_live_review": {
+    "namespace": "chat-20260922",
+    "sources": [
+      {
+        "source_id": "3cb7afcd-d992-466f-8835-79b5ad0054de",
+        "kind": "user_message",
+        "user_message": "Cedar project's backend owner is Mira, and its database is PostgreSQL. Summarize what you know about Cedar.",
+        "learning": {
+          "source_id": "3cb7afcd-d992-466f-8835-79b5ad0054de",
+          "status": "succeeded",
+          "decision": "extracted",
+          "revision_ids": [
+            "3ba2482e-edbd-43be-b253-ce4aaade887e",
+            "b7ef15d5-06cf-4e25-ba6f-5f66c4506e4d"
+          ],
+          "error_code": null,
+          "attempts": 1,
+          "calls": [
+            {
+              "id": "ae49f6ef-f3db-4deb-b94e-6b39651e38ae",
+              "status": "succeeded",
+              "input_tokens": 2719,
+              "output_tokens": 620,
+              "elapsed_ms": 2880,
+              "error_code": null
+            }
+          ]
+        },
+        "answer": {
+          "status": "answered",
+          "browser_round_trip_ms": 8598.1,
+          "provider_elapsed_ms": 2142,
+          "input_tokens": 1687,
+          "output_tokens": 200,
+          "review": "Mira owns the backend; database PostgreSQL.",
+          "call_id": "a9720e81-6dfd-4e60-9780-84233b3259ad"
+        }
+      },
+      {
+        "source_id": "c6d6de5f-f9ce-4aef-9587-49e1a23b4612",
+        "kind": "user_message",
+        "user_message": "Cedar project's backend owner is Mira, and its database is PostgreSQL. Summarize what you know about Cedar.",
+        "learning": {
+          "source_id": "c6d6de5f-f9ce-4aef-9587-49e1a23b4612",
+          "status": "succeeded",
+          "decision": "duplicate",
+          "revision_ids": [],
+          "error_code": null,
+          "attempts": 1,
+          "calls": [
+            {
+              "id": "402f6b64-f630-46d8-809e-b60854265df7",
+              "status": "succeeded",
+              "input_tokens": 3499,
+              "output_tokens": 8,
+              "elapsed_ms": 1317,
+              "error_code": null
+            }
+          ]
+        },
+        "answer": {
+          "status": "answered",
+          "browser_round_trip_ms": 6867.5,
+          "provider_elapsed_ms": 1467,
+          "input_tokens": 1865,
+          "output_tokens": 201,
+          "review": "Repeat retained as a source; still two active memories.",
+          "call_id": "3593441a-539c-4cf3-8a32-37376c623223"
+        }
+      },
+      {
+        "source_id": "f495493e-1ad0-4d40-ab26-57fb3eb1c76c",
+        "kind": "user_message",
+        "user_message": "Cedar's database has changed from PostgreSQL to SQLite for the prototype. What database are we using now?",
+        "learning": {
+          "source_id": "f495493e-1ad0-4d40-ab26-57fb3eb1c76c",
+          "status": "succeeded",
+          "decision": "extracted",
+          "revision_ids": [
+            "d9b7366d-aa3e-4e0d-b911-433bfbe10506"
+          ],
+          "error_code": null,
+          "attempts": 1,
+          "calls": [
+            {
+              "id": "15586992-12e9-4142-9cc9-4e26d9153c24",
+              "status": "succeeded",
+              "input_tokens": 3874,
+              "output_tokens": 214,
+              "elapsed_ms": 1659,
+              "error_code": null
+            }
+          ]
+        },
+        "answer": {
+          "status": "answered",
+          "browser_round_trip_ms": 7148.8,
+          "provider_elapsed_ms": 1491,
+          "input_tokens": 2080,
+          "output_tokens": 126,
+          "review": "SQLite for the prototype; prior database revision preserved.",
+          "call_id": "b9dfa5c6-373f-4050-9a4f-9ebb8166c7a8"
+        }
+      },
+      {
+        "source_id": "113f5149-da3e-44de-9408-ec6ff70c9ee9",
+        "kind": "user_message",
+        "user_message": "For that same project, backend ownership has changed from Mira to Ravi. Who is the backend owner now?",
+        "learning": {
+          "source_id": "113f5149-da3e-44de-9408-ec6ff70c9ee9",
+          "status": "succeeded",
+          "decision": "extracted",
+          "revision_ids": [
+            "2e75afca-0ac4-49a2-be83-dfbc1272aca9"
+          ],
+          "error_code": null,
+          "attempts": 1,
+          "calls": [
+            {
+              "id": "6dbaf6fd-60fc-4d1a-89db-a2731b8964d3",
+              "status": "succeeded",
+              "input_tokens": 4321,
+              "output_tokens": 210,
+              "elapsed_ms": 1820,
+              "error_code": null
+            }
+          ]
+        },
+        "answer": {
+          "status": "answered",
+          "browser_round_trip_ms": 7677.4,
+          "provider_elapsed_ms": 1505,
+          "input_tokens": 2327,
+          "output_tokens": 123,
+          "review": "Resolved 'that same project' to Cedar; backend owner now Ravi.",
+          "call_id": "a6ec8603-29ec-4d76-a10d-60e9c36bc976"
+        }
+      },
+      {
+        "source_id": "35611bf1-b1ee-4924-9a81-81a0fc69e733",
+        "kind": "user_message",
+        "user_message": "When did we launch Cedar in Europe?",
+        "learning": {
+          "source_id": "35611bf1-b1ee-4924-9a81-81a0fc69e733",
+          "status": "succeeded",
+          "decision": "no_memory",
+          "revision_ids": [],
+          "error_code": null,
+          "attempts": 1,
+          "calls": [
+            {
+              "id": "a33e0299-5df7-4216-8cf6-9e10d996356c",
+              "status": "succeeded",
+              "input_tokens": 4818,
+              "output_tokens": 13,
+              "elapsed_ms": 1354,
+              "error_code": null
+            }
+          ]
+        },
+        "answer": {
+          "status": "unknown",
+          "browser_round_trip_ms": 5984.2,
+          "provider_elapsed_ms": 1454,
+          "input_tokens": 2576,
+          "output_tokens": 51,
+          "review": "No European launch date found; question premise was not learned.",
+          "call_id": "a5729c77-0c48-4272-b192-35da41a68bfe"
+        }
+      },
+      {
+        "source_id": "895dccff-b76d-4a0c-8798-915f2f0a151a",
+        "kind": "user_message",
+        "user_message": "Explain what a database index is in two sentences.",
+        "learning": {
+          "source_id": "895dccff-b76d-4a0c-8798-915f2f0a151a",
+          "status": "succeeded",
+          "decision": "no_memory",
+          "revision_ids": [],
+          "error_code": null,
+          "attempts": 1,
+          "calls": [
+            {
+              "id": "a5383932-deda-437a-b1f0-13aa3fe7291a",
+              "status": "succeeded",
+              "input_tokens": 5367,
+              "output_tokens": 10,
+              "elapsed_ms": 1336,
+              "error_code": null
+            }
+          ]
+        },
+        "answer": {
+          "status": "general",
+          "browser_round_trip_ms": 6020.6,
+          "provider_elapsed_ms": 1274,
+          "input_tokens": 2877,
+          "output_tokens": 74,
+          "review": "Database-index explanation labelled general knowledge; no citations or learned reply.",
+          "call_id": "0c225ca5-4dc6-47c8-859a-e1fc097d8c60"
+        }
+      }
+    ],
+    "active_memories": [
+      {
+        "id": "2e75afca-0ac4-49a2-be83-dfbc1272aca9",
+        "claim_id": "5c4f9d7e-3f5b-45b4-b5a6-8ef61952ce61",
+        "revision": 2,
+        "content": {
+          "subject": {
+            "label": "Cedar",
+            "entity_id": null
+          },
+          "predicate": "backend owner",
+          "value": {
+            "kind": "text",
+            "value": "Ravi"
+          },
+          "scope": {
+            "kind": "project",
+            "key": "Cedar"
+          },
+          "attribution": {
+            "label": "user",
+            "entity_id": null
+          },
+          "evidence_status": "reported",
+          "modality": "asserted",
+          "negated": false,
+          "condition": null,
+          "time": {
+            "event": null,
+            "valid_from": null,
+            "valid_to": null
+          }
+        },
+        "source_ids": [
+          "113f5149-da3e-44de-9408-ec6ff70c9ee9"
+        ]
+      },
+      {
+        "id": "d9b7366d-aa3e-4e0d-b911-433bfbe10506",
+        "claim_id": "93e040a4-dff7-45e9-8ea3-401ce00b026e",
+        "revision": 2,
+        "content": {
+          "subject": {
+            "label": "Cedar",
+            "entity_id": null
+          },
+          "predicate": "database",
+          "value": {
+            "kind": "text",
+            "value": "SQLite"
+          },
+          "scope": {
+            "kind": "project",
+            "key": "Cedar"
+          },
+          "attribution": {
+            "label": "user",
+            "entity_id": null
+          },
+          "evidence_status": "reported",
+          "modality": "asserted",
+          "negated": false,
+          "condition": null,
+          "time": {
+            "event": null,
+            "valid_from": null,
+            "valid_to": null
+          }
+        },
+        "source_ids": [
+          "f495493e-1ad0-4d40-ab26-57fb3eb1c76c"
+        ]
+      }
+    ],
+    "histories": [
+      {
+        "revisions": [
+          {
+            "revision": 1,
+            "lifecycle": "superseded",
+            "content": {
+              "subject": {
+                "label": "Cedar",
+                "entity_id": null
+              },
+              "predicate": "backend owner",
+              "value": {
+                "kind": "text",
+                "value": "Mira"
+              },
+              "scope": {
+                "kind": "project",
+                "key": "Cedar"
+              },
+              "attribution": {
+                "label": "user",
+                "entity_id": null
+              },
+              "evidence_status": "reported",
+              "modality": "asserted",
+              "negated": false,
+              "condition": null,
+              "time": {
+                "event": null,
+                "valid_from": null,
+                "valid_to": null
+              }
+            }
+          },
+          {
+            "revision": 2,
+            "lifecycle": "active",
+            "content": {
+              "subject": {
+                "label": "Cedar",
+                "entity_id": null
+              },
+              "predicate": "backend owner",
+              "value": {
+                "kind": "text",
+                "value": "Ravi"
+              },
+              "scope": {
+                "kind": "project",
+                "key": "Cedar"
+              },
+              "attribution": {
+                "label": "user",
+                "entity_id": null
+              },
+              "evidence_status": "reported",
+              "modality": "asserted",
+              "negated": false,
+              "condition": null,
+              "time": {
+                "event": null,
+                "valid_from": null,
+                "valid_to": null
+              }
+            }
+          }
+        ],
+        "relations": [
+          {
+            "from_revision_id": "2e75afca-0ac4-49a2-be83-dfbc1272aca9",
+            "to_revision_id": "3ba2482e-edbd-43be-b253-ce4aaade887e",
+            "kind": "supersedes"
+          }
+        ]
+      },
+      {
+        "revisions": [
+          {
+            "revision": 1,
+            "lifecycle": "superseded",
+            "content": {
+              "subject": {
+                "label": "Cedar",
+                "entity_id": null
+              },
+              "predicate": "database",
+              "value": {
+                "kind": "text",
+                "value": "PostgreSQL"
+              },
+              "scope": {
+                "kind": "project",
+                "key": "Cedar"
+              },
+              "attribution": {
+                "label": "user",
+                "entity_id": null
+              },
+              "evidence_status": "reported",
+              "modality": "asserted",
+              "negated": false,
+              "condition": null,
+              "time": {
+                "event": null,
+                "valid_from": null,
+                "valid_to": null
+              }
+            }
+          },
+          {
+            "revision": 2,
+            "lifecycle": "active",
+            "content": {
+              "subject": {
+                "label": "Cedar",
+                "entity_id": null
+              },
+              "predicate": "database",
+              "value": {
+                "kind": "text",
+                "value": "SQLite"
+              },
+              "scope": {
+                "kind": "project",
+                "key": "Cedar"
+              },
+              "attribution": {
+                "label": "user",
+                "entity_id": null
+              },
+              "evidence_status": "reported",
+              "modality": "asserted",
+              "negated": false,
+              "condition": null,
+              "time": {
+                "event": null,
+                "valid_from": null,
+                "valid_to": null
+              }
+            }
+          }
+        ],
+        "relations": [
+          {
+            "from_revision_id": "d9b7366d-aa3e-4e0d-b911-433bfbe10506",
+            "to_revision_id": "b7ef15d5-06cf-4e25-ba6f-5f66c4506e4d",
+            "kind": "supersedes"
+          }
+        ]
+      }
+    ],
+    "source_count": 6,
+    "active_memory_count": 2,
+    "claim_revision_count": 4,
+    "all_final_learning_jobs_succeeded": true,
+    "final_live_provider_calls": 12
+  },
+  "limitations": [
+    "Six final synthetic turns are a bounded demonstration, not a general semantic-accuracy score.",
+    "Model extraction and semantic deduplication can still fail; exact quotations do not prove entailment.",
+    "The prototype qualifier survived the saved source and answer but was not explicit in the final structured database-value text; inspect original evidence when scope matters.",
+    "No dense embeddings, live web retrieval, or new unattended conversation worker was added.",
+    "Active learning adds latency and provider usage even for messages that yield no memory.",
+    "A closed page or occupied lease can leave visible pending work; retry learning or process sources to resume.",
+    "Clearing/reloading conversation clears the in-memory thread, not saved original sources.",
+    "Application/test lint passes do not cover legacy PDF-generation tools; an incidental whole-checkout check reported existing formatting issues there."
+  ]
+}

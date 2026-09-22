@@ -252,6 +252,28 @@ def create_app(service: Service | None = None) -> FastAPI:
         payload = await current_input(request)
         return await run_in_threadpool(service.ask, context, payload, JSONResponse)
 
+    @app.post("/conversation/messages")
+    async def save_message(request: Request):
+        service = app.state.service
+        context = service.identity.context(request.headers.get("X-Jarvis-Mode", ""))
+        context.require_saved_access()
+        return await run_in_threadpool(service.save_message, context, await current_input(request))
+
+    @app.post("/conversation/messages/{source_id}/learn")
+    async def learn_message(request: Request, source_id: str):
+        service = app.state.service
+        context = service.identity.context(request.headers.get("X-Jarvis-Mode", ""))
+        context.require_saved_access()
+        return await run_in_threadpool(
+            service.learn_message, context, source_id, await current_input(request)
+        )
+
+    @app.get("/conversation/messages/{source_id}")
+    def message_learning(request: Request, source_id: str):
+        service = app.state.service
+        context = service.identity.context(request.headers.get("X-Jarvis-Mode", ""))
+        return service.message_learning(context, source_id)
+
     @app.post("/private/ask")
     async def private_ask(request: Request):
         service = app.state.service

@@ -8,7 +8,7 @@ const stages = [
   [
     "Observe",
     "Give Jarvis a note",
-    "Type, paste or import paired raw/formatted transcripts. Saving is explicit. Ask questions and generated replies are not silently learned.",
+    "Type, paste or import notes. Normal Ask also preserves each user message automatically and checks it for useful new facts. Questions do not assert their answers; generated replies never become learned evidence.",
     "Conversation / Sources",
   ],
   [
@@ -31,9 +31,9 @@ const stages = [
   ],
   [
     "Request",
-    "Choose when to learn",
-    "Process sources explicitly requests eligible work. The browser now submits one collection-scoped step at a time. Pause or leaving Normal stops browser follow-up requests.",
-    "POST /processing; POST /processing/step",
+    "Learn as you talk",
+    "Normal Ask learns from its saved message before answering, with a visible receipt for new facts, repeats, ambiguity or failures. Imports still use Process sources. Leaving Normal stops browser follow-up requests; accepted Normal work may finish.",
+    "POST /conversation/messages; POST /conversation/messages/{id}/learn",
   ],
   [
     "Lease",
@@ -172,11 +172,10 @@ export function Workflow({ workspace: w }: { workspace: Workspace }) {
         <span className="eyebrow">The second half</span>
         <h2>Memory to answer, without inventing certainty.</h2>
         <p className="flow-sentence">
-          Current question <ArrowRight /> permitted lexical candidates{" "}
-          <ArrowRight /> original evidence + optional saved memories{" "}
-          <ArrowRight /> bounded response proposal <ArrowRight /> citation
-          validation + revocation recheck <ArrowRight /> answer, citations and
-          measured calls.
+          Saved user message <ArrowRight /> selective learning <ArrowRight />{" "}
+          original evidence + learned memories <ArrowRight /> bounded response
+          proposal <ArrowRight /> citation validation + revocation recheck{" "}
+          <ArrowRight /> answer, citations and measured calls.
         </p>
         <p>
           Current instructions override remembered preferences. Unknown

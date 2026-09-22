@@ -601,7 +601,15 @@ test("Private direct sends with Enter and keeps the answer out of Normal", async
   );
 });
 
-for (const target of ["source", "search", "memory", "ask", "usage"]) {
+for (const target of [
+  "source",
+  "search",
+  "memory",
+  "ask",
+  "capture",
+  "learning",
+  "usage",
+]) {
   test(`Private cancels pending ${target}, ignores the late result and prevents follow-up reads`, async (t) => {
     const page = await pageFor(t);
     await importFile(page, `late-${target}-${randomUUID()}`);
@@ -610,6 +618,8 @@ for (const target of ["source", "search", "memory", "ask", "usage"]) {
       search: "**/search",
       memory: "**/memories?*",
       ask: "**/ask",
+      capture: "**/conversation/messages",
+      learning: "**/conversation/messages/*/learn",
       usage: "**/usage",
     };
     const pending = await hold(page, patterns[target]);
@@ -625,7 +635,7 @@ for (const target of ["source", "search", "memory", "ask", "usage"]) {
       await nav(page, "Memory");
       await button(page, "Refresh memories").click();
     }
-    if (target === "ask") {
+    if (["ask", "capture", "learning"].includes(target)) {
       await nav(page, "Conversation");
       await page.getByLabel("Ask a question").fill("Atlas launch");
       await button(page, "Ask").click();
@@ -681,6 +691,79 @@ test("unknown backend errors stay bounded; loading a collection is not mistaken 
     await page.locator("body").innerText(),
     /DATABASE_SECRET_SYNTHETIC_FAILURE|Room for your first thought/,
   );
+});
+
+test("Normal Ask automatically saves, learns, skips repeats and preserves a changed fact", async (t) => {
+  const page = await pageFor(t);
+  const namespace = `chat-${randomUUID()}`;
+  await page.getByLabel("Collection name", { exact: true }).fill(namespace);
+  const rows = fixture
+    .toString()
+    .trim()
+    .split("\n")
+    .map((line) => JSON.parse(line));
+  for (const [text, expected] of [
+    [rows[0].raw_transcript, /1 memory change/],
+    [rows[0].raw_transcript, /Already known/],
+    [rows[2].raw_transcript, /2 memory change/],
+    ["Who approved the Atlas launch?", /No lasting fact/],
+  ]) {
+    await page.getByLabel("Ask a question").fill(text);
+    await page.getByLabel("Ask a question").press("Enter");
+    await idle(page);
+    assert.match(
+      await page.locator(".message-learning").last().innerText(),
+      expected,
+    );
+  }
+  const headers = { "X-Jarvis-Mode": "normal" };
+  const sources = await fetch(`${origin}/sources?namespace=${namespace}`, {
+    headers,
+  }).then((r) => r.json());
+  const memories = await fetch(`${origin}/memories?namespace=${namespace}`, {
+    headers,
+  }).then((r) => r.json());
+  assert.equal(sources.observations.length, 4);
+  assert.equal(memories.memories.length, 2);
+  const launch = memories.memories.find(
+    (m) => m.content.predicate === "launch_date",
+  );
+  assert.equal(launch.content.value.value, "2026-09-21");
+  assert.equal(launch.revision, 2);
+  await screenshot(page, "conversation-learning-desktop");
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.ok(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  );
+  await screenshot(page, "conversation-learning-mobile");
+});
+
+test("Answer retry reuses the saved message and completed learning", async (t) => {
+  const page = await pageFor(t);
+  const namespace = `retry-chat-${randomUUID()}`;
+  await page.getByLabel("Collection name", { exact: true }).fill(namespace);
+  await page.getByLabel("Ask a question").fill("What is Atlas?");
+  await page.route("**/ask", (route) => route.abort());
+  await button(page, "Ask").click();
+  await idle(page);
+  assert.match(
+    await page.locator(".message-learning").innerText(),
+    /Message saved/,
+  );
+  await page.unroute("**/ask");
+  await button(page, "Try question again").click();
+  await idle(page);
+  assert.equal(await page.locator(".conversation-turn").count(), 1);
+  assert.match(
+    await page.locator(".message-learning").innerText(),
+    /1 model call/,
+  );
+  const data = await fetch(`${origin}/sources?namespace=${namespace}`, {
+    headers: { "X-Jarvis-Mode": "normal" },
+  }).then((r) => r.json());
+  assert.equal(data.observations.length, 1);
 });
 
 test("sample import is idempotent; usage reports measured payloads, timings and unknown billing", async (t) => {
@@ -776,7 +859,7 @@ test("Private direct draft is cleared before browser-history restoration", async
     assert.equal(await page.locator("#private-draft").inputValue(), "");
 });
 
-test("greeting explains capabilities locally and evidence choices are explained and collapsed", async (t) => {
+test("Normal greeting is preserved without learning a fact and evidence choices stay collapsed", async (t) => {
   const page = await pageFor(t);
   const calls = [];
   page.on("request", (request) => {
@@ -791,7 +874,12 @@ test("greeting explains capabilities locally and evidence choices are explained 
       exact: true,
     })
     .waitFor();
-  assert.deepEqual(calls, []);
+  await idle(page);
+  assert.ok(calls.some((url) => url.endsWith("/conversation/messages")));
+  assert.match(
+    await page.locator(".message-learning").innerText(),
+    /No lasting fact to learn/,
+  );
   await page.getByText("Context: automatic", { exact: true }).click();
   await page.getByLabel("Answer evidence").selectOption("sources_and_memories");
   assert.match(
@@ -820,7 +908,10 @@ test("automatic date uses the clock and makes its provenance visible", async (t)
   await page
     .getByText("Query metrics and model calls", { exact: true })
     .click();
-  assert.match(await page.locator(".query-metrics").innerText(), /0 recorded/);
+  assert.match(
+    await page.locator(".reply .query-metrics").innerText(),
+    /0 recorded/,
+  );
   assert.equal(await page.getByLabel("Ask a question").inputValue(), "");
 });
 
@@ -997,11 +1088,19 @@ test("query exposes evidence selection and actual model-call metrics", async (t)
     .fill("What is the latest recorded Atlas launch date?");
   await button(page, "Ask").click();
   await idle(page);
-  await page.locator(".query-metrics > summary").click();
+  await page.locator(".reply .query-metrics > summary").click();
   assert.match(
-    await page.locator(".query-metrics").innerText(),
+    await page.locator(".reply .query-metrics").innerText(),
     /Browser round trip:/,
   );
-  assert.match(await page.locator(".query-metrics").innerText(), /tokens/);
+  assert.match(
+    await page.locator(".reply .query-metrics").innerText(),
+    /tokens/,
+  );
   assert.ok(await page.locator(".call-metric").count());
+  await page.locator(".message-learning .query-metrics > summary").click();
+  assert.match(
+    await page.locator(".message-learning .query-metrics").innerText(),
+    /input 100 \/ output 100 tokens/,
+  );
 });

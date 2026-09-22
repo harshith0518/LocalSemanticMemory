@@ -16,6 +16,7 @@ import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import { Activity, OriginalButton, Sprout } from "./common";
 import type { Workspace } from "@/lib/use-workspace";
 import type { Representation, Turn } from "@/lib/types";
+import { errors } from "@/lib/api";
 import "./conversation-help.css";
 
 type ModelSetup = {
@@ -49,6 +50,67 @@ function Reply({ turn, workspace }: { turn: Turn; workspace: Workspace }) {
         <span className="eyebrow">You</span>
         <p>{turn.question}</p>
       </div>
+      {turn.learning && (
+        <div className="message-learning" role="status">
+          <p>
+            <Check size={16} aria-hidden="true" /> Message saved ·{" "}
+            {turn.learning.decision === "extracted"
+              ? `${turn.learning.revision_ids.length} memory change(s) recorded`
+              : turn.learning.decision === "duplicate"
+                ? "Already known — no new memory needed"
+                : turn.learning.decision === "no_memory"
+                  ? "No lasting fact to learn"
+                  : turn.learning.decision === "needs_clarification"
+                    ? "More detail needed before learning; name the project or fact explicitly"
+                    : turn.learning.status === "cancelled"
+                      ? "Learning cancelled"
+                      : turn.learning.status === "failed"
+                        ? "Learning did not finish"
+                        : "Learning pending"}
+          </p>
+          {(turn.learning.error_code || turn.learningError) && (
+            <p className="meta">
+              {turn.learningError ??
+                errors[turn.learning.error_code!] ??
+                turn.learning.error_code}
+            </p>
+          )}
+          <OriginalButton
+            disabled={!!workspace.busy}
+            onClick={() => void workspace.inspect(turn.learning!.source_id)}
+          >
+            View saved message
+          </OriginalButton>
+          {(["pending", "running", "failed"].includes(turn.learning.status) ||
+            turn.learningError) && (
+            <Button
+              variant="link"
+              disabled={!!workspace.busy}
+              onClick={() => void workspace.retryLearning(turn)}
+            >
+              Retry learning
+            </Button>
+          )}
+          {!!turn.learning.calls.length && (
+            <details className="query-metrics">
+              <summary>
+                Learning metrics · {turn.learning.calls.length} model call(s)
+              </summary>
+              {turn.learning.calls.map((call) => (
+                <p key={call.id}>
+                  {call.status}; {call.elapsed_ms ?? "unknown"} ms; input{" "}
+                  {call.input_tokens ?? "unknown"} / output{" "}
+                  {call.output_tokens ?? "unknown"} tokens.
+                  {call.error_code && ` ${call.error_code}`}
+                </p>
+              ))}
+              <p className="meta">
+                These extraction calls are additional to the answer calls below.
+              </p>
+            </details>
+          )}
+        </div>
+      )}
       {answer ? (
         <m.div
           initial={{ opacity: 0, y: 8 }}
@@ -211,13 +273,15 @@ function Reply({ turn, workspace }: { turn: Turn; workspace: Workspace }) {
           <Button
             variant="outline"
             disabled={!!workspace.busy}
-            onClick={() => void workspace.ask(turn.request)}
+            onClick={() => void workspace.ask(turn.request, turn)}
           >
             Try question again
           </Button>
         </div>
       ) : (
-        <Activity label="Reading evidence and checking the answer" />
+        <Activity
+          label={workspace.busy || "Reading evidence and checking the answer"}
+        />
       )}
     </article>
   );
@@ -261,9 +325,9 @@ export function Conversation({
         )
       ) {
         setHelpVisible(true);
-        return;
+      } else {
+        setHelpVisible(false);
       }
-      setHelpVisible(false);
       setQuestion("");
       await w.ask({
         namespace: w.namespace,
@@ -359,7 +423,7 @@ export function Conversation({
             <Button
               variant="ghost"
               disabled={!!w.busy}
-              onClick={() => w.setTurns([])}
+              onClick={w.clearConversation}
             >
               Clear conversation
             </Button>
@@ -384,13 +448,14 @@ export function Conversation({
           <section className="setup-card" role="status">
             <strong>Hello! I help you find the details in your notes.</strong>
             <p>
-              Save a note or import a collection, process it in Memory, then ask
-              a question. I can recall supported details and draft text; I do
-              not send messages or perform external actions.
+              Share a fact or ask a question here. Normal messages are saved,
+              useful new facts are learned, and answers link back to evidence. I
+              can recall supported details and draft text; I do not send
+              messages or perform external actions.
             </p>
             <small>
-              Workspace help, not a generated answer. No saved notes were read
-              and no model was called.
+              This help text is built in. Your submitted message and its
+              learning and answer results appear above.
             </small>
           </section>
         )}
@@ -423,7 +488,7 @@ export function Conversation({
             </Tabs>
             <span className="composer-scope">
               {intent === "ask"
-                ? "Current question only"
+                ? "Saved · checked for new facts"
                 : "Saved in Normal mode"}
             </span>
           </div>
@@ -554,15 +619,18 @@ export function Conversation({
         <p className="composer-footnote">
           Typed or pasted text stands in for a transcript. No microphone needed.
           <br />
-          Questions and replies are not automatically learned. Private direct
-          chat does not read or save workspace context.
+          Normal messages are saved automatically. Jarvis learns useful new facts
+          you share, checks repeats and preserves updates. AI replies are not
+          learned as evidence. Private chat does not read or save workspace
+          context.
         </p>
         <details className="setup-card">
           <summary>Model setup and 30 showcase questions</summary>
           <p>
             Start in Sources: import the sample or the 540-note fictional
             corpus. In Memory, choose Process sources, then return here. A
-            question is not a saved note.
+            Normal Ask message is also saved and checked for useful new
+            information.
           </p>
           <div className="setup-actions">
             <Button

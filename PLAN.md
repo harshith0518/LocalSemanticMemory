@@ -1,5 +1,9 @@
 # Implementation plan
 
+## Approved walkthrough extension: learn from Normal conversation
+
+The 22 September request authorizes the Normal Ask capture/learning workflow described in ARCHITECTURE.md. Acceptance covers exact/idempotent preservation, new-fact extraction, repeat/no-memory outcomes, scoped updates with history, bounded earlier-user context, visible independent learning/answer failures and metrics, source-specific processing, Private cancellation and no assistant-output ingestion. Keep the existing provider and persisted allowance. Verify with isolated PostgreSQL contracts, browser journeys and separately labelled live synthetic cases; record failures as well as successes. No third-party memory-store dependency or schema replacement is required.
+
 Status: implementation sequence with dated historical scopes below. Updated deadline, confirmed by the user: **Saturday, 12 September 2026, 11:30 pm IST**. See [todo.md](todo.md) for completed, ongoing and pending work. The user requested beginning with Phase One preservation and then progressing step by step. **Ask before substantial implementation changes outside already approved scope.** After each meaningful completed milestone, test, update the tracker, commit and push.
 
 ## Delivery strategy

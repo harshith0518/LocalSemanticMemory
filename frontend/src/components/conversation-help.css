@@ -3,6 +3,24 @@
   font-size: 0.8rem;
   color: #425643;
 }
+.message-learning {
+  margin: 0.7rem 0 1.2rem;
+  padding: 0.8rem 1rem;
+  border-left: 3px solid #8ea565;
+  border-radius: 0.4rem;
+  background: #eff3e8;
+  color: #344d39;
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+.message-learning > p:first-child {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.message-learning p {
+  margin: 0.35rem 0;
+}
 .context-options summary {
   padding: 0.65rem 0;
   font-weight: 600;

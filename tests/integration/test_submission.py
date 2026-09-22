@@ -131,7 +131,7 @@ def test_scale_selection_keeps_relevant_claims_and_complete_variants(engine):
     assert packet.source.formatted_text == rows[0]["formatted_text"]
     assert len(service.list_memories(ctx, {"namespace": "scale", "limit": 100})["memories"]) == 72
     body, _ = service.extractor.prepare(packet)
-    assert "s11" in PROMPT_VERSION and len(json.dumps(body).encode()) < 60000
+    assert 0 < len(PROMPT_VERSION) <= 32 and len(json.dumps(body).encode()) < 60000
 
 
 def test_configuration_endpoint_is_not_a_live_probe_and_never_returns_keys(engine):

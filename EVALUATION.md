@@ -1,5 +1,11 @@
 # Minimal evaluation plan for Hey Jarvis
 
+## Interview conversational learning regression
+
+`test_conversation.py` uses actual isolated PostgreSQL and explicit model doubles to check immutable message capture/retries, concurrent capture on separate connections, selective learning, repeat retention without extra claims, world-change history, bounded conversation/collection context, source-specific queue work, failure isolation, retry ceilings, ownership, Private rejection before parsing/store access, Forget/exact-repeat exclusion, invalid text and useful schema-repair feedback. Browser cases check visible receipts, repeat/update behavior, source counts, answer retry idempotency, mobile overflow and cancellation during both capture and learning. These contracts are not semantic-quality scores.
+
+Live synthetic cases and metrics are recorded in [regression-conversation-review.json](eval/reports/regression-conversation-review.json). Initial update failures are retained alongside subsequent fixes and successful checks. Evaluate questions separately from assertions even though the Normal UI now preserves both as original user messages. Evaluators continue using read-only `/ask`; they do not ingest their question/answer keys. Assistant output must not appear among saved source records. Semantic equivalence and reference resolution remain model-dependent and bounded.
+
 ## Interview retrieval and answer-policy regression
 
 The 22 September user transcript provides regression questions, not new learned facts: beverage/tea paraphrases, broad project mentions, memory inventories and an inappropriate refusal to state today's date. Deterministic tests in `test_auto_answers.py` cover complete small-collection context, active supported memories, bounded large-collection query expansion, partial inventory disclosure, source-only comparison behavior, no borrowed general citations, no personal/current-fact fallback, runtime timezone dates, missing live-web capability, fresh first-use accounting, other-owner/collection/excluded-evidence isolation, stale revisions, planner outages and Private gates. Browser acceptance adds the visible clock provenance, zero model-call count and Enter submission.

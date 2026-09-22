@@ -10,6 +10,7 @@ import type {
   ImportReceipt,
   Inspection,
   MemoryPage,
+  MessageLearning,
   Processing,
   SourcePage,
   Timing,
@@ -27,6 +28,7 @@ export function useWorkspace(session: ApiSession) {
   const [history, setHistory] = useState<History>();
   const [usage, setUsage] = useState<Usage>();
   const [turns, setTurns] = useState<Turn[]>([]);
+  const conversationId = useRef(crypto.randomUUID());
   const [contentVersion, setContentVersion] = useState(0);
   const [busy, setBusy] = useState("");
   const [notice, setNotice] = useState({ text: "", error: false });
@@ -90,6 +92,7 @@ export function useWorkspace(session: ApiSession) {
     setHistory(undefined);
     setUsage(undefined);
     setTurns([]);
+    conversationId.current = crypto.randomUUID();
     setTiming(undefined);
     setNotice({ text: "", error: false });
   }
@@ -248,8 +251,43 @@ export function useWorkspace(session: ApiSession) {
         }
       },
     );
-  const ask = (request: AnswerRequest) =>
-    run("Reading evidence and checking the answer", async () => {
+  async function learnMessage(sourceId: string, retryFailed = false) {
+    const ticket = epoch.current;
+    for (let attempt = 0; ; attempt++) {
+      if (!active.current || ticket !== epoch.current)
+        throw new DOMException("Cancelled", "AbortError");
+      const receipt = await session.post<MessageLearning>(
+        `/conversation/messages/${sourceId}/learn`,
+        { retry_failed: retryFailed && attempt === 0 },
+      );
+      if (
+        !["pending", "running"].includes(receipt.status) ||
+        receipt.error_code ||
+        attempt >= 7
+      )
+        return receipt;
+      // Only wait for an occupied lease. Failed provider calls need an explicit retry.
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
+  const retryLearning = (turn: Turn) =>
+    run("Checking learning for this saved message", async () => {
+      if (!turn.learning) return;
+      const learning = await learnMessage(turn.learning.source_id, true);
+      setTurns((previous) =>
+        previous.map((item) =>
+          item.id === turn.id
+            ? { ...item, learning, learningError: undefined }
+            : item,
+        ),
+      );
+      setContentVersion((previous) => previous + 1);
+      await loadSources();
+      await loadMemories();
+    });
+  const ask = (request: AnswerRequest, retry?: Turn) =>
+    run("Saving your message", async () => {
+      const ticket = epoch.current;
       const started = performance.now();
       const measured = (outcome: Timing["outcome"]): Timing => ({
         elapsed_ms: performance.now() - started,
@@ -257,12 +295,50 @@ export function useWorkspace(session: ApiSession) {
         outcome,
       });
       const turn: Turn = {
-        id: crypto.randomUUID(),
+        id: retry?.id ?? crypto.randomUUID(),
+        conversation_id: retry?.conversation_id ?? conversationId.current,
         question: request.question,
         request,
       };
-      setTurns((previous) => [...previous.slice(-11), turn]);
+      setTurns((previous) =>
+        retry
+          ? previous.map((item) => (item.id === turn.id ? turn : item))
+          : [...previous.slice(-11), turn],
+      );
       try {
+        const saved = await session.post<MessageLearning>(
+          "/conversation/messages",
+          {
+            message_id: turn.id,
+            conversation_id: turn.conversation_id,
+            request,
+          },
+        );
+        setTurns((previous) =>
+          previous.map((item) =>
+            item.id === turn.id ? { ...item, learning: saved } : item,
+          ),
+        );
+        setContentVersion((previous) => previous + 1);
+        setBusy("Checking your message for new information");
+        try {
+          const learning = await learnMessage(saved.source_id);
+          setTurns((previous) =>
+            previous.map((item) =>
+              item.id === turn.id ? { ...item, learning } : item,
+            ),
+          );
+        } catch (error) {
+          if (isCancelled(error)) throw error;
+          setTurns((previous) =>
+            previous.map((item) =>
+              item.id === turn.id
+                ? { ...item, learningError: messageFor(error) }
+                : item,
+            ),
+          );
+        }
+        setBusy("Reading evidence and checking the answer");
         const answer = await session.post<Answer>("/ask", request);
         setTurns((previous) =>
           previous.map((item) =>
@@ -285,6 +361,17 @@ export function useWorkspace(session: ApiSession) {
             ),
           );
         throw error;
+      } finally {
+        setContentVersion((previous) => previous + 1);
+        // Refresh failures must not replace a completed answer or a saved receipt.
+        if (active.current && ticket === epoch.current) {
+          try {
+            await loadSources();
+            await loadMemories();
+          } catch {
+            /* The next page refresh can recover these derived lists. */
+          }
+        }
       }
     });
   const feedback = (turn: Turn, diagnosis: string) =>
@@ -370,6 +457,11 @@ export function useWorkspace(session: ApiSession) {
       processingPaused.current = true;
     },
     ask,
+    retryLearning,
+    clearConversation: () => {
+      setTurns([]);
+      conversationId.current = crypto.randomUUID();
+    },
     feedback,
     preview,
     apply,

@@ -4,7 +4,7 @@ import json
 from typing import Annotated, Literal, Self
 from uuid import UUID
 
-from pydantic import Field, model_validator
+from pydantic import Field, ValidationError, model_validator
 
 from jarvis.contracts import (
     ClaimContent,
@@ -22,11 +22,19 @@ from jarvis.errors import ApplicationError, ErrorCode
 from jarvis.imports import Identifier as Namespace
 from jarvis.imports import reject_constant, unique_object
 
-PROMPT_VERSION = "s11-v3-qualified-context"
+PROMPT_VERSION = "conversation-learning-v2"
 MAX_OPERATIONS = 16
 MAX_CONTEXT_CLAIMS = 64
 MAX_ATTEMPTS = 3
 LEASE_SECONDS = 300
+
+
+class ProposalShapeError(ApplicationError):
+    """Safe structural repair feedback, never raw validation input or exception text."""
+
+    def __init__(self, hints):
+        super().__init__(ErrorCode.INVALID_INPUT)
+        self.repair_hint = "Schema fields to recheck: " + "; ".join(hints)
 
 
 class MemoryOperation(Contract):
@@ -82,7 +90,31 @@ def parse_proposal(payload: object, packet=None) -> ExtractionProposal:
             operation["passages"] = [
                 resolve_excerpt(p, sources) for p in operation.get("passages", [])
             ]
-    return parse_contract(ExtractionProposal, payload)
+    try:
+        return parse_contract(ExtractionProposal, payload)
+    except ApplicationError as error:
+        if error.code is not ErrorCode.INVALID_INPUT or not isinstance(payload, dict):
+            raise
+        try:
+            ExtractionProposal.model_validate(payload)
+        except ValidationError as details:
+            fields = set(
+                "operations decision action target_revision_id content passages subject label "
+                "entity_id predicate value kind scope key attribution evidence_status modality "
+                "negated condition time event valid_from valid_to precision unit source_id "
+                "source_revision variant exact_text start end text quantity boolean date".split()
+            )
+            hints = []
+            for item in details.errors(
+                include_input=False, include_context=False, include_url=False
+            )[:6]:
+                path = ".".join(
+                    str(key) if isinstance(key, int) or key in fields else "unknown_field"
+                    for key in item["loc"]
+                )
+                hints.append(f"{path or 'proposal'} ({item['type']})")
+            raise ProposalShapeError(hints) from None
+        raise
 
 
 class ProcessingRequest(Contract):
@@ -108,6 +140,7 @@ class ExtractionPacket(Contract):
     memories: tuple[ClaimRevision, ...]
     context_claim_count: int = 0
     context_bounded: bool = False
+    previous_user_source_ids: tuple[UUID, ...] = ()
 
 
 SYSTEM_PROMPT = """You propose selective memories from the CURRENT_SOURCE only.
@@ -152,10 +185,24 @@ Existing target IDs must come from MEMORIES. Never link people merely because na
 Keep evidence for changes and reasons. Preserve historical and current values distinctly.
 Use decision no_memory for no useful claim, duplicate for no new information/evidence, and
 needs_clarification if no interpretation is supportable. Do not invent a clarification answer.
+For a user_message, preserve useful new assertions even when mixed with a question. Do not
+memorize greetings, a question's assumed answer, requests for knowledge, or guesses as facts.
+RECENT_USER_MESSAGES are chronological earlier user-authored context, not new observations.
+Use them only to resolve an unambiguous reference such as 'that project'; quote both the new
+assertion and its antecedent when needed. If multiple projects fit, choose needs_clarification.
+Do not repeat old claims merely because they occur in recent context. An unchanged repeated
+user assertion normally needs decision duplicate, not another claim or confidence increase.
+If a same-meaning claim is already in MEMORIES, do not add a second copy. A supported update
+keeps the existing target's subject, predicate, scope and attribution; preserve revision history.
+An assistant suggestion becomes a user plan only when the user explicitly states its content
+as their own choice. 'Yes', 'remember that', or an unresolved reference alone is insufficient.
+Set condition to null for asserted facts. An ordinary scope phrase such as 'for the prototype'
+can stay in a text value; it is not an if-condition. Only modality conditional may have condition,
+and it requires tentative or disputed evidence_status. Never add fields outside OUTPUT_SCHEMA.
 """
 
 
-def messages(packet: ExtractionPacket, *, repair: bool = False) -> list[dict]:
+def messages(packet: ExtractionPacket, *, repair: bool | str = False) -> list[dict]:
     def evidence(source):
         # Collection names, owner identity and import/activity times are not model evidence.
         return source.model_dump(
@@ -178,18 +225,24 @@ def messages(packet: ExtractionPacket, *, repair: bool = False) -> list[dict]:
             "note": "Unselected memories and original sources remain stored and searchable.",
         },
         "SOURCES": [evidence(source) for source in packet.sources if source.id != packet.source.id],
+        "SOURCE_KIND": packet.source.kind,
+        "RECENT_USER_MESSAGES": [
+            evidence(source)
+            for source_id in packet.previous_user_source_ids
+            for source in packet.sources
+            if source.id == source_id
+        ],
         "MEMORIES": [
-            claim.model_dump(
-                mode="json",
-                include={
-                    "id",
-                    "claim_id",
-                    "revision",
-                    "lifecycle",
-                    "content",
-                    "passages",
-                },
-            )
+            {
+                **claim.model_dump(
+                    mode="json", include={"id", "claim_id", "revision", "lifecycle", "content"}
+                ),
+                # Show the same quote-only shape we ask the model to return. Persisted
+                # offsets still exist and are checked by the canonical contracts.
+                "passages": [
+                    p.model_dump(mode="json", exclude={"start", "end"}) for p in claim.passages
+                ],
+            }
             for claim in packet.memories
         ],
         "OUTPUT_SCHEMA": model_proposal_schema(),
@@ -199,6 +252,8 @@ def messages(packet: ExtractionPacket, *, repair: bool = False) -> list[dict]:
         instruction += (
             "\nThe previous proposal failed validation. Recheck schema, spans and transitions."
         )
+        if isinstance(repair, str):
+            instruction += "\n" + repair
     return [
         {"role": "system", "content": instruction},
         {"role": "user", "content": json.dumps(payload, ensure_ascii=False, separators=(",", ":"))},

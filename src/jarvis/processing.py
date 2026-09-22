@@ -173,18 +173,37 @@ class ProcessingOperations:
         )
         if latest != job.expected_source_revision or source.revision != latest:
             raise ApplicationError(ErrorCode.STALE_REVISION)
+        previous = []
+        if source.kind == "user_message":
+            metadata = source.capture_metadata or {}
+            previous = session.scalars(
+                self._namespace_sources(context, namespace)
+                .where(
+                    Source.id.in_(metadata.get("previous_user_source_ids", [])[:6]),
+                    Source.kind == "user_message",
+                    Source.capture_metadata["conversation_id"].astext
+                    == metadata.get("conversation_id"),
+                    ~Source.id.in_(blocked_sources(context)),
+                )
+                .order_by(Source.imported_at, Source.id)
+            ).all()
+        reference_text = " ".join(s.raw_text for s in previous)
         active = self._active_memories(session, context, namespace)
         count = session.scalar(select(func.count()).select_from(active.order_by(None).subquery()))
         # Small collections retain the original complete-context behavior. At scale use
         # the same lexical machinery as retrieval, with an explicit project-scope boost.
         if count > 16:
             tsquery = self._search_query(
-                session, (source.raw_text + " " + (source.formatted_text or ""))[:4096]
+                session,
+                (source.raw_text + " " + (source.formatted_text or "") + " " + reference_text)[
+                    :4096
+                ],
             )
             vector = literal_column(f"({CLAIM_SEARCH_SQL})", type_=TSVECTOR())
             scope = ClaimRecord.content["scope"]["key"].astext
             scope_match = (func.length(scope) > 1) & (
-                func.strpos(func.lower(source.raw_text), func.lower(scope)) > 0
+                func.strpos(func.lower(source.raw_text + " " + reference_text), func.lower(scope))
+                > 0
             )
             active = (
                 active.where(vector.op("@@")(tsquery))
@@ -207,7 +226,11 @@ class ProcessingOperations:
                     passages=claim.passages,
                 ),
             )
-        ids = {source.id} | {p.source_id for claim in claims for p in claim.passages}
+        ids = (
+            {source.id}
+            | {s.id for s in previous}
+            | {p.source_id for claim in claims for p in claim.passages}
+        )
         sources = session.scalars(
             select(Source)
             .where(Source.owner_id == context.owner_id, Source.id.in_(ids))
@@ -228,6 +251,7 @@ class ProcessingOperations:
             memories=claims,
             context_claim_count=count,
             context_bounded=count > len(claims),
+            previous_user_source_ids=tuple(s.id for s in previous),
         )
         # Remove whole lowest-ranked memory/support groups, never truncate a passage,
         # a qualifier, the current observation or one of its paired variants.
@@ -237,7 +261,11 @@ class ProcessingOperations:
             > MAX_INPUT_BYTES - 1024
         ):
             retained = packet.memories[:-1]
-            keep = {source.id} | {p.source_id for c in retained for p in c.passages}
+            keep = (
+                {source.id}
+                | {s.id for s in previous}
+                | {p.source_id for c in retained for p in c.passages}
+            )
             packet = packet.model_copy(
                 update={
                     "memories": retained,
@@ -248,7 +276,7 @@ class ProcessingOperations:
         return packet
 
     @measured("lease")
-    def lease_next(self, context, *, namespace=None):
+    def lease_next(self, context, *, namespace=None, source_id=None):
         self._provider_gate(context)
         if namespace is not None:
             namespace = parse_contract(MemoryQuery, {"namespace": namespace}).namespace
@@ -292,6 +320,8 @@ class ProcessingOperations:
                         autoescape=True,
                     )
                 )
+            if source_id is not None:
+                statement = statement.where(Job.source_id == source_id)
             job = session.scalar(statement)
             if job is None:
                 return None
@@ -357,6 +387,10 @@ class ProcessingOperations:
             if operation.action == "add":
                 key = content  # Typed equality also treats 15000 and 15000.0 alike.
                 if key in additions:
+                    raise ApplicationError(ErrorCode.INVALID_TRANSITION)
+                if packet.source.kind == "user_message" and any(
+                    c.content == content for c in packet.memories
+                ):
                     raise ApplicationError(ErrorCode.INVALID_TRANSITION)
                 additions.add(key)
             if target and any(

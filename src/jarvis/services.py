@@ -23,6 +23,7 @@ from jarvis.contracts import (
     parse_contract,
 )
 from jarvis.controls import ControlOperations, blocked_sources
+from jarvis.conversation import ConversationOperations
 from jarvis.errors import ApplicationError, ErrorCode
 from jarvis.imports import (
     IMPORT_PREFIX,
@@ -58,6 +59,7 @@ def content_hash(raw: str, formatted: str | None) -> str:
 
 
 class Service(
+    ConversationOperations,
     ProcessingOperations,
     RetrievalOperations,
     AnswerOperations,

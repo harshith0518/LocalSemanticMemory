@@ -53,6 +53,14 @@ def fixture_proposal(data):
         (row["record_id"] for row in originals if row["raw_transcript"] == source["raw_text"]), None
     )
     claims = []
+    if data.get("SOURCE_KIND") == "user_message" and record in {"dict_0001", "dict_0003"}:
+        expected = "2026-09-18" if record == "dict_0001" else "2026-09-21"
+        if any(
+            c["content"]["predicate"] == "launch_date"
+            and c["content"]["value"]["value"] == expected
+            for c in data["MEMORIES"]
+        ):
+            return {"decision": "duplicate", "operations": []}
     if record == "dict_0001":
         claims = [content("launch_date", {"kind": "date", "value": "2026-09-18"})]
     elif record == "dict_0002":

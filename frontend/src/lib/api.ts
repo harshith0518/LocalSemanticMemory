@@ -27,7 +27,7 @@ export const errors: Record<string, string> = {
     "The model provider could not finish. This is a service failure, not missing evidence.",
   provider_response_invalid:
     "The model response failed validation. No answer was released.",
-  retry_limit_reached: "This answer has already used its one feedback retry.",
+  retry_limit_reached: "This operation has reached its retry limit.",
 };
 export class RequestError extends Error {
   constructor(readonly reason: string) {
@@ -81,6 +81,7 @@ export class ApiSession {
           AbortSignal.timeout(
             path === "/ask" ||
               path === "/feedback" ||
+              /^\/conversation\/messages\/[^/]+\/learn$/.test(path) ||
               path.startsWith("/processing/step?")
               ? 390000
               : 15000,

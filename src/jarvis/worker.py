@@ -7,15 +7,16 @@ from jarvis.extraction import parse_proposal
 from jarvis.metrics import stage
 
 
-def process_one(service, context, *, namespace=None):
+def process_one(service, context, *, namespace=None, source_id=None):
     # A Private invocation must not inspect a queue, prepare a prompt, or reserve a call.
     service._provider_gate(context)
-    packet = service.lease_next(context, namespace=namespace)
+    packet = service.lease_next(context, namespace=namespace, source_id=source_id)
     if packet is None:
         return None
+    repair = False
     try:
         for attempt in range(2):
-            body, reservation = service.extractor.prepare(packet, repair=bool(attempt))
+            body, reservation = service.extractor.prepare(packet, repair=repair)
             call_id = service.reserve_call(context, packet, reservation)
             completion = service.complete_call(context, service.extractor, body, call_id)
             if completion.input_tokens + completion.output_tokens > reservation:
@@ -31,6 +32,23 @@ def process_one(service, context, *, namespace=None):
                     ErrorCode.INVALID_PASSAGE,
                     ErrorCode.INVALID_TRANSITION,
                 }:
+                    repair = (
+                        getattr(error, "repair_hint", None)
+                        or {
+                            ErrorCode.INVALID_INPUT: (
+                                "Follow OUTPUT_SCHEMA exactly; use typed objects "
+                                "and only allowed fields."
+                            ),
+                            ErrorCode.INVALID_PASSAGE: (
+                                "Copy a unique exact quote and its source ID. "
+                                "Omit start/end offsets entirely."
+                            ),
+                            ErrorCode.INVALID_TRANSITION: (
+                                "Recheck the existing target. Keep its subject, predicate, scope "
+                                "and attribution; do not add an already-known claim."
+                            ),
+                        }[error.code]
+                    )
                     continue
                 raise
     except ApplicationError as error:
