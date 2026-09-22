@@ -1098,6 +1098,49 @@ main {
 .button-stack button {
   font-size: 11px;
 }
+.waiting-sources {
+  margin-top: 18px;
+}
+.waiting-sources > .section-title {
+  align-items: flex-start;
+}
+.waiting-sources > .section-title p {
+  margin: 5px 0 0;
+}
+.waiting-sources ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+}
+.waiting-sources button {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: 1px solid #dfe4d4;
+  border-radius: 10px;
+  background: #fbfaf4;
+  color: #53634a;
+  padding: 12px;
+  text-align: left;
+}
+.waiting-sources button > svg {
+  width: 16px;
+}
+.waiting-sources button strong,
+.waiting-sources button small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.waiting-sources button small {
+  color: #839174;
+  font-size: 10px;
+  margin-top: 3px;
+}
 .memory-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 245px;
@@ -1367,6 +1410,60 @@ main {
   margin-top: 35px;
   color: #75856a;
 }
+.private-composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+  margin-top: 28px;
+  text-align: left;
+}
+.private-composer label {
+  grid-column: 1 / -1;
+  color: #75856a;
+}
+.private-composer textarea {
+  min-height: 96px;
+  margin: 0;
+}
+.private-composer button {
+  min-height: 46px;
+}
+.private-turns {
+  display: grid;
+  gap: 14px;
+  max-height: 390px;
+  overflow-y: auto;
+  margin-top: 28px;
+  padding: 3px;
+  text-align: left;
+}
+.private-turns article {
+  display: grid;
+  gap: 8px;
+}
+.private-question,
+.private-answer {
+  border-radius: 12px;
+  padding: 13px 15px;
+}
+.private-question {
+  justify-self: end;
+  max-width: 82%;
+  background: #e9eedb;
+  color: #53634a;
+}
+.private-answer {
+  background: #fcfbf4;
+  border: 1px solid #dfe4d4;
+  white-space: pre-wrap;
+}
+.private-answer small {
+  display: block;
+  color: #82916e;
+  font-size: 9px;
+  margin-top: 10px;
+}
 .private-page textarea {
   margin-top: 8px;
   min-height: 160px;
@@ -1468,6 +1565,12 @@ main {
   }
 }
 @media (max-width: 760px) {
+  .waiting-sources ul {
+    grid-template-columns: 1fr;
+  }
+  .private-composer {
+    grid-template-columns: 1fr;
+  }
   .app-shell {
     display: block;
   }

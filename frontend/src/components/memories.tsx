@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  AlertCircle,
   Brain,
+  FileClock,
   GitBranch,
   History as HistoryIcon,
   RefreshCw,
@@ -374,7 +376,11 @@ export function Memories({ workspace: w }: { workspace: Workspace }) {
             <h2>From words to useful context</h2>
             <Badge variant="secondary">You choose when</Badge>
           </div>
-          <p>Saving a source does not make every sentence a lasting fact. Process this collection here, one guarded job at a time. Pause stops future steps, not an already submitted Normal request.</p>
+          <p>
+            Saving a source does not make every sentence a lasting fact. Process
+            this collection here, one guarded job at a time. Pause stops future
+            steps, not an already submitted Normal request.
+          </p>
           <div id="processing-state" className="meta" role="status">
             {w.processing ? (
               <>
@@ -408,7 +414,11 @@ export function Memories({ workspace: w }: { workspace: Workspace }) {
           </div>
         </div>
         <div className="button-stack">
-          {w.learning && <Button variant="outline" onClick={w.stopProcessing}>Pause learning</Button>}
+          {w.learning && (
+            <Button variant="outline" onClick={w.stopProcessing}>
+              Pause learning
+            </Button>
+          )}
           <Button
             disabled={!!w.busy || !w.sources}
             onClick={() => void w.process()}
@@ -425,6 +435,51 @@ export function Memories({ workspace: w }: { workspace: Workspace }) {
           </Button>
         </div>
       </section>
+      {!!w.processing?.waiting.length && (
+        <section
+          className="panel waiting-sources"
+          aria-labelledby="waiting-title"
+        >
+          <div className="section-title">
+            <div>
+              <h2 id="waiting-title">Saved sources waiting to learn</h2>
+              <p className="meta">
+                These notes are safely stored in Sources. They appear here so
+                their learning state is visible; they are not memories yet.
+              </p>
+            </div>
+            <Badge variant="outline">{w.processing.waiting.length} shown</Badge>
+          </div>
+          <ul>
+            {w.processing.waiting.map((item) => (
+              <li key={item.source_id}>
+                <button
+                  type="button"
+                  disabled={!!w.busy}
+                  onClick={() => void w.inspect(item.source_id)}
+                >
+                  {item.status === "failed" || item.status === "cancelled" ? (
+                    <AlertCircle aria-hidden="true" />
+                  ) : (
+                    <FileClock aria-hidden="true" />
+                  )}
+                  <span>
+                    <strong>{item.record_id}</strong>
+                    <small>
+                      {item.status.replaceAll("_", " ")}
+                      {item.reason
+                        ? ` · ${item.reason.replaceAll("_", " ")}`
+                        : ""}
+                      {item.attempts ? ` · ${item.attempts} attempt(s)` : ""}
+                    </small>
+                  </span>
+                  <span aria-hidden="true">↗</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <div className="memory-layout">
         <section>
           <div className="section-title">

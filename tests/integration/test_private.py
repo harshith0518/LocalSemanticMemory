@@ -9,6 +9,7 @@ from uuid import uuid4
 
 import httpx
 import pytest
+from answer_double import FixtureResponder
 from sqlalchemy import event, select
 from typer.testing import CliRunner
 
@@ -223,6 +224,36 @@ def test_private_current_context_is_not_backfilled(service, normal, private, obs
         "responder",
     }
     assert SENTINEL not in repr(vars(service.extractor))
+
+
+def test_private_direct_answer_calls_provider_without_store_access(service, engine, monkeypatch):
+    service.responder = FixtureResponder(private_direct=True)
+    before = snapshot(engine)
+    with no_store_access(engine, monkeypatch):
+        response = http_request(
+            service,
+            "/private/ask",
+            json.dumps({"question": "Give one fictional greeting."}),
+        )
+        assert response.status_code == 200
+        assert response.json() == {
+            "text": "Synthetic context-free answer.",
+            "model": "deterministic-answer-double",
+            "input_tokens": 20,
+            "output_tokens": 8,
+            "elapsed_ms": 1,
+            "saved": False,
+            "memory_context": False,
+        }
+        denied = http_request(
+            service,
+            "/private/ask",
+            json.dumps({"question": "Normal mode cannot use this route."}),
+            mode="normal",
+        )
+        assert denied.status_code == 403
+    assert service.responder.calls == 1
+    assert snapshot(engine) == before
 
 
 def test_adapter_owner_override_and_mode_fail_closed(service, observation, engine, monkeypatch):

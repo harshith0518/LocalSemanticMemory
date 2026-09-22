@@ -7,7 +7,7 @@ from pathlib import Path
 from time import perf_counter
 from uuid import UUID, uuid4
 
-from sqlalchemy import func, literal_column, or_, select
+from sqlalchemy import case, func, literal_column, or_, select
 from sqlalchemy.dialects.postgresql import TSVECTOR, insert
 from sqlalchemy.orm import aliased
 
@@ -69,7 +69,12 @@ class ProcessingOperations:
     def _trial_source(self, source, *, live=None, unfamiliar=None):
         if not (self.extractor.live if live is None else live):
             return  # Only trusted dependency injection in tests; never a request flag.
-        if self.extractor.unfamiliar_mode if unfamiliar is None else unfamiliar:
+        approved = (
+            self.extractor.unfamiliar_mode or getattr(self.extractor, "unfamiliar_sources", False)
+            if unfamiliar is None
+            else unfamiliar
+        )
+        if approved:
             return  # Explicit operator approval, never inferred from source metadata.
         allowed = _synthetic_sources()
         # Compare all original fields, not a caller-supplied namespace/hash/synthetic label.
@@ -711,10 +716,46 @@ class ProcessingOperations:
                 .scalars()
                 .all()
             )
+            waiting = session.execute(
+                select(
+                    Source.id,
+                    Source.source_key,
+                    Job.status,
+                    Job.attempts,
+                    Job.error_code,
+                )
+                .join(Job, Job.source_id == Source.id)
+                .where(
+                    Source.owner_id == context.owner_id,
+                    Job.owner_id == context.owner_id,
+                    Source.id.in_(sources),
+                    Job.status != "succeeded",
+                )
+                .order_by(
+                    case(
+                        (Job.status == "failed", 0),
+                        (Job.status == "cancelled", 1),
+                        (Job.status == "running", 2),
+                        else_=3,
+                    ),
+                    Source.imported_at.desc(),
+                )
+                .limit(50)
+            ).all()
             return {
                 "counts": dict(rows),
                 "provider_enabled": self.extractor.enabled,
                 "failures": [{"job_id": str(j), "reason": code} for j, code in failures],
+                "waiting": [
+                    {
+                        "source_id": str(source_id),
+                        "record_id": source_key.rsplit(":", 1)[1],
+                        "status": status,
+                        "attempts": attempts,
+                        "reason": error_code,
+                    }
+                    for source_id, source_key, status, attempts, error_code in waiting
+                ],
                 "decisions": {
                     name: sum(r["decision"] == name for r in receipts)
                     for name in ("extracted", "no_memory", "duplicate", "needs_clarification")
@@ -732,6 +773,8 @@ class ProcessingOperations:
                 "key_configured": bool(provider._key) or not provider.live,
                 "unfamiliar_mode": provider.unfamiliar_mode,
                 "unfamiliar_questions": getattr(provider, "unfamiliar_questions", False),
+                "unfamiliar_sources": getattr(provider, "unfamiliar_sources", False),
+                "private_direct": getattr(provider, "private_direct", False),
                 "provider": getattr(provider, "provider_name", "test_double"),
             }
 
@@ -744,10 +787,10 @@ class ProcessingOperations:
             "warning": (
                 "Hosted inference follows the selected provider's data terms. Google free "
                 "inputs/outputs may be used for product improvement and human review. "
-                "Free Google/OpenRouter routes accept only approved public synthetic data. "
-                "New questions require the separate synthetic-question approval; unfamiliar "
-                "sources require explicit NVIDIA unfamiliar mode. "
-                "Private never calls any provider."
+                "Free Google/OpenRouter routes accept only operator-approved demo data. "
+                "New questions, unfamiliar synthetic sources, and context-free Private chat "
+                "each require their own explicit switch. Private chat never reads the database "
+                "and its text or reply is not saved by Jarvis."
             ),
         }
 

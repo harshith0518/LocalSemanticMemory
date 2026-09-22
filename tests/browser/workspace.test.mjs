@@ -26,8 +26,12 @@ after(async () => {
   await browser?.close();
 });
 
-async function eventually(check, message = "Expected UI state did not arrive") {
-  const deadline = Date.now() + 8000;
+async function eventually(
+  check,
+  message = "Expected UI state did not arrive",
+  timeoutMs = 8000,
+) {
+  const deadline = Date.now() + timeoutMs;
   let last;
   do {
     try {
@@ -139,15 +143,22 @@ async function importFile(page, namespace, content = fixture) {
 }
 async function processFixture(page, namespace) {
   await nav(page, "Memory");
+  await eventually(async () =>
+    assert.equal(await page.locator(".waiting-sources li").count(), 8),
+  );
   await button(page, "Process sources").click();
   await idle(page);
-  await eventually(async () => {
-    const response = await fetch(
-      `${origin}/processing?namespace=${namespace}`,
-      { headers: { "X-Jarvis-Mode": "normal" } },
-    );
-    assert.equal((await response.json()).counts.succeeded, 8);
-  });
+  await eventually(
+    async () => {
+      const response = await fetch(
+        `${origin}/processing?namespace=${namespace}`,
+        { headers: { "X-Jarvis-Mode": "normal" } },
+      );
+      assert.equal((await response.json()).counts.succeeded, 8);
+    },
+    "All eight deterministic processing jobs did not finish",
+    20000,
+  );
   await button(page, "Refresh memories").click();
   await idle(page);
 }
@@ -475,7 +486,8 @@ test("Ask cites original evidence, diagnoses feedback and permits only one expli
     await page.getByLabel("Ask a question").inputValue(),
     /Atlas launch/,
   );
-  await button(page, "Ask").click();
+  await page.getByLabel("Ask a question").press("Enter");
+  assert.equal(await page.getByLabel("Ask a question").inputValue(), "");
   await idle(page);
   assert.match(
     await page.locator("#ask-result").innerText(),
@@ -526,7 +538,7 @@ test("Ask failure is not an unknown answer, and retry is explicit", async (t) =>
   assert.equal(await page.locator(".activity").count(), 0);
 });
 
-test("Private unmounts all content, file state and scratchpad without reads or backfill", async (t) => {
+test("Private unmounts Normal content and clears an unsent direct draft without backfill", async (t) => {
   const page = await pageFor(t);
   await importFile(page, `private-${randomUUID()}`);
   await page.getByLabel("Add dictations").setInputFiles({
@@ -544,7 +556,7 @@ test("Private unmounts all content, file state and scratchpad without reads or b
     await page.locator("body").textContent(),
     /SYNTHETIC_NORMAL_DRAFT|dict_0008/,
   );
-  await page.getByLabel("Temporary text").fill("SYNTHETIC_PRIVATE_DRAFT");
+  await page.getByLabel("Direct question").fill("SYNTHETIC_PRIVATE_DRAFT");
   await screenshot(page, "private-desktop");
   await normal(page);
   assert.doesNotMatch(
@@ -558,6 +570,35 @@ test("Private unmounts all content, file state and scratchpad without reads or b
   );
   assert.equal(await page.locator("#source-list li").count(), 0);
   assert.deepEqual(calls, []);
+});
+
+test("Private direct sends with Enter and keeps the answer out of Normal", async (t) => {
+  const page = await pageFor(t);
+  const calls = [];
+  page.on("request", (request) => calls.push(new URL(request.url()).pathname));
+  await privateMode(page);
+  await page
+    .getByLabel("Direct question")
+    .fill("A fictional context-free question");
+  await page.getByLabel("Direct question").press("Enter");
+  await page
+    .getByText("Synthetic context-free answer.", { exact: true })
+    .waitFor();
+  assert.deepEqual(
+    calls.filter((path) => path === "/private/ask"),
+    ["/private/ask"],
+  );
+  assert.match(
+    await page.locator("#private-panel").innerText(),
+    /20 in \/ 8 out/,
+  );
+  await normal(page);
+  assert.equal(await page.locator("#private-panel").count(), 0);
+  await privateMode(page);
+  assert.doesNotMatch(
+    await page.locator("#private-panel").innerText(),
+    /Synthetic context-free answer/,
+  );
 });
 
 for (const target of ["source", "search", "memory", "ask", "usage"]) {
@@ -708,11 +749,11 @@ test("mobile keyboard, dialog focus and back navigation do not restore personal 
   assert.equal(await page.locator("#source-list li,#evidence").count(), 0);
 });
 
-test("Private scratchpad is cleared before browser-history restoration", async (t) => {
+test("Private direct draft is cleared before browser-history restoration", async (t) => {
   const page = await pageFor(t);
   await privateMode(page);
   await page
-    .getByLabel("Temporary text")
+    .getByLabel("Direct question")
     .fill("SYNTHETIC_PRIVATE_HISTORY_SENTINEL");
   // Also exercise the persisted pageshow branch deterministically; real history follows.
   await page.evaluate(() =>
@@ -720,9 +761,9 @@ test("Private scratchpad is cleared before browser-history restoration", async (
       new PageTransitionEvent("pagehide", { persisted: true }),
     ),
   );
-  assert.equal(await page.getByLabel("Temporary text").inputValue(), "");
+  assert.equal(await page.getByLabel("Direct question").inputValue(), "");
   await page
-    .getByLabel("Temporary text")
+    .getByLabel("Direct question")
     .fill("SYNTHETIC_PRIVATE_HISTORY_SENTINEL");
   await page.goto("about:blank");
   await page.goBack();
@@ -906,31 +947,46 @@ test("mobile Correct, world change and Forget review effects and clear revoked c
 test("workflow diagram is navigable and Private clears its loaded evidence", async (t) => {
   const page = await pageFor(t, { width: 390, height: 844 });
   await nav(page, "Workflow & evidence");
-  assert.equal(await page.locator('.flow-nodes button').count(), 12);
-  await page.locator('.flow-nodes button').nth(3).click();
-  assert.match(await page.locator('.flow-detail').innerText(), /Keep the original first/);
+  assert.equal(await page.locator(".flow-nodes button").count(), 12);
+  await page.locator(".flow-nodes button").nth(3).click();
+  assert.match(
+    await page.locator(".flow-detail").innerText(),
+    /Keep the original first/,
+  );
   await button(page, "Lightning smoke").click();
   await idle(page);
-  assert.ok(await page.locator('.evidence-json').innerText());
-  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  assert.ok(await page.locator(".evidence-json").innerText());
+  assert.equal(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+    true,
+  );
   await privateMode(page);
-  assert.equal(await page.locator('.evidence-json').count(), 0);
+  assert.equal(await page.locator(".evidence-json").count(), 0);
   await normal(page);
   await nav(page, "Workflow & evidence");
-  assert.equal(await page.locator('.evidence-json').count(), 0);
+  assert.equal(await page.locator(".evidence-json").count(), 0);
 });
 
 test("query exposes evidence selection and actual model-call metrics", async (t) => {
   const page = await pageFor(t);
   await importFile(page, `metrics-${randomUUID()}`);
   await nav(page, "Conversation");
-  await page.locator('.context-options > summary').click();
-  await page.getByLabel("Answer evidence", { exact: true }).selectOption("sources_and_memories");
-  await page.getByLabel("Ask a question", { exact: true }).fill("What is the latest recorded Atlas launch date?");
+  await page.locator(".context-options > summary").click();
+  await page
+    .getByLabel("Answer evidence", { exact: true })
+    .selectOption("sources_and_memories");
+  await page
+    .getByLabel("Ask a question", { exact: true })
+    .fill("What is the latest recorded Atlas launch date?");
   await button(page, "Ask").click();
   await idle(page);
-  await page.locator('.query-metrics > summary').click();
-  assert.match(await page.locator('.query-metrics').innerText(), /Browser round trip:/);
-  assert.match(await page.locator('.query-metrics').innerText(), /tokens/);
-  assert.ok(await page.locator('.call-metric').count());
+  await page.locator(".query-metrics > summary").click();
+  assert.match(
+    await page.locator(".query-metrics").innerText(),
+    /Browser round trip:/,
+  );
+  assert.match(await page.locator(".query-metrics").innerText(), /tokens/);
+  assert.ok(await page.locator(".call-metric").count());
 });

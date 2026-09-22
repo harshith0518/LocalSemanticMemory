@@ -4,7 +4,7 @@ export const errors: Record<string, string> = {
   provider_disabled:
     "Live answers are not enabled or a model key is missing. Check model setup below; repeating the question will not enable it. Sources and memory controls still work.",
   trial_input_denied:
-    "This installation permits only approved synthetic sources and questions. The operator can separately enable new questions over approved synthetic database evidence. Unfamiliar sources need unfamiliar opt-in; saved notes remain local.",
+    "This installation permits only operator-approved demo sources and questions. Saved notes remain local; enable the separate synthetic-source switch before sending unfamiliar demo notes to the provider.",
   budget_exhausted:
     "The evaluation allowance is exhausted. Your saved sources and memories remain available.",
   rate_limited:
@@ -79,7 +79,11 @@ export class ApiSession {
         signal: AbortSignal.any([
           controller.signal,
           AbortSignal.timeout(
-            path === "/ask" || path === "/feedback" || path.startsWith("/processing/step?") ? 390000 : 15000,
+            path === "/ask" ||
+              path === "/feedback" ||
+              path.startsWith("/processing/step?")
+              ? 390000
+              : 15000,
           ),
         ]),
       });

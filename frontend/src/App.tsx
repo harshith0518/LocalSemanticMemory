@@ -8,12 +8,13 @@ import {
   Brain,
   ChevronRight,
   LockKeyhole,
+  Send,
   MessageCircle,
   ShieldCheck,
 } from "lucide-react";
-import { ApiSession } from "./lib/api";
+import { ApiSession, messageFor, RequestError } from "./lib/api";
 import { useWorkspace } from "./lib/use-workspace";
-import type { Page } from "./lib/types";
+import type { Page, PrivateAnswer } from "./lib/types";
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
 import { Textarea } from "./components/ui/textarea";
@@ -98,7 +99,23 @@ function Normal({
       </div>
       <div className="page-content" key={w.namespace}>
         <nav className="guided-steps" aria-label="Submission walkthrough">
-          {([['sources', '1. Import'], ['memories', '2. Learn'], ['conversation', '3. Ask'], ['workflow', '4. Inspect flow'], ['usage', '5. Measure']] as const).map(([id, label]) => <button key={id} aria-current={page === id ? "step" : undefined} onClick={() => navigate(id)}>{label}</button>)}
+          {(
+            [
+              ["sources", "1. Import"],
+              ["memories", "2. Learn"],
+              ["conversation", "3. Ask"],
+              ["workflow", "4. Inspect flow"],
+              ["usage", "5. Measure"],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              aria-current={page === id ? "step" : undefined}
+              onClick={() => navigate(id)}
+            >
+              {label}
+            </button>
+          ))}
         </nav>
         <div
           id="feedback"
@@ -141,6 +158,65 @@ function Normal({
 }
 function Private() {
   const [draft, setDraft] = useState("");
+  const [turns, setTurns] = useState<
+    { id: string; question: string; answer?: PrivateAnswer; error?: string }[]
+  >([]);
+  const [busy, setBusy] = useState(false);
+  const controller = useRef<AbortController | undefined>(undefined);
+  useEffect(
+    () => () => {
+      controller.current?.abort();
+    },
+    [],
+  );
+  async function submit() {
+    const question = draft.trim();
+    if (!question || busy) return;
+    const id = crypto.randomUUID();
+    setDraft("");
+    setBusy(true);
+    setTurns((previous) => [...previous.slice(-7), { id, question }]);
+    const request = new AbortController();
+    controller.current = request;
+    try {
+      const response = await fetch("/private/ask", {
+        method: "POST",
+        cache: "no-store",
+        credentials: "omit",
+        redirect: "error",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Jarvis-Mode": "private",
+        },
+        body: JSON.stringify({ question }),
+        signal: AbortSignal.any([request.signal, AbortSignal.timeout(60000)]),
+      });
+      const result = await response.json();
+      if (!response.ok)
+        throw new RequestError(
+          typeof result.reason === "string"
+            ? result.reason
+            : "operation_failed",
+        );
+      setTurns((previous) =>
+        previous.map((turn) =>
+          turn.id === id ? { ...turn, answer: result as PrivateAnswer } : turn,
+        ),
+      );
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === "AbortError"))
+        setTurns((previous) =>
+          previous.map((turn) =>
+            turn.id === id ? { ...turn, error: messageFor(error) } : turn,
+          ),
+        );
+    } finally {
+      if (controller.current === request) {
+        controller.current = undefined;
+        setBusy(false);
+      }
+    }
+  }
   return (
     <div id="private-panel" className="private-page">
       <div className="private-symbol">
@@ -155,29 +231,89 @@ function Private() {
       <p>
         Saved sources and memories are not read in Private mode.
         <br />
-        This temporary scratchpad stays in this page and is cleared when you
-        leave.
+        Ask the configured model directly. Jarvis does not save this text or its
+        reply, and clears both when you leave.
       </p>
-      <label htmlFor="private-draft">Temporary text</label>
-      <Textarea
-        id="private-draft"
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        placeholder="Type or paste something temporary…"
+      {!!turns.length && (
+        <section className="private-turns" aria-live="polite">
+          {turns.map((turn) => (
+            <article key={turn.id}>
+              <p className="private-question">{turn.question}</p>
+              {turn.answer ? (
+                <div className="private-answer">
+                  <p>{turn.answer.text}</p>
+                  <small>
+                    {turn.answer.model} · {turn.answer.elapsed_ms} ms ·{" "}
+                    {turn.answer.input_tokens} in / {turn.answer.output_tokens}{" "}
+                    out
+                  </small>
+                </div>
+              ) : turn.error ? (
+                <p className="error-card" role="alert">
+                  {turn.error}
+                </p>
+              ) : (
+                <p className="meta">Thinking…</p>
+              )}
+            </article>
+          ))}
+        </section>
+      )}
+      <form
+        className="private-composer"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void submit();
+        }}
         autoComplete="off"
-        spellCheck={false}
-        maxLength={65536}
-      />
+      >
+        <label htmlFor="private-draft">Direct question</label>
+        <Textarea
+          id="private-draft"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(event) => {
+            if (
+              event.key === "Enter" &&
+              !event.shiftKey &&
+              !event.nativeEvent.isComposing
+            ) {
+              event.preventDefault();
+              void submit();
+            }
+          }}
+          placeholder="Ask without memory context…"
+          autoComplete="off"
+          spellCheck={false}
+          maxLength={512}
+          disabled={busy}
+          required
+        />
+        <Button type="submit" disabled={busy || !draft.trim()}>
+          Submit
+          <Send />
+        </Button>
+      </form>
       <div className="private-caption">
         <LockKeyhole />
-        <span>No saving. No learning. No model calls.</span>
+        <span>No database context · no source or memory is created</span>
       </div>
-      <Button variant="outline" onClick={() => setDraft("")} disabled={!draft}>
-        Clear temporary text
+      <Button
+        variant="outline"
+        onClick={() => {
+          controller.current?.abort();
+          setDraft("");
+          setTurns([]);
+          setBusy(false);
+        }}
+        disabled={!draft && !turns.length}
+      >
+        Clear private chat
       </Button>
       <p className="meta">
-        Private chat generation is not available in this prototype. There is no
-        backfill when you return to Normal.
+        The current question is sent to the configured hosted provider under its
+        data terms. Private calls are transient and are not included in the
+        saved Usage page. Enter sends; Shift+Enter adds a line.
       </p>
     </div>
   );

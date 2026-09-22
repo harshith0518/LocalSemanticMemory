@@ -219,6 +219,26 @@ def test_live_gate_checks_actual_content_before_queue(memory_service, engine):
         assert session.scalar(select(Job.requested)) is False
 
 
+def test_explicit_demo_source_opt_in_can_queue_unfamiliar_synthetic_content(memory_service, engine):
+    context = memory_service.identity.context("normal")
+    modified = json.loads(FIXTURE.read_text().splitlines()[0])
+    modified["raw_transcript"] += " operator-approved fictional demo text"
+    memory_service.import_observations(
+        context, {"namespace": "demo", "expected_policy_revision": 0}, json.dumps(modified)
+    )
+    memory_service.extractor = NvidiaExtractor(
+        approved=True,
+        key="synthetic-test-key",
+        unfamiliar_sources=True,
+    )
+    receipt = memory_service.request_processing(
+        context, {"namespace": "demo", "expected_policy_revision": 0}
+    )
+    assert receipt == {"status": "queued", "requested": 1}
+    with Session(engine) as session:
+        assert session.scalar(select(Job.requested)) is True
+
+
 def test_api_uses_shared_memory_operations(memory_service):
     context = queue(memory_service, FIXTURE.read_text().splitlines()[0])
     process_one(memory_service, context)

@@ -252,6 +252,15 @@ def create_app(service: Service | None = None) -> FastAPI:
         payload = await current_input(request)
         return await run_in_threadpool(service.ask, context, payload, JSONResponse)
 
+    @app.post("/private/ask")
+    async def private_ask(request: Request):
+        service = app.state.service
+        context = service.identity.context(request.headers.get("X-Jarvis-Mode", ""))
+        # Authorize this narrowly-scoped provider route before receiving its body.
+        service.private_answer_gate(context)
+        payload = await current_input(request)
+        return await run_in_threadpool(service.ask_private, context, payload)
+
     @app.post("/controls/preview")
     async def preview_control(request: Request):
         service = app.state.service

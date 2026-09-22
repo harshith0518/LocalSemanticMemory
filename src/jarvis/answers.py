@@ -22,6 +22,7 @@ from jarvis.errors import ApplicationError, ErrorCode
 from jarvis.imports import Identifier, reject_constant, unique_object
 from jarvis.metrics import measured, stage
 from jarvis.models import FeedbackReceipt, ModelCall, Policy, Source
+from jarvis.policy import Mode
 from jarvis.retrieval import SearchPacket, SearchRequest, evidence_size
 
 ANSWER_VERSION = "s06-s08-v2-excerpts"
@@ -32,6 +33,14 @@ class AskRequest(Contract):
     namespace: Identifier
     question: Annotated[str, Field(strict=True, min_length=1, max_length=512)]
     representation: Literal["history", "sources", "sources_and_memories"] = "sources"
+
+
+class PrivateAskRequest(Contract):
+    question: Annotated[str, Field(strict=True, min_length=1, max_length=512)]
+
+
+class PrivateAnswerProposal(Contract):
+    text: Annotated[str, Field(strict=True, min_length=1, max_length=12000)]
 
 
 class AnswerProposal(Contract):
@@ -152,6 +161,39 @@ def parse_answer(value, packet=None):
 
 
 class AnswerOperations:
+    def private_answer_gate(self, context):
+        """Authorize the one Private operation before its request body is read."""
+        self._authorize(context, saved=False)
+        if context.mode is not Mode.PRIVATE:
+            raise ApplicationError(ErrorCode.PRIVATE_OPERATION)
+        if not self.responder.enabled or not getattr(self.responder, "private_direct", False):
+            raise ApplicationError(ErrorCode.PROVIDER_DISABLED)
+
+    def ask_private(self, context, payload):
+        """One provider call with no database context, writes, retries, or retained transcript."""
+        self.private_answer_gate(context)
+        request = parse_contract(PrivateAskRequest, payload)
+        body = self.responder.prepare_direct(request.question)
+        completion = self.responder.complete(body)
+        try:
+            data = json.loads(
+                completion.content,
+                object_pairs_hook=unique_object,
+                parse_constant=reject_constant,
+            )
+            proposal = parse_contract(PrivateAnswerProposal, data)
+        except (ApplicationError, ValueError, TypeError):
+            raise ApplicationError(ErrorCode.PROVIDER_RESPONSE) from None
+        return {
+            "text": proposal.text,
+            "model": completion.model,
+            "input_tokens": completion.input_tokens,
+            "output_tokens": completion.output_tokens,
+            "elapsed_ms": completion.elapsed_ms,
+            "saved": False,
+            "memory_context": False,
+        }
+
     def _answer_gate(self, context):
         self._authorize(context)
         if not self.responder.enabled:
@@ -197,7 +239,12 @@ class AnswerOperations:
             raise ApplicationError(ErrorCode.CONTEXT_LIMIT)
         for source in evidence.sources:
             self._trial_source(
-                source, live=self.responder.live, unfamiliar=self.responder.unfamiliar_mode
+                source,
+                live=self.responder.live,
+                unfamiliar=(
+                    self.responder.unfamiliar_mode
+                    or getattr(self.responder, "unfamiliar_sources", False)
+                ),
             )
         return AnswerPacket(request=request, evidence=evidence)
 

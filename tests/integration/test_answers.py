@@ -148,6 +148,26 @@ def test_free_question_opt_in_keeps_synthetic_source_gate(answering):
         )
 
 
+def test_explicit_demo_source_opt_in_allows_database_context(answering):
+    service, context = answering
+    service.responder = FreeChatProvider(
+        provider="google",
+        role="responder",
+        model="gemini-3.5-flash-lite",
+        approved=True,
+        key="synthetic-test-key",
+        unfamiliar_questions=True,
+        unfamiliar_sources=True,
+    )
+    with service._session(context, write=True) as session:
+        session.execute(update(Source).values(raw_text="Operator-approved fictional Atlas note"))
+    packet = service.prepare_answer(
+        context,
+        request(question="Who is Atlas?", representation="history"),
+    )
+    assert len(packet.evidence.sources) == 8
+
+
 def test_full_history_overflow_is_explicit(answering, engine):
     service, context = answering
     with engine.begin() as connection:

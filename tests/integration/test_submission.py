@@ -198,8 +198,15 @@ def test_free_provider_consent_and_no_unfamiliar_inheritance(monkeypatch, provid
     configured = NvidiaExtractor.from_env()
     assert configured.enabled and not configured.unfamiliar_mode
     assert not configured.unfamiliar_questions
+    assert not configured.unfamiliar_sources
+    assert not configured.private_direct
     monkeypatch.setenv("JARVIS_FREE_SYNTHETIC_QUESTIONS_APPROVED", "true")
-    assert NvidiaExtractor.from_env().unfamiliar_questions
+    monkeypatch.setenv("JARVIS_FREE_SYNTHETIC_SOURCES_APPROVED", "true")
+    monkeypatch.setenv("JARVIS_PRIVATE_DIRECT_APPROVED", "true")
+    configured = NvidiaExtractor.from_env()
+    assert configured.unfamiliar_questions
+    assert configured.unfamiliar_sources
+    assert configured.private_direct
     monkeypatch.setenv("JARVIS_UNFAMILIAR_INFERENCE_APPROVED", "true")
     monkeypatch.setenv("JARVIS_UNFAMILIAR_DATA_POLICY_ACK", REVIEWER_ACK)
     assert not NvidiaExtractor.from_env().enabled

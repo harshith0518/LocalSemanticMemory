@@ -19,7 +19,11 @@ from jarvis.worker import run_worker
 settings = Settings.from_env()
 settings.require_test_database()  # Fail before any fixture or worker operation.
 engine = make_engine(settings)
-service = Service(engine, extractor=FixtureExtractor(), responder=FixtureResponder())
+service = Service(
+    engine,
+    extractor=FixtureExtractor(),
+    responder=FixtureResponder(private_direct=True),
+)
 stop = Event()
 worker = Thread(target=run_worker, args=(service, stop), daemon=True)
 worker.start()

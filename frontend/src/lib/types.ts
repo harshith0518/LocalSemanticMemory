@@ -1,4 +1,5 @@
-export type Page = "conversation" | "sources" | "memories" | "usage" | "workflow";
+export type Page =
+  "conversation" | "sources" | "memories" | "usage" | "workflow";
 export type Representation = "sources" | "sources_and_memories" | "history";
 export type SourceSummary = {
   id: string;
@@ -75,6 +76,13 @@ export type Processing = {
   decisions: Record<string, number>;
   provider_enabled: boolean;
   failures: { job_id: string; reason: string }[];
+  waiting: {
+    source_id: string;
+    record_id: string;
+    status: string;
+    attempts: number;
+    reason: string | null;
+  }[];
 };
 export type Search = {
   status: "matched" | "no_matches" | "evidence_budget_exceeded";
@@ -90,6 +98,15 @@ export type AnswerRequest = {
   namespace: string;
   question: string;
   representation: Representation;
+};
+export type PrivateAnswer = {
+  text: string;
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  elapsed_ms: number;
+  saved: false;
+  memory_context: false;
 };
 export type Answer = {
   status: "answered" | "draft" | "unknown" | "clarification";

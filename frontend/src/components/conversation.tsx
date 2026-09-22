@@ -25,6 +25,8 @@ type ModelSetup = {
     key_configured: boolean;
     unfamiliar_mode: boolean;
     unfamiliar_questions: boolean;
+    unfamiliar_sources: boolean;
+    private_direct: boolean;
   };
   extractor: {
     model: string;
@@ -32,6 +34,8 @@ type ModelSetup = {
     key_configured: boolean;
     unfamiliar_mode: boolean;
     unfamiliar_questions: boolean;
+    unfamiliar_sources: boolean;
+    private_direct: boolean;
   };
   warning: string;
 };
@@ -69,14 +73,46 @@ function Reply({ turn, workspace }: { turn: Turn; workspace: Workspace }) {
           <p className="reply-text">{answer.text}</p>
           <details className="query-metrics">
             <summary>Query metrics and model calls</summary>
-            <p>{answer.sources.length} evidence sources; {answer.citations.length} citations; {answer.evidence_bytes.toLocaleString()} evidence bytes. Context: {answer.representation}.</p>
-            <p>{turn.timing ? `Browser round trip: ${turn.timing.elapsed_ms.toFixed(1)} ms. ${turn.timing.stages || "Server timing unavailable."}` : "Browser timing unavailable for this response."}</p>
-            <p>Model: {answer.model ?? "No model call"}. {answer.metrics?.calls.length ?? answer.call_ids.length} recorded attempt(s), including validation repairs.</p>
-            {answer.metrics?.calls.map((call) => <article key={call.id} className="call-metric">
-              <code>{call.id}</code><p>{call.status}{call.error_code ? `: ${call.error_code}` : ""}; {call.elapsed_ms ?? "unknown"} ms; input {call.input_tokens ?? "unknown"} / output {call.output_tokens ?? "unknown"} tokens.</p>
-              {(call.input_tokens === null || call.output_tokens === null) && <p>Conservative reservation: {call.reserved_tokens} tokens, not measured usage.</p>}
-            </article>)}
-            <p className="meta">Provider billing is unmeasured. Timings include nested work; do not add them together. Valid citations are not proof of semantic correctness.</p>
+            <p>
+              {answer.sources.length} evidence sources;{" "}
+              {answer.citations.length} citations;{" "}
+              {answer.evidence_bytes.toLocaleString()} evidence bytes. Context:{" "}
+              {answer.representation}.
+            </p>
+            <p>
+              {turn.timing
+                ? `Browser round trip: ${turn.timing.elapsed_ms.toFixed(1)} ms. ${turn.timing.stages || "Server timing unavailable."}`
+                : "Browser timing unavailable for this response."}
+            </p>
+            <p>
+              Model: {answer.model ?? "No model call"}.{" "}
+              {answer.metrics?.calls.length ?? answer.call_ids.length} recorded
+              attempt(s), including validation repairs.
+            </p>
+            {answer.metrics?.calls.map((call) => (
+              <article key={call.id} className="call-metric">
+                <code>{call.id}</code>
+                <p>
+                  {call.status}
+                  {call.error_code ? `: ${call.error_code}` : ""};{" "}
+                  {call.elapsed_ms ?? "unknown"} ms; input{" "}
+                  {call.input_tokens ?? "unknown"} / output{" "}
+                  {call.output_tokens ?? "unknown"} tokens.
+                </p>
+                {(call.input_tokens === null ||
+                  call.output_tokens === null) && (
+                  <p>
+                    Conservative reservation: {call.reserved_tokens} tokens, not
+                    measured usage.
+                  </p>
+                )}
+              </article>
+            ))}
+            <p className="meta">
+              Provider billing is unmeasured. Timings include nested work; do
+              not add them together. Valid citations are not proof of semantic
+              correctness.
+            </p>
           </details>
           <div className="citations">
             {answer.citations.map((passage, index) => (
@@ -205,6 +241,7 @@ export function Conversation({
         return;
       }
       setHelpVisible(false);
+      setQuestion("");
       await w.ask({ namespace: w.namespace, question, representation });
     } else {
       if (!note.trim()) return;
@@ -374,6 +411,17 @@ export function Conversation({
                 ? setQuestion(e.target.value)
                 : changeNote(e.target.value)
             }
+            onKeyDown={(event) => {
+              if (
+                intent === "ask" &&
+                event.key === "Enter" &&
+                !event.shiftKey &&
+                !event.nativeEvent.isComposing
+              ) {
+                event.preventDefault();
+                void submit();
+              }
+            }}
             placeholder={
               intent === "ask"
                 ? "Hey Jarvis, what did we decide about…"
@@ -476,8 +524,8 @@ export function Conversation({
         <p className="composer-footnote">
           Typed or pasted text stands in for a transcript. No microphone needed.
           <br />
-          Questions and replies are not automatically learned. Private stays
-          local.
+          Questions and replies are not automatically learned. Private direct
+          chat does not read or save workspace context.
         </p>
         <details className="setup-card">
           <summary>Model setup and 30 showcase questions</summary>
@@ -526,9 +574,12 @@ export function Conversation({
               <p>
                 {setup.responder.unfamiliar_mode
                   ? "Unfamiliar opt-in is enabled for Normal-mode notes and questions."
-                  : setup.responder.unfamiliar_questions
-                    ? "Flexible questions are enabled over approved synthetic database sources. Unfamiliar sources remain blocked."
-                    : "Synthetic-only mode: use bundled sources and showcase questions. New questions need explicit synthetic-question approval."}
+                  : setup.responder.unfamiliar_questions &&
+                      setup.responder.unfamiliar_sources
+                    ? "Flexible demo questions and locally entered synthetic sources are enabled."
+                    : setup.responder.unfamiliar_questions
+                      ? "Flexible questions are enabled over the checked-in synthetic sources."
+                      : "Synthetic-only mode: use bundled sources and showcase questions. New questions need explicit synthetic-question approval."}
               </p>
               <p>{setup.warning}</p>
             </div>
