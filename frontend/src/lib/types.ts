@@ -158,8 +158,9 @@ export type Turn = {
   learningError?: string;
 };
 export type MessageLearning = {
-  source_id: string;
-  status: "pending" | "running" | "succeeded" | "failed" | "cancelled";
+  source_id: string | null;
+  status:
+    "pending" | "running" | "succeeded" | "failed" | "cancelled" | "not_saved";
   decision:
     "extracted" | "no_memory" | "duplicate" | "needs_clarification" | null;
   revision_ids: string[];

@@ -1,5 +1,7 @@
 # Implementation plan
 
+Current routing refinement: fix request-framing false positives, keep clear public/date questions in the current chat, exclude completed no-memory chat history from Automatic evidence, and show actual model-context counts. Validate against the user's long/short capital questions, personal recall, mixed assertions, persistence, retry and Private regressions. See ARCHITECTURE.md for the conservative routing boundaries and RUN.md for results.
+
 ## Approved walkthrough extension: learn from Normal conversation
 
 The 22 September request authorizes the Normal Ask capture/learning workflow described in ARCHITECTURE.md. Acceptance covers exact/idempotent preservation, new-fact extraction, repeat/no-memory outcomes, scoped updates with history, bounded earlier-user context, visible independent learning/answer failures and metrics, source-specific processing, Private cancellation and no assistant-output ingestion. Keep the existing provider and persisted allowance. Verify with isolated PostgreSQL contracts, browser journeys and separately labelled live synthetic cases; record failures as well as successes. No third-party memory-store dependency or schema replacement is required.

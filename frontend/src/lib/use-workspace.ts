@@ -272,7 +272,7 @@ export function useWorkspace(session: ApiSession) {
   }
   const retryLearning = (turn: Turn) =>
     run("Checking learning for this saved message", async () => {
-      if (!turn.learning) return;
+      if (!turn.learning?.source_id) return;
       const learning = await learnMessage(turn.learning.source_id, true);
       setTurns((previous) =>
         previous.map((item) =>
@@ -286,7 +286,7 @@ export function useWorkspace(session: ApiSession) {
       await loadMemories();
     });
   const ask = (request: AnswerRequest, retry?: Turn) =>
-    run("Saving your message", async () => {
+    run("Checking your message", async () => {
       const ticket = epoch.current;
       const started = performance.now();
       const measured = (outcome: Timing["outcome"]): Timing => ({
@@ -321,23 +321,24 @@ export function useWorkspace(session: ApiSession) {
         );
         setContentVersion((previous) => previous + 1);
         setBusy("Checking your message for new information");
-        try {
-          const learning = await learnMessage(saved.source_id);
-          setTurns((previous) =>
-            previous.map((item) =>
-              item.id === turn.id ? { ...item, learning } : item,
-            ),
-          );
-        } catch (error) {
-          if (isCancelled(error)) throw error;
-          setTurns((previous) =>
-            previous.map((item) =>
-              item.id === turn.id
-                ? { ...item, learningError: messageFor(error) }
-                : item,
-            ),
-          );
-        }
+        if (saved.source_id)
+          try {
+            const learning = await learnMessage(saved.source_id);
+            setTurns((previous) =>
+              previous.map((item) =>
+                item.id === turn.id ? { ...item, learning } : item,
+              ),
+            );
+          } catch (error) {
+            if (isCancelled(error)) throw error;
+            setTurns((previous) =>
+              previous.map((item) =>
+                item.id === turn.id
+                  ? { ...item, learningError: messageFor(error) }
+                  : item,
+              ),
+            );
+          }
         setBusy("Reading evidence and checking the answer");
         const answer = await session.post<Answer>("/ask", request);
         setTurns((previous) =>

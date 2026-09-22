@@ -1,5 +1,9 @@
 # Decisions and hypotheses
 
+## Public questions stay in the current chat — 22 September 2026
+
+The user selected keeping pure general-knowledge questions only in the current chat, superseding the blanket preserve-every-message choice below for clearly routed public/date questions. Contextual and mixed messages retain selective learning; explicit Save a note still saves the entered original. Public routing is conservative: a local lexical match or ambiguous entity question keeps the contextual path. We did not add a claim of universal intent understanding. Existing stored questions are retained, while completed `no_memory` chat sources are excluded from Automatic evidence unless used as claim support. Personal/project questions still review complete small collections for paraphrase recall; public questions with no workspace match send no notes. One-response phrasing such as 'I just want to know the city' is not a durable preference or a reason to deny public knowledge.
+
 ## Automatic conversational memory approved and implemented — 22 September 2026
 
 The user explicitly requested automatically saving Normal Ask messages and selectively remembering new information shared while discussing existing projects. This supersedes the earlier browser-only explicit-note capture choice for Normal Ask. Preserve every submitted original, including repeats and pure questions; create or revise semantic claims only from useful supported user assertions. Do not turn generated answers or general-knowledge responses into autobiographical evidence. Private stays transient and context-free.

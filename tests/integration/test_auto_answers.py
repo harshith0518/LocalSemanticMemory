@@ -154,7 +154,8 @@ def test_first_ever_question_can_use_general_knowledge_without_any_import(engine
     context = service.identity.context("normal")
     result = service.ask(context, request("How many sides does a triangle have?"))
     assert result["status"] == "general" and result["sources"] == []
-    assert result["retrieval"]["eligible_sources"] == 0
+    assert result["retrieval"]["sources_reviewed"] == 0
+    assert result["retrieval"]["strategy"] == "general_question"
     state = snapshot(engine)
     assert not state["sources"] and not state["jobs"] and not state["claim_revisions"]
     assert len(state["model_calls"]) == 1

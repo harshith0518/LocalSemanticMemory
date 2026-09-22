@@ -30,8 +30,10 @@ from jarvis.models import (
     SOURCE_SEARCH_SQL,
     ClaimEvidence,
     ClaimRecord,
+    Job,
     Passage,
     Policy,
+    ProcessingReceipt,
     Source,
 )
 
@@ -50,6 +52,7 @@ class SearchRequest(Contract):
     captured_from: Timestamp | None = None
     captured_to: Timestamp | None = None
     include_undated: Annotated[bool, Field(strict=True)] = True
+    memory_eligible_only: Annotated[bool, Field(strict=True)] = False
 
     @model_validator(mode="after")
     def valid_query(self) -> Self:
@@ -216,6 +219,28 @@ class RetrievalOperations:
             )
             .exists(),
         )
+        if query.memory_eligible_only:
+            no_memory = (
+                select(Job.id)
+                .join(ProcessingReceipt, ProcessingReceipt.job_id == Job.id)
+                .where(
+                    Job.source_id == Source.id,
+                    Job.owner_id == context.owner_id,
+                    ProcessingReceipt.result["decision"].astext == "no_memory",
+                )
+                .exists()
+            )
+            supports_claim = (
+                select(Passage.id)
+                .join(ClaimEvidence, ClaimEvidence.passage_id == Passage.id)
+                .where(Passage.source_id == Source.id, Passage.owner_id == context.owner_id)
+                .exists()
+            )
+            # Keep pending/failed extraction and any antecedent used by a claim.
+            # A completed question-only chat receipt is history, not answer evidence.
+            statement = statement.where(
+                or_(Source.kind != "user_message", ~no_memory, supports_claim)
+            )
         times = []
         if query.captured_from:
             times.append(Source.captured_at >= query.captured_from)

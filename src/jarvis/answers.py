@@ -14,7 +14,9 @@ from sqlalchemy.dialects.postgresql import insert
 
 from jarvis.answer_policy import (
     general_knowledge_allowed,
+    general_question_candidate,
     is_date_question,
+    knowledge_question_text,
     needs_live_information,
     today_in,
 )
@@ -34,7 +36,7 @@ from jarvis.models import FeedbackReceipt, ModelCall, Policy, Source
 from jarvis.policy import Mode
 from jarvis.retrieval import SearchPacket, SearchRequest, evidence_size
 
-ANSWER_VERSION = "walkthrough-auto-context-v1"
+ANSWER_VERSION = "question-routing-v2"
 EVIDENCE_ALLOWANCE = 24000
 
 
@@ -289,7 +291,12 @@ def answer_notice(packet, proposal):
         )
     if proposal.status == "general":
         return (
-            "I did not find this answer in the notes reviewed. This answer uses general model "
+            (
+                "No workspace evidence was sent to the answer model. "
+                if packet.evidence.strategy == "general_question"
+                else "I did not find this answer in the notes reviewed. "
+            )
+            + "This answer uses general model "
             "knowledge, is not verified by live web search, and is not saved as a memory."
         )
     if proposal.status == "unknown" and needs_live_information(packet.request.question):
@@ -306,6 +313,23 @@ def answer_notice(packet, proposal):
 
 
 class AnswerOperations:
+    def _general_question_evidence(self, session, context, request):
+        if request.representation != "auto" or not general_question_candidate(request.question):
+            return None
+        head = re.split(r"[?!;\n]", knowledge_question_text(request.question), maxsplit=1)[0]
+        query = SearchRequest(
+            namespace=request.namespace,
+            query=head,
+            representation="sources_and_memories",
+            memory_eligible_only=True,
+            limit=12,
+            max_bytes=EVIDENCE_ALLOWANCE,
+        )
+        candidate = self._select_search(session, context, query)
+        if not candidate.sources:
+            return candidate.model_copy(update={"strategy": "general_question"})
+        return None
+
     def private_answer_gate(self, context):
         """Authorize the one Private operation before its request body is read."""
         self._authorize(context, saved=False)
@@ -354,6 +378,7 @@ class AnswerOperations:
             history=request.representation != "auto",
             limit=12,
             max_bytes=EVIDENCE_ALLOWANCE,
+            memory_eligible_only=request.representation == "auto",
         )
         if request.representation == "auto" and is_date_question(request.question):
             policy = session.scalar(
@@ -369,7 +394,13 @@ class AnswerOperations:
                 ),
             )
         if request.representation == "auto":
-            evidence = self._select_auto(session, context, query)
+            # Use a local lexical check for potential workspace references before
+            # sending a clear public question without any saved evidence.
+            evidence = self._general_question_evidence(session, context, request)
+            if evidence is not None:
+                evidence = evidence.model_copy(update={"request": query})
+            if evidence is None:
+                evidence = self._select_auto(session, context, query)
         elif request.representation != "history":
             evidence = self._select_search(session, context, query)
         else:
@@ -653,6 +684,10 @@ class AnswerOperations:
                     ErrorCode.PROVIDER_RESPONSE,
                 }:
                     continue
+                if error.code in {ErrorCode.INVALID_INPUT, ErrorCode.INVALID_PASSAGE}:
+                    # The user's request was parsed before inference. A rejected
+                    # model output must not be reported as a malformed user input.
+                    raise ApplicationError(ErrorCode.PROVIDER_RESPONSE) from None
                 raise
             except Exception:
                 self.finish_call(context, call_id, error=ErrorCode.PROVIDER_FAILED)

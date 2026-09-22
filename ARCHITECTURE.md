@@ -1,5 +1,11 @@
 # Proposed memory architecture
 
+## Interview question routing refinement (22 September 2026)
+
+Normal Ask capture now returns `not_saved` with no source ID for a clear public question with no lexical workspace match, or an application-clock date question. The browser skips learning and keeps that turn in memory only. The public-question route performs a local search for possible workspace references but sends zero original notes/memories to the answer model. Mixed assertions, personal questions and ambiguous entity questions retain the contextual capture path below. This conservative lexical/grammar routing is not a general semantic intent classifier.
+
+Automatic evidence excludes user-message sources with a completed `no_memory` receipt unless they support a claim; pending/failed learning and claim antecedents remain available. Existing originals remain inspectable in Sources and explicit source retrieval. Personal/contextual questions still use complete small-collection review for paraphrase recall, bounded to 50 sources, 80 memories and 24,000 serialized evidence bytes; larger collections retain ranked retrieval. Counts now say what was sent to the model, not that each item was correctly understood. Provider output rejected after the repair attempt is reported as a model-response failure, never as malformed user input.
+
 ## Interview conversation learning (22 September 2026)
 
 Normal browser Ask now preserves its user-authored message, learns selectively, then answers. `POST /conversation/messages` validates an immutable message UUID, conversation UUID and existing Ask request; one guarded transaction creates a `user_message` Source plus Job. Exact retries reuse the original. A new turn with repeated words is still a separate source. Assistant answers are not accepted by this capture contract. No schema migration or new dependency is needed.

@@ -1,5 +1,9 @@
 # Minimal evaluation plan for Hey Jarvis
 
+## Interview public-question routing regression
+
+`test_question_routing.py` checks the exact long-capital failure, short capital/planet/definition questions, zero public source/job/claim writes, an actual empty provider evidence payload, retained personal/mixed capture, completed no-memory source filtering, original evidence for unextracted workspace entities, and model-output failures reported as provider errors. The browser journey checks the unsaved receipt, absence of extraction requests and saved source link, empty provider context counts and an empty source list. These deterministic contracts supplement separately recorded live completions; they do not certify the grammar/lexical router for every phrasing or semantic extraction quality.
+
 ## Interview conversational learning regression
 
 `test_conversation.py` uses actual isolated PostgreSQL and explicit model doubles to check immutable message capture/retries, concurrent capture on separate connections, selective learning, repeat retention without extra claims, world-change history, bounded conversation/collection context, source-specific queue work, failure isolation, retry ceilings, ownership, Private rejection before parsing/store access, Forget/exact-repeat exclusion, invalid text and useful schema-repair feedback. Browser cases check visible receipts, repeat/update behavior, source counts, answer retry idempotency, mobile overflow and cancellation during both capture and learning. These contracts are not semantic-quality scores.

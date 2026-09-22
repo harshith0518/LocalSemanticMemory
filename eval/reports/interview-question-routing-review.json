@@ -1,0 +1,98 @@
+{
+  "date": "2026-09-22",
+  "baseline_commit": "2cf39fd985fd263c94d99c4168cb04bdf4b15584",
+  "scope": "Public-question routing, selective capture, automatic evidence eligibility and truthful error/context reporting",
+  "diagnosis": {
+    "running_baseline_short_capital_allowed": true,
+    "running_baseline_long_capital_allowed": false,
+    "cause": "The personal-pronoun filter treated the trailing request framing 'I just want to know' as personal context. General model output then failed answer validation and surfaced as invalid_input.",
+    "historical_failures_retained": "Recent persisted answer calls included invalid_input despite recorded completions and token usage. Raw provider outputs were not retained, so their exact rejected shape cannot be reconstructed.",
+    "previous_context": "Automatic mode really serialized the complete eligible small collection into SOURCES and MEMORIES; the old Reviewed label described supplied context, not independently verified model comprehension. Saved no_memory chat sources inflated that context."
+  },
+  "changes": [
+    "Normalize request framing without erasing personal assertions or possessives.",
+    "Clear public questions with no lexical workspace match return not_saved and skip extraction; date questions also remain in the current chat.",
+    "Public routing checks workspace references locally but sends no workspace evidence to the provider.",
+    "Automatic context excludes completed no_memory chat sources unless they support claims; pending/failed learning and supporting antecedents remain eligible.",
+    "Existing source history is preserved. Personal/contextual and mixed messages retain selective extraction; assistant replies are never ingested.",
+    "The extractor explicitly distinguishes durable personal/project information from public trivia and one-response style requests.",
+    "Context counts say Sent to answer model. Invalid model outputs after repair surface as provider_response_invalid instead of blaming the user input."
+  ],
+  "checks": {
+    "focused_postgresql": {"passed": 75, "seconds": 25.88},
+    "full_postgresql": {"passed": 310, "seconds": 105.17},
+    "isolated_browser_fixture_reset": {"passed": 1, "seconds": 0.75},
+    "chromium": {"passed": 33, "failed": 0, "seconds": 43.1819489},
+    "typescript_production_docker_build": "passed",
+    "ruff_lint_and_format": "passed; 55 Python files in documented scopes",
+    "prettier": "passed",
+    "application_start": "Existing demo API replaced with tested image and healthy; database preserved",
+    "tooling_retries": "An initial read-only audit referenced a nonexistent ModelCall.role field and was corrected to job_id. Initial Ruff cache writes were denied; checks passed with --no-cache. Neither was a runtime application failure."
+  },
+  "live": {
+    "provider_model": "gemini-3.5-flash-lite",
+    "calls": 8,
+    "known_input_plus_output_tokens": 24059,
+    "answer_prompt": "question-routing-v2",
+    "extraction_prompt": "conversation-learning-v3",
+    "cases": [
+      {
+        "question": "what is the capital of USA ? I just want to know the city and in which state it is present",
+        "collection": "my-notes",
+        "capture": "not_saved",
+        "learning_calls": 0,
+        "answer_status": "general",
+        "review": "Answered Washington, D.C.; correctly explained that it is a federal district, not a U.S. state.",
+        "sent_sources": 0,
+        "sent_memories": 0,
+        "evidence_bytes": 0,
+        "browser_roundtrip_ms": 2450.4,
+        "answer_call": {"id": "01802dc7-46fa-44c0-bbe5-25ec43c9b202", "input_tokens": 1052, "output_tokens": 67, "elapsed_ms": 1192}
+      },
+      {
+        "question": "how many planets are there in the solar system ?",
+        "collection": "my-notes",
+        "capture": "not_saved",
+        "learning_calls": 0,
+        "answer_status": "general",
+        "review": "Answered eight and listed the eight planets.",
+        "sent_sources": 0,
+        "sent_memories": 0,
+        "evidence_bytes": 0,
+        "browser_roundtrip_ms": 2349.5,
+        "answer_call": {"id": "c32a6e35-870f-4512-b736-76b781ed3b69", "input_tokens": 1041, "output_tokens": 50, "elapsed_ms": 1165}
+      },
+      {
+        "question": "what is one of my favourite beverage ?",
+        "collection": "my-notes",
+        "capture": "saved",
+        "learning_decision": "no_memory",
+        "learning_call": {"input_tokens": 6348, "output_tokens": 19, "elapsed_ms": 1794},
+        "answer_status": "answered",
+        "review": "Tea, retaining the feeling-good condition and citing the original note.",
+        "sent_sources": 16,
+        "sent_memories": 10,
+        "new_claims": 0,
+        "browser_roundtrip_ms": 6848.0,
+        "answer_call": {"id": "1d11a0ea-d47c-48ea-8685-4c15c9b1ab54", "input_tokens": 5517, "output_tokens": 140, "elapsed_ms": 1403}
+      },
+      {
+        "question": "For the fictional Willow project, I prefer SQLite for the prototype. What database do I prefer for Willow?",
+        "collection": "routing-facts-20260922",
+        "first_learning": {"decision": "extracted", "new_revisions": 1, "call_id": "421cb02e-5646-4808-9b28-66b2dba8481f", "input_tokens": 2809, "output_tokens": 330, "elapsed_ms": 1678},
+        "first_answer": {"status": "answered", "call_id": "04c34af9-68b2-428e-a726-230ab6da34bb", "input_tokens": 1446, "output_tokens": 125, "elapsed_ms": 1339},
+        "repeat_learning": {"decision": "duplicate", "new_revisions": 0, "call_id": "214735ef-94ed-4545-9c3f-507648c436fd", "input_tokens": 3354, "output_tokens": 17, "elapsed_ms": 1126},
+        "repeat_answer": {"status": "answered", "call_id": "216ba7ce-9216-473a-8129-251b40f32e4e", "input_tokens": 1619, "output_tokens": 125, "elapsed_ms": 1504},
+        "stored_memory": {"subject": "user", "predicate": "prefers database for prototype", "value": "SQLite", "scope": "project:Willow", "evidence_status": "reported", "modality": "asserted", "times": "unknown"},
+        "review": "Both cited answers preserved the prototype scope. Two original messages support one active learned memory; the repeat did not add a claim."
+      }
+    ]
+  },
+  "limits": [
+    "Grammar and lexical routing is conservative and not an all-language semantic classifier. Ambiguous/entity/mixed messages can remain on the contextual capture path.",
+    "Personal questions still review a complete small collection for paraphrase recall, rather than claiming every selected note is directly relevant.",
+    "Existing sources were not retroactively deleted; explicit source retrieval and Sources can still inspect older question records.",
+    "Source history and learned memory are separate. Personal questions may be retained as history without any learned claim.",
+    "General answers are model knowledge, not live-web verified facts. These few live checks do not establish universal semantic accuracy."
+  ]
+}

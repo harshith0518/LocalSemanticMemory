@@ -51,7 +51,12 @@ function Reply({ turn, workspace }: { turn: Turn; workspace: Workspace }) {
         <span className="eyebrow">You</span>
         <p>{turn.question}</p>
       </div>
-      {turn.learning && (
+      {turn.learning?.status === "not_saved" && (
+        <p className="message-learning" role="status">
+          General question · Only in this chat · No source or memory saved
+        </p>
+      )}
+      {turn.learning?.source_id && (
         <div className="message-learning" role="status">
           <p>
             <Check size={16} aria-hidden="true" /> Message saved ·{" "}
@@ -78,7 +83,7 @@ function Reply({ turn, workspace }: { turn: Turn; workspace: Workspace }) {
           )}
           <OriginalButton
             disabled={!!workspace.busy}
-            onClick={() => void workspace.inspect(turn.learning!.source_id)}
+            onClick={() => void workspace.inspect(turn.learning!.source_id!)}
           >
             View saved message
           </OriginalButton>
@@ -141,17 +146,19 @@ function Reply({ turn, workspace }: { turn: Turn; workspace: Workspace }) {
           <p className="reply-text">{answer.text}</p>
           {answer.retrieval && answer.status !== "clock" && (
             <p className="meta">
-              Reviewed {answer.retrieval.sources_reviewed}
+              {answer.model ? "Sent to answer model: " : "Selected context: "}
+              {answer.retrieval.sources_reviewed}
               {answer.retrieval.eligible_sources !== null
                 ? ` of ${answer.retrieval.eligible_sources}`
                 : ""}{" "}
-              notes
+              eligible notes
               {" and "}
               {answer.retrieval.memories_reviewed}
               {answer.retrieval.eligible_memories !== null
                 ? ` of ${answer.retrieval.eligible_memories}`
                 : ""}{" "}
-              learned memories.
+              learned memories. These counts describe supplied context, not a
+              guarantee that the model used every item correctly.
               {answer.retrieval.partial ? " Partial collection review." : ""}
               {answer.retrieval.query_expanded
                 ? " Also searched alternative wording."
@@ -451,10 +458,11 @@ export function Conversation({
           <section className="setup-card" role="status">
             <strong>Hello! I help you find the details in your notes.</strong>
             <p>
-              Share a fact or ask a question here. Normal messages are saved,
-              useful new facts are learned, and answers link back to evidence. I
-              can recall supported details and draft text; I do not send
-              messages or perform external actions.
+              Share a fact or ask a question here. Clear general questions stay
+              only in this chat. Personal and project context is saved, useful
+              new facts are learned, and answers link back to evidence. I can
+              recall supported details and draft text; I do not send messages or
+              perform external actions.
             </p>
             <small>
               This help text is built in. Your submitted message and its
@@ -491,7 +499,7 @@ export function Conversation({
             </Tabs>
             <span className="composer-scope">
               {intent === "ask"
-                ? "Saved · checked for new facts"
+                ? "Useful context remembered"
                 : "Saved in Normal mode"}
             </span>
           </div>
@@ -622,18 +630,18 @@ export function Conversation({
         <p className="composer-footnote">
           Typed or pasted text stands in for a transcript. No microphone needed.
           <br />
-          Normal messages are saved automatically. Jarvis learns useful new facts
-          you share, checks repeats and preserves updates. AI replies are not
-          learned as evidence. Private chat does not read or save workspace
-          context.
+          Clear general questions stay only in this chat. Personal and project
+          messages are saved; Jarvis learns useful facts, checks repeats and
+          preserves updates. AI replies are not learned as evidence. Private
+          chat does not read or save workspace context.
         </p>
         <details className="setup-card">
           <summary>Model setup and 30 showcase questions</summary>
           <p>
             Start in Sources: import the sample or the 540-note fictional
             corpus. In Memory, choose Process sources, then return here. A
-            Normal Ask message is also saved and checked for useful new
-            information.
+            Normal Ask message with personal or project context is also saved
+            and checked for useful new information.
           </p>
           <div className="setup-actions">
             <Button

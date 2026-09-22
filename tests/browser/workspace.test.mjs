@@ -1075,6 +1075,40 @@ test("workflow diagram is navigable and Private clears its loaded evidence", asy
   assert.equal(await page.locator(".evidence-json").count(), 0);
 });
 
+test("general questions stay in the chat without source capture or learning calls", async (t) => {
+  const page = await pageFor(t);
+  const namespace = `public-${randomUUID()}`;
+  await page.getByLabel("Collection name", { exact: true }).fill(namespace);
+  const requests = [];
+  page.on("request", (request) =>
+    requests.push(new URL(request.url()).pathname),
+  );
+  await page
+    .getByLabel("Ask a question")
+    .fill(
+      "what is the capital of USA ? I just want to know the city and in which state it is present",
+    );
+  await button(page, "Ask").click();
+  await idle(page);
+  assert.match(
+    await page.locator(".message-learning").innerText(),
+    /Only in this chat/,
+  );
+  assert.equal(
+    await page.getByText("View saved message", { exact: true }).count(),
+    0,
+  );
+  assert.equal(requests.filter((path) => path.endsWith("/learn")).length, 0);
+  assert.match(
+    await page.locator(".reply").innerText(),
+    /Sent to answer model: 0 eligible notes and 0 learned memories/,
+  );
+  const data = await fetch(`${origin}/sources?namespace=${namespace}`, {
+    headers: { "X-Jarvis-Mode": "normal" },
+  }).then((response) => response.json());
+  assert.equal(data.observations.length, 0);
+});
+
 test("query exposes evidence selection and actual model-call metrics", async (t) => {
   const page = await pageFor(t);
   await importFile(page, `metrics-${randomUUID()}`);

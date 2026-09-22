@@ -22,7 +22,7 @@ from jarvis.errors import ApplicationError, ErrorCode
 from jarvis.imports import Identifier as Namespace
 from jarvis.imports import reject_constant, unique_object
 
-PROMPT_VERSION = "conversation-learning-v2"
+PROMPT_VERSION = "conversation-learning-v3"
 MAX_OPERATIONS = 16
 MAX_CONTEXT_CLAIMS = 64
 MAX_ATTEMPTS = 3
@@ -187,6 +187,11 @@ Use decision no_memory for no useful claim, duplicate for no new information/evi
 needs_clarification if no interpretation is supportable. Do not invent a clarification answer.
 For a user_message, preserve useful new assertions even when mixed with a question. Do not
 memorize greetings, a question's assumed answer, requests for knowledge, or guesses as facts.
+Learn durable user-specific preferences, relationships, commitments, constraints, and concrete
+project facts/changes. Do not turn public trivia, generic definitions, or a one-response style
+request (such as 'just tell me the city') into a personal preference. A momentary feeling alone
+is not a durable preference. A mixed message can contain both a useful assertion and a question;
+learn only the assertion and preserve its original scope, conditions, and uncertainty.
 RECENT_USER_MESSAGES are chronological earlier user-authored context, not new observations.
 Use them only to resolve an unambiguous reference such as 'that project'; quote both the new
 assertion and its antecedent when needed. If multiple projects fit, choose needs_clarification.
