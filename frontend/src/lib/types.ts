@@ -100,6 +100,7 @@ export type AnswerRequest = {
   question: string;
   representation: Representation;
   timezone?: string;
+  assessment_id?: string;
 };
 export type PrivateAnswer = {
   text: string;
@@ -112,7 +113,15 @@ export type PrivateAnswer = {
 };
 export type Answer = {
   status:
-    "answered" | "draft" | "unknown" | "clarification" | "general" | "clock";
+    | "answered"
+    | "draft"
+    | "unknown"
+    | "clarification"
+    | "general"
+    | "clock"
+    | "mixed";
+  general_text?: string | null;
+  assessment?: TurnAssessment;
   basis?: string;
   notice?: string | null;
   retrieval?: {
@@ -156,8 +165,43 @@ export type Turn = {
   conversation_id?: string;
   learning?: MessageLearning;
   learningError?: string;
+  answerCalls?: ModelMetric[];
+};
+export type ModelMetric = {
+  id: string;
+  model?: string;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  reserved_tokens?: number;
+  elapsed_ms: number | null;
+  status: string;
+  error_code: string | null;
+};
+export type TurnAssessment = {
+  assessment_id: string;
+  status: "ready" | "running" | "failed";
+  decision: {
+    retention: "skip" | "candidate";
+    route:
+      "general" | "contextual" | "mixed" | "live" | "clock" | "clarification";
+    reason:
+      | "general_request"
+      | "personal_question"
+      | "useful_assertion"
+      | "hypothetical"
+      | "one_off"
+      | "small_talk"
+      | "ambiguous"
+      | "current_information"
+      | "clock";
+    memory_excerpts: string[];
+  } | null;
+  calls: ModelMetric[];
+  error_code: string | null;
 };
 export type MessageLearning = {
+  assessment_id?: string;
+  assessment?: TurnAssessment;
   source_id: string | null;
   status:
     "pending" | "running" | "succeeded" | "failed" | "cancelled" | "not_saved";
@@ -236,6 +280,7 @@ export type FeedbackResult = {
   request?: AnswerRequest;
 };
 export type Timing = {
+  requests?: { phase: string; stages: string }[];
   elapsed_ms: number;
   stages: string;
   outcome: "completed" | "failed";

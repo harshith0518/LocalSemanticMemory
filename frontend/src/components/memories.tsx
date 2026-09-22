@@ -25,6 +25,7 @@ import {
   memoryLabel,
   OriginalButton,
   Qualifiers,
+  sourceLabel,
 } from "./common";
 import type {
   Claim,
@@ -307,7 +308,7 @@ function Control({
               <summary>Review affected notes</summary>
               {preview.sources.map((source) => (
                 <div key={source.id}>
-                  <h4>{source.source_key.split(":").at(-1)}</h4>
+                  <h4>{sourceLabel(source)}</h4>
                   <p className="passage">{source.raw_text}</p>
                 </div>
               ))}
@@ -567,7 +568,7 @@ export function Memories({ workspace: w }: { workspace: Workspace }) {
                   </summary>
                   <blockquote>{passage.exact_text}</blockquote>
                   <p className="meta">
-                    Source {passage.source_id} · characters [{passage.start},{" "}
+                    Supporting original · characters [{passage.start},{" "}
                     {passage.end})
                   </p>
                   <OriginalButton

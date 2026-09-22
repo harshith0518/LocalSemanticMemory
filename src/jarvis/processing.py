@@ -174,8 +174,23 @@ class ProcessingOperations:
         if latest != job.expected_source_revision or source.revision != latest:
             raise ApplicationError(ErrorCode.STALE_REVISION)
         previous = []
+        memory_excerpts = None
         if source.kind == "user_message":
             metadata = source.capture_metadata or {}
+            if metadata.get("origin") == "ask_jarvis" and metadata.get("assessment_id"):
+                selected = metadata.get("memory_excerpts")
+                if (
+                    not isinstance(selected, list)
+                    or not 1 <= len(selected) <= 4
+                    or any(
+                        not isinstance(excerpt, str)
+                        or not excerpt
+                        or source.raw_text.count(excerpt) != 1
+                        for excerpt in selected
+                    )
+                ):
+                    raise ApplicationError(ErrorCode.INVALID_PASSAGE)
+                memory_excerpts = tuple(selected)
             previous = session.scalars(
                 self._namespace_sources(context, namespace)
                 .where(
@@ -252,6 +267,7 @@ class ProcessingOperations:
             context_claim_count=count,
             context_bounded=count > len(claims),
             previous_user_source_ids=tuple(s.id for s in previous),
+            memory_excerpts=memory_excerpts,
         )
         # Remove whole lowest-ranked memory/support groups, never truncate a passage,
         # a qualifier, the current observation or one of its paired variants.
@@ -380,6 +396,24 @@ class ProcessingOperations:
                 raise ApplicationError(ErrorCode.INVALID_PASSAGE)
             if any(p.source_id not in source_ids for p in operation.passages):
                 raise ApplicationError(ErrorCode.REFERENCE_UNAVAILABLE)
+            if packet.memory_excerpts is not None:
+                selected_ranges = [
+                    (
+                        packet.source.raw_text.index(excerpt),
+                        packet.source.raw_text.index(excerpt) + len(excerpt),
+                    )
+                    for excerpt in packet.memory_excerpts
+                ]
+                if any(
+                    passage.variant != "raw"
+                    or not any(
+                        start <= passage.start and passage.end <= end
+                        for start, end in selected_ranges
+                    )
+                    for passage in operation.passages
+                    if passage.source_id == packet.source.id
+                ):
+                    raise ApplicationError(ErrorCode.INVALID_PASSAGE)
             target = targets.get(operation.target_revision_id)
             if operation.target_revision_id and target is None:
                 raise ApplicationError(ErrorCode.STALE_REVISION)

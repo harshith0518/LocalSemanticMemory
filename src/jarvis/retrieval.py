@@ -37,9 +37,18 @@ from jarvis.models import (
     Source,
 )
 
-SEARCH_VERSION = "s14-lexical-specificity-v3"
+SEARCH_VERSION = "s15-memory-first-v1"
 CANDIDATES = 100
 MAX_RANKED_SOURCES = 10000
+
+# Automatic answers have a much narrower purpose than an explicit Search or History
+# view.  They need enough complete evidence to answer one question, not a dump of a
+# small workspace.  These are candidate/read caps; `max_bytes` remains the final
+# immutable-record budget.
+AUTO_MATCH_LIMIT = 12
+AUTO_MEMORY_CANDIDATES = 24
+AUTO_SOURCE_CANDIDATES = 48
+AUTO_MEMORY_FALLBACK_SCAN = 96
 
 
 class SearchRequest(Contract):
@@ -116,93 +125,359 @@ def fuse_rankings(*rankings):
 
 class RetrievalOperations:
     def _select_auto(self, session, context, query):
-        """Read a complete small collection, otherwise disclose bounded retrieval."""
+        """Select bounded, memory-first evidence for an automatic answer.
+
+        A normal question should not turn a small source collection into a prompt.
+        Current learned claims are the primary recall index; complete originals are
+        attached only for each selected claim's provenance, qualifiers and conflicts.
+        An explicit inventory remains the deliberate exception.
+        """
         policy = session.scalar(
             select(Policy).where(Policy.owner_id == context.owner_id).with_for_update()
         )
         eligible = self._search_sources(context, query)
-        source_count = session.scalar(select(func.count()).select_from(eligible.subquery()))
+        source_count = int(
+            session.scalar(select(func.count()).select_from(eligible.subquery())) or 0
+        )
         current_query = query.model_copy(update={"history": False})
         claims = self._search_claims(context, current_query, eligible)
-        memory_count = session.scalar(select(func.count()).select_from(claims.subquery()))
-        # Do not load arbitrarily large raw records while deciding whether everything fits.
-        raw_bytes = session.scalar(
-            select(
-                func.coalesce(
-                    func.sum(
-                        func.octet_length(Source.raw_text)
-                        + func.octet_length(func.coalesce(Source.formatted_text, ""))
-                    ),
-                    0,
-                )
-            ).where(Source.id.in_(eligible))
-        )
-        complete_candidate = (
-            source_count <= 50 and memory_count <= 80 and raw_bytes <= query.max_bytes
-        )
-        overview = is_inventory_question(query.query)
-        if complete_candidate or overview:
-            rows = session.scalars(
-                select(Source)
-                .where(Source.id.in_(eligible))
-                .order_by(Source.source_key, Source.id)
-                .limit(50)
-            ).all()
-            sources = []
-            for row in rows:
-                source = self._source_contract(row)
-                if evidence_size((*sources, source), ()) > query.max_bytes:
-                    break
-                sources.append(source)
-            selected_ids = {s.id for s in sources}
-            memories = []
-            for row in session.scalars(
-                claims.order_by(ClaimRecord.claim_id, ClaimRecord.revision).limit(80)
+        memory_count = int(session.scalar(select(func.count()).select_from(claims.subquery())) or 0)
+        if is_inventory_question(query.query):
+            return self._select_auto_inventory(
+                session,
+                context,
+                query,
+                policy,
+                eligible,
+                claims,
+                source_count,
+                memory_count,
+            )
+
+        # First retrieve normalized memories.  A fact's supporting originals travel
+        # as one group, so a condition, revision or conflicting source is never
+        # separated from the memory it validates.
+        tsquery = self._search_query(session, query.query)
+        memory_rows = session.scalars(
+            claims.where(
+                literal_column(f"({CLAIM_SEARCH_SQL})", type_=TSVECTOR()).op("@@")(tsquery)
+            )
+            .order_by(
+                func.ts_rank_cd(
+                    literal_column(f"({CLAIM_SEARCH_SQL})", type_=TSVECTOR()), tsquery, 32
+                ).desc(),
+                ClaimRecord.claim_id,
+                ClaimRecord.revision,
+            )
+            .limit(AUTO_MEMORY_CANDIDATES)
+        ).all()
+        memory_candidates = [
+            self._auto_claim_contract(session, context, policy, row) for row in memory_rows
+        ]
+        source_candidates = self._auto_lexical_source_ids(session, eligible, query, tsquery)
+
+        selected_sources = {}
+        selected_memories = {}
+        matches = []
+        budget_limited = False
+        match_limit = min(query.limit, AUTO_MATCH_LIMIT)
+
+        for memory in memory_candidates:
+            if len(matches) >= match_limit:
+                break
+            if not self._auto_add_memory(
+                session,
+                context,
+                eligible,
+                query,
+                selected_sources,
+                selected_memories,
+                matches,
+                memory,
             ):
-                claim = self._claim_contract(session, context, row)
-                if any(p.source_id not in selected_ids for p in claim.passages):
-                    continue
-                self._support(
-                    session,
-                    context,
-                    ClaimWrite(
-                        expected_policy_revision=policy.revision,
-                        content=claim.content,
-                        passages=claim.passages,
-                    ),
-                )
-                if evidence_size(sources, (*memories, claim)) > query.max_bytes:
+                budget_limited = True
+                break
+
+        # A lexical original can still contain a useful, unextracted detail.  It is
+        # deliberately secondary to memory matches and is never used to bulk-fill a
+        # small collection.
+        if not budget_limited:
+            for source_id in source_candidates:
+                if len(matches) >= match_limit:
                     break
-                memories.append(claim)
-            complete = len(sources) == source_count and len(memories) == memory_count
-            if complete or overview:
-                packet = self._attach_controls(
+                if source_id in selected_sources:
+                    continue
+                if not self._auto_add_source(
                     session,
                     context,
-                    SearchPacket(
-                        request=query,
-                        policy_revision=policy.revision if policy else None,
-                        status="matched" if sources else "no_matches",
-                        sources=tuple(sources),
-                        memories=tuple(memories),
-                        evidence_bytes=evidence_size(sources, memories),
-                        has_more=not complete,
-                        strategy="complete_collection" if complete else "collection_overview",
-                        eligible_sources=source_count,
-                        eligible_memories=memory_count,
-                    ),
-                )
-                return packet
-        packet = self._select_search(session, context, query)
-        return packet.model_copy(
-            update={
-                "strategy": "ranked_sources_and_memories",
-                "eligible_sources": source_count,
-                "eligible_memories": memory_count,
-                "has_more": len(packet.sources) < source_count
-                or len(packet.memories) < memory_count,
-            }
+                    eligible,
+                    query,
+                    selected_sources,
+                    selected_memories,
+                    matches,
+                    source_id,
+                ):
+                    budget_limited = True
+                    break
+
+        used_diversity_fallback = False
+        if not selected_sources and not selected_memories and not budget_limited and memory_count:
+            # A paraphrase may have no shared lexeme with a normalized memory. This
+            # is a bounded, diversity-first recall fallback, not a vector-similarity
+            # result: it supplies compact learned claims and their provenance, never
+            # every original note. If it cannot cover all memories, the caller gets
+            # an explicit partial flag and may request one rewrite.
+            fallback_rows = self._auto_diverse_fallback_rows(session, claims)
+            used_diversity_fallback = bool(fallback_rows)
+            for row in fallback_rows:
+                if len(matches) >= match_limit:
+                    break
+                memory = self._auto_claim_contract(session, context, policy, row)
+                if not self._auto_add_memory(
+                    session,
+                    context,
+                    eligible,
+                    query,
+                    selected_sources,
+                    selected_memories,
+                    matches,
+                    memory,
+                ):
+                    budget_limited = True
+                    break
+
+        has_more = len(selected_sources) < source_count or len(selected_memories) < memory_count
+        if budget_limited:
+            status = "evidence_budget_exceeded"
+        elif selected_sources or selected_memories:
+            status = "matched"
+        else:
+            status = "no_matches"
+        # `ranked_sources_and_memories` is also the existing signal for one bounded
+        # query-rewrite attempt.  Use it only when no direct hit was found or the
+        # diversity fallback could not cover the semantic memory set; do not spend
+        # an extra model call merely because unrelated sources exist.
+        if used_diversity_fallback:
+            strategy = (
+                "memory_diversity_fallback"
+                if len(selected_memories) == memory_count
+                else "ranked_sources_and_memories"
+            )
+        elif memory_candidates or source_candidates:
+            strategy = "memory_first_ranked"
+        else:
+            strategy = "ranked_sources_and_memories"
+        return self._attach_controls(
+            session,
+            context,
+            SearchPacket(
+                request=query,
+                policy_revision=policy.revision if policy else None,
+                status=status,
+                sources=tuple(selected_sources.values()),
+                memories=tuple(selected_memories.values()),
+                matches=tuple(matches),
+                evidence_bytes=evidence_size(selected_sources.values(), selected_memories.values()),
+                has_more=has_more,
+                budget_limited=budget_limited,
+                strategy=strategy,
+                eligible_sources=source_count,
+                eligible_memories=memory_count,
+            ),
         )
+
+    def _select_auto_inventory(
+        self, session, context, query, policy, eligible, claims, source_count, memory_count
+    ):
+        """An inventory is the explicit, bounded exception to normal auto retrieval."""
+        rows = session.scalars(
+            select(Source)
+            .where(Source.id.in_(eligible))
+            .order_by(Source.source_key, Source.id)
+            .limit(50)
+        ).all()
+        sources = []
+        for row in rows:
+            source = self._source_contract(row)
+            if evidence_size((*sources, source), ()) > query.max_bytes:
+                break
+            sources.append(source)
+        selected_ids = {source.id for source in sources}
+        memories = []
+        for row in session.scalars(
+            claims.order_by(ClaimRecord.claim_id, ClaimRecord.revision).limit(80)
+        ):
+            claim = self._auto_claim_contract(session, context, policy, row)
+            if any(passage.source_id not in selected_ids for passage in claim.passages):
+                continue
+            if evidence_size(sources, (*memories, claim)) > query.max_bytes:
+                break
+            memories.append(claim)
+        complete = len(sources) == source_count and len(memories) == memory_count
+        return self._attach_controls(
+            session,
+            context,
+            SearchPacket(
+                request=query,
+                policy_revision=policy.revision if policy else None,
+                status="matched" if sources else "no_matches",
+                sources=tuple(sources),
+                memories=tuple(memories),
+                evidence_bytes=evidence_size(sources, memories),
+                has_more=not complete,
+                strategy="complete_collection" if complete else "collection_overview",
+                eligible_sources=source_count,
+                eligible_memories=memory_count,
+            ),
+        )
+
+    def _auto_claim_contract(self, session, context, policy, row):
+        claim = self._claim_contract(session, context, row)
+        self._support(
+            session,
+            context,
+            ClaimWrite(
+                expected_policy_revision=policy.revision,
+                content=claim.content,
+                passages=claim.passages,
+            ),
+        )
+        return claim
+
+    @staticmethod
+    def _auto_diverse_fallback_rows(session, claims):
+        """Round-robin structured facets instead of taking the latest N claims."""
+        rows = session.scalars(
+            claims.order_by(
+                ClaimRecord.recorded_at.desc(), ClaimRecord.claim_id, ClaimRecord.revision
+            ).limit(AUTO_MEMORY_FALLBACK_SCAN)
+        ).all()
+        buckets = defaultdict(list)
+        for row in rows:
+            content = row.content
+            scope = content.get("scope", {}) if isinstance(content, dict) else {}
+            subject = content.get("subject", {}) if isinstance(content, dict) else {}
+            buckets[
+                (
+                    str(scope.get("kind", "")),
+                    str(scope.get("key", "")),
+                    str(subject.get("label", "")),
+                    str(content.get("predicate", "")) if isinstance(content, dict) else "",
+                )
+            ].append(row)
+        result = []
+        while buckets and len(result) < AUTO_MATCH_LIMIT:
+            for key in sorted(tuple(buckets)):
+                result.append(buckets[key].pop(0))
+                if not buckets[key]:
+                    del buckets[key]
+                if len(result) == AUTO_MATCH_LIMIT:
+                    break
+        return result
+
+    def _auto_lexical_source_ids(self, session, eligible, query, tsquery):
+        vector = literal_column(f"({SOURCE_SEARCH_SQL})", type_=TSVECTOR())
+
+        def variant_score(column):
+            value = func.coalesce(column, "")
+            parsed = func.to_tsvector(literal_column("'english'::regconfig"), value).op("||")(
+                func.to_tsvector(literal_column("'simple'::regconfig"), value)
+            )
+            return func.ts_rank_cd(parsed, tsquery, 32)
+
+        rank = func.greatest(variant_score(Source.raw_text), variant_score(Source.formatted_text))
+        rows = session.execute(
+            select(
+                Source.id,
+                Source.source_key,
+                func.tsvector_to_array(vector).label("lexemes"),
+                rank.label("score"),
+            )
+            .where(Source.id.in_(eligible), vector.op("@@")(tsquery))
+            .limit(MAX_RANKED_SOURCES + 1)
+        ).all()
+        if len(rows) > MAX_RANKED_SOURCES:
+            raise ApplicationError(ErrorCode.CONTEXT_LIMIT)
+        terms = set(self._search_terms(session, query.query))
+        matching = {row.id: terms.intersection(row.lexemes) for row in rows}
+        frequency = Counter(term for terms in matching.values() for term in terms)
+        specificity = {
+            source_id: sum(1 / frequency[term] for term in terms)
+            for source_id, terms in matching.items()
+        }
+        return [
+            row.id
+            for row in sorted(
+                rows,
+                key=lambda row: (-specificity[row.id], -row.score, row.source_key, str(row.id)),
+            )[:AUTO_SOURCE_CANDIDATES]
+        ]
+
+    def _auto_add_memory(
+        self,
+        session,
+        context,
+        eligible,
+        query,
+        selected_sources,
+        selected_memories,
+        matches,
+        memory,
+    ):
+        support_ids = {passage.source_id for passage in memory.passages}
+        rows = session.scalars(
+            select(Source)
+            .where(
+                Source.owner_id == context.owner_id,
+                Source.id.in_(support_ids),
+                Source.id.in_(eligible),
+            )
+            .order_by(Source.source_key, Source.id)
+        ).all()
+        if {row.id for row in rows} != support_ids:
+            raise ApplicationError(ErrorCode.REFERENCE_UNAVAILABLE)
+        next_sources = {**selected_sources, **{row.id: self._source_contract(row) for row in rows}}
+        next_memories = {**selected_memories, memory.id: memory}
+        if evidence_size(next_sources.values(), next_memories.values()) > query.max_bytes:
+            return False
+        selected_sources.update(next_sources)
+        selected_memories.update(next_memories)
+        matches.append(
+            SearchMatch(
+                source_id=memory.passages[0].source_id,
+                rank=len(matches) + 1,
+                via=("memory",),
+            )
+        )
+        return True
+
+    def _auto_add_source(
+        self,
+        session,
+        context,
+        eligible,
+        query,
+        selected_sources,
+        selected_memories,
+        matches,
+        source_id,
+    ):
+        row = session.scalar(
+            select(Source).where(
+                Source.owner_id == context.owner_id,
+                Source.id == source_id,
+                Source.id.in_(eligible),
+            )
+        )
+        if row is None:
+            raise ApplicationError(ErrorCode.REFERENCE_UNAVAILABLE)
+        source = self._source_contract(row)
+        next_sources = {**selected_sources, source.id: source}
+        if evidence_size(next_sources.values(), selected_memories.values()) > query.max_bytes:
+            return False
+        selected_sources.update(next_sources)
+        matches.append(SearchMatch(source_id=source.id, rank=len(matches) + 1, via=("source",)))
+        return True
 
     def _search_sources(self, context, query):
         newer = aliased(Source)

@@ -5,21 +5,13 @@ import re
 from functools import cache
 from pathlib import Path
 from typing import Annotated, Literal
-from uuid import UUID
+from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import Field, model_validator
 from sqlalchemy import select
-from sqlalchemy.dialects.postgresql import insert
 
-from jarvis.answer_policy import (
-    general_knowledge_allowed,
-    general_question_candidate,
-    is_date_question,
-    knowledge_question_text,
-    needs_live_information,
-    today_in,
-)
+from jarvis.answer_policy import today_in
 from jarvis.contracts import (
     Contract,
     SupportingPassage,
@@ -28,16 +20,19 @@ from jarvis.contracts import (
     parse_contract,
     resolve_excerpt,
 )
-from jarvis.controls import digest
 from jarvis.errors import ApplicationError, ErrorCode
 from jarvis.imports import Identifier, reject_constant, unique_object
 from jarvis.metrics import measured, stage
 from jarvis.models import FeedbackReceipt, ModelCall, Policy, Source
 from jarvis.policy import Mode
 from jarvis.retrieval import SearchPacket, SearchRequest, evidence_size
+from jarvis.turn_assessment import TurnDecision, assessment_hash
 
-ANSWER_VERSION = "question-routing-v2"
+ANSWER_VERSION = "semantic-turn-routing-v3"
 EVIDENCE_ALLOWANCE = 24000
+INTERNAL_UUID = re.compile(
+    r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b", re.I
+)
 
 
 class AskRequest(Contract):
@@ -45,6 +40,7 @@ class AskRequest(Contract):
     question: Annotated[str, Field(strict=True, min_length=1, max_length=512)]
     representation: Literal["auto", "history", "sources", "sources_and_memories"] = "sources"
     timezone: Annotated[str, Field(strict=True, max_length=80)] = "UTC"
+    assessment_id: UUID | None = None
 
     @model_validator(mode="after")
     def valid_timezone(self):
@@ -64,16 +60,19 @@ class PrivateAnswerProposal(Contract):
 
 
 class AnswerProposal(Contract):
-    status: Literal["answered", "draft", "unknown", "clarification", "general", "clock"]
+    status: Literal["answered", "draft", "unknown", "clarification", "general", "clock", "mixed"]
     text: Text
+    general_text: Annotated[str, Field(strict=True, min_length=1, max_length=12000)] | None = None
     citations: Annotated[tuple[SupportingPassage, ...], Field(max_length=24)] = ()
 
     @model_validator(mode="after")
     def evidence_required(self):
-        if self.status in {"answered", "draft"} and not self.citations:
+        if self.status in {"answered", "draft", "mixed"} and not self.citations:
             raise ValueError("A factual answer or draft requires evidence")
         if self.status in {"general", "clock"} and self.citations:
             raise ValueError("A general or clock answer must not borrow a source citation")
+        if (self.status == "mixed") != (self.general_text is not None):
+            raise ValueError("Only mixed replies need a separate general explanation")
         if len(self.text) > 12000:
             raise ValueError("Reply exceeds the bounded UI allowance")
         return self
@@ -84,6 +83,7 @@ class AnswerPacket(Contract):
     evidence: SearchPacket
     retrieval_query: str | None = None
     phase: Literal["answer", "retrieval"] = "answer"
+    assessment: TurnDecision | None = None
 
 
 class RetrievalPlan(Contract):
@@ -109,21 +109,7 @@ def trial_questions():
 
 
 def general_allowed(packet):
-    if not general_knowledge_allowed(packet.request.question):
-        return False
-    question_words = set(re.findall(r"\w+", packet.request.question.casefold()))
-    # Do not substitute a famous public namesake for a person/project in this workspace.
-    labels = [
-        label
-        for m in packet.evidence.memories
-        for label in (
-            m.content.subject.label,
-            m.content.scope.key,
-        )
-        if label and label.casefold() != "user"
-    ]
-    names = {word.casefold() for label in labels for word in re.findall(r"\w{3,}", label)}
-    return not question_words.intersection(names)
+    return packet.assessment is not None and packet.assessment.route in {"general", "mixed"}
 
 
 def answer_messages(packet, *, repair=False):
@@ -189,6 +175,9 @@ memory learning from a saved message alone; the separate learning receipt report
 Return JSON matching OUTPUT_SCHEMA. Cite exact original passages using supplied IDs/revisions,
 raw/formatted variant and an EXACT UNIQUE excerpt. Do not calculate or return offsets: code
 resolves the excerpt after exact matching. Never invent a source or repair its wording.
+Never put source IDs, source keys, revision IDs, UUIDs, bracketed reference tokens or character
+offsets into text or general_text. The citations field is the only evidence reference; the UI
+renders it with a human-readable original title.
 Original paired variants are one observation. Surface conflicting amounts; do not choose one.
 Preserve subject, scope, attribution, condition, uncertainty, negation, units and unknown times.
 Missing capture metadata stays unknown; an event date is not its capture date. A recorded plan
@@ -213,22 +202,40 @@ conditions, including facts that use different words from the question. For an i
 summarize recorded facts/projects with citations. Mentioning a project does not establish that
 the user worked on it or completed it. Preserve conditions (wanting tea when happy does not
 establish an unconditional favorite). Originals can correct an over-broad extracted memory.
+Distinguish a habit from a preference or favorite. Merely drinking something often, on waking,
+or in a particular mood does not establish a favorite. If asked for a favorite with only habit
+evidence, state the recorded habit and explicitly say a favorite was not established.
 If raw and formatted variants disagree on an amount, say the amount is UNRESOLVED and give
 BOTH values with equal standing. Never lead with 'the amount is X' and tuck Y into a note.
 This rule applies inside inventories too, even if an extracted memory picked one value.
 RETRIEVAL describes coverage. A partial view cannot establish that the whole database lacks a
 fact. When support is missing, say 'I could not find that in the notes reviewed' and suggest a
 targeted question or collection; never invent the user's identity, preferences, projects or history.
-Only if GENERAL_KNOWLEDGE_ALLOWED is true AND the question asks about stable public knowledge,
-you may answer from model knowledge using status general and NO citations. This is a fallback
-when the records do not answer; never use general for personal/workspace facts, private entities,
-time-sensitive facts or advice requiring current verification. Do not claim web search occurred.
+TURN_DECISION separates retention from the answer route; follow that route. The mere words
+'I', 'me', 'US', 'project' or 'manager' do not make an ordinary public question personal.
+For route general use status general and NO citations: answer stable public knowledge, ordinary
+explanations, creative requests, greetings or help with the current input. You may acknowledge
+what the user explicitly says NOW without inventing saved facts or claiming successful learning.
+A candidate fact can be learned separately while the answer itself is general.
+For route contextual use evidence to answer personal/workspace questions. Missing personal
+evidence requires unknown/clarification, never a guess or a famous public namesake.
+For route mixed, put ONLY supported workspace facts in text with their citations and put the
+separate public explanation in general_text, using status mixed. If the personal part lacks
+support, use unknown/clarification and explain the missing context without inventing it.
+Only mixed replies have general_text; otherwise omit it or return null. Never use general or
+general_text for invented personal/workspace facts or advice requiring current verification.
+Do not claim web search occurred.
 For current news/weather/prices/office holders, say live verification is unavailable and do not
 guess. The app clock supplies only the current calendar date, not knowledge of current events.
 Never emit status clock; the application owns that result. A general answer is not learned.
 """
     if repair:
-        instruction += "\nPrevious output failed validation; recheck schema and exact citations."
+        instruction += (
+            "\nPrevious output failed application validation. Recheck TURN_DECISION, status, "
+            "exact citation excerpts and required fields. General replies have no citations; "
+            "mixed replies require grounded text, citations and separate general_text. "
+            "Do not use clock. Return only the corrected schema JSON."
+        )
     return [
         {"role": "system", "content": instruction},
         {
@@ -236,6 +243,9 @@ Never emit status clock; the application owns that result. A general answer is n
             "content": json.dumps(
                 {
                     "QUESTION": packet.request.question,
+                    "TURN_DECISION": (
+                        packet.assessment.model_dump(mode="json") if packet.assessment else None
+                    ),
                     "GENERAL_KNOWLEDGE_ALLOWED": (
                         packet.request.representation == "auto" and general_allowed(packet)
                     ),
@@ -287,7 +297,13 @@ def answer_notice(packet, proposal):
     if proposal.status == "clock":
         return (
             "From the application clock in your selected timezone; "
-            "no model call or saved note was needed."
+            "no answer model call or saved note was needed."
+        )
+    if proposal.status == "mixed":
+        return (
+            "Recorded context is supported by the citations below. The separate general "
+            "explanation uses model knowledge, is not verified by live web search, "
+            "and is not saved as a memory."
         )
     if proposal.status == "general":
         return (
@@ -296,10 +312,10 @@ def answer_notice(packet, proposal):
                 if packet.evidence.strategy == "general_question"
                 else "I did not find this answer in the notes reviewed. "
             )
-            + "This answer uses general model "
-            "knowledge, is not verified by live web search, and is not saved as a memory."
+            + "The general explanation uses model knowledge or your current input, "
+            "is not verified by live web search, and is not saved as a memory."
         )
-    if proposal.status == "unknown" and needs_live_information(packet.request.question):
+    if proposal.status == "unknown" and packet.assessment and packet.assessment.route == "live":
         return (
             "Live web verification is not connected. "
             "Model training and old notes cannot establish a current fact."
@@ -313,22 +329,27 @@ def answer_notice(packet, proposal):
 
 
 class AnswerOperations:
-    def _general_question_evidence(self, session, context, request):
-        if request.representation != "auto" or not general_question_candidate(request.question):
-            return None
-        head = re.split(r"[?!;\n]", knowledge_question_text(request.question), maxsplit=1)[0]
-        query = SearchRequest(
-            namespace=request.namespace,
-            query=head,
-            representation="sources_and_memories",
-            memory_eligible_only=True,
-            limit=12,
-            max_bytes=EVIDENCE_ALLOWANCE,
-        )
-        candidate = self._select_search(session, context, query)
-        if not candidate.sources:
-            return candidate.model_copy(update={"strategy": "general_question"})
-        return None
+    def _failed_answer_calls(self, context, call_ids):
+        if not call_ids:
+            return []
+        with self._session(context) as session:
+            return [
+                {
+                    "id": str(call.id),
+                    "model": call.returned_model or call.configured_model,
+                    "input_tokens": call.input_tokens,
+                    "output_tokens": call.output_tokens,
+                    "reserved_tokens": call.reserved_tokens,
+                    "elapsed_ms": call.elapsed_ms,
+                    "status": call.status,
+                    "error_code": call.error_code,
+                }
+                for call in session.scalars(
+                    select(ModelCall)
+                    .where(ModelCall.owner_id == context.owner_id, ModelCall.id.in_(call_ids))
+                    .order_by(ModelCall.recorded_at)
+                )
+            ]
 
     def private_answer_gate(self, context):
         """Authorize the one Private operation before its request body is read."""
@@ -380,27 +401,32 @@ class AnswerOperations:
             max_bytes=EVIDENCE_ALLOWANCE,
             memory_eligible_only=request.representation == "auto",
         )
-        if request.representation == "auto" and is_date_question(request.question):
+        decision = (
+            self._read_turn_decision(session, context, request)
+            if request.representation == "auto"
+            else None
+        )
+        if decision and decision.route in {"general", "clock", "live", "clarification"}:
             policy = session.scalar(
                 select(Policy).where(Policy.owner_id == context.owner_id).with_for_update()
             )
             return AnswerPacket(
                 request=request,
+                assessment=decision,
                 evidence=SearchPacket(
                     request=query,
                     policy_revision=policy.revision if policy else None,
                     status="no_matches",
-                    strategy="application_clock",
+                    strategy={
+                        "general": "general_question",
+                        "clock": "application_clock",
+                        "live": "live_information",
+                        "clarification": "clarification",
+                    }[decision.route],
                 ),
             )
         if request.representation == "auto":
-            # Use a local lexical check for potential workspace references before
-            # sending a clear public question without any saved evidence.
-            evidence = self._general_question_evidence(session, context, request)
-            if evidence is not None:
-                evidence = evidence.model_copy(update={"request": query})
-            if evidence is None:
-                evidence = self._select_auto(session, context, query)
+            evidence = self._select_auto(session, context, query)
         elif request.representation != "history":
             evidence = self._select_search(session, context, query)
         else:
@@ -438,7 +464,11 @@ class AnswerOperations:
                 ),
             )
         return AnswerPacket(
-            request=request, evidence=evidence, retrieval_query=retrieval_query, phase=phase
+            request=request,
+            evidence=evidence,
+            retrieval_query=retrieval_query,
+            phase=phase,
+            assessment=decision,
         )
 
     @measured("answer_context")
@@ -452,17 +482,12 @@ class AnswerOperations:
             and request.question not in trial_questions()
         ):
             raise ApplicationError(ErrorCode.TRIAL_INPUT_DENIED)
+        if request.representation == "auto" and request.assessment_id is None:
+            receipt = self.assess_turn(context, request, uuid4())
+            if receipt["status"] != "ready":
+                raise ApplicationError(receipt["error_code"] or ErrorCode.OPERATION_FAILED)
+            request = request.model_copy(update={"assessment_id": UUID(receipt["assessment_id"])})
         with self._session(context, write=True) as session:
-            if (
-                request.representation == "auto"
-                and not is_date_question(request.question)
-                and not needs_live_information(request.question)
-            ):
-                # A first-ever general question still needs an owned accounting row.
-                # This creates no source, memory, job or stored question.
-                session.execute(
-                    insert(Policy).values(owner_id=context.owner_id).on_conflict_do_nothing()
-                )
             return self._answer_snapshot(session, context, request)
 
     def _check_answer(self, session, context, packet):
@@ -498,23 +523,31 @@ class AnswerOperations:
                 self.responder,
                 reservation,
                 ANSWER_VERSION,
-                request_hash=digest(packet.request.model_dump(mode="json")),
+                request_hash=assessment_hash(packet.request),
                 policy_revision=packet.evidence.policy_revision,
                 feedback_parent_id=feedback_parent,
             )
 
     @staticmethod
     def _validate_answer(packet, proposal):
+        if any(
+            INTERNAL_UUID.search(text) for text in (proposal.text, proposal.general_text) if text
+        ):
+            raise ApplicationError(ErrorCode.INVALID_INPUT)
         if proposal.status == "clock":
-            if packet.request.representation != "auto" or not is_date_question(
-                packet.request.question
-            ):
+            if packet.assessment is None or packet.assessment.route != "clock":
                 raise ApplicationError(ErrorCode.INVALID_INPUT)
             expected = clock_answer(packet.request)
             if proposal != expected:
                 raise ApplicationError(ErrorCode.INVALID_INPUT)
         if proposal.status == "general" and (
-            packet.request.representation != "auto" or not general_allowed(packet)
+            packet.request.representation != "auto"
+            or packet.assessment is None
+            or packet.assessment.route != "general"
+        ):
+            raise ApplicationError(ErrorCode.INVALID_INPUT)
+        if proposal.status == "mixed" and (
+            packet.assessment is None or packet.assessment.route != "mixed"
         ):
             raise ApplicationError(ErrorCode.INVALID_INPUT)
         sources = {source.id: source for source in packet.evidence.sources}
@@ -541,10 +574,16 @@ class AnswerOperations:
                 **proposal.model_dump(mode="json"),
                 "sources": [s.model_dump(mode="json") for s in packet.evidence.sources],
                 "representation": packet.request.representation,
+                "assessment": (
+                    self._read_turn_receipt(session, context, packet.request)
+                    if packet.assessment
+                    else None
+                ),
                 "policy_revision": packet.evidence.policy_revision,
                 "model": self.responder.model if call_ids else None,
                 "basis": {
                     "general": "general_knowledge",
+                    "mixed": "mixed",
                     "clock": "application_clock",
                     "unknown": "insufficient_evidence",
                     "clarification": "needs_clarification",
@@ -591,12 +630,24 @@ class AnswerOperations:
 
     @measured("answer")
     def ask(self, context, payload, render=None, *, feedback_parent=None):
+        calls = []
+        try:
+            return self._ask(context, payload, render, feedback_parent=feedback_parent, calls=calls)
+        except ApplicationError as error:
+            # Only owned fixed accounting fields are exposed. Keep the original failure
+            # if accounting is unavailable; missing metrics are never reported as zero.
+            if context.mode is not Mode.PRIVATE:
+                try:
+                    error.calls = self._failed_answer_calls(context, calls)
+                except ApplicationError:
+                    pass
+            raise
+
+    def _ask(self, context, payload, render=None, *, feedback_parent=None, calls):
         packet = self.prepare_answer(context, payload)
-        if packet.request.representation == "auto" and is_date_question(packet.request.question):
+        if packet.assessment and packet.assessment.route == "clock":
             return self.release_answer(context, packet, clock_answer(packet.request), render=render)
-        if packet.request.representation == "auto" and needs_live_information(
-            packet.request.question
-        ):
+        if packet.assessment and packet.assessment.route == "live":
             return self.release_answer(
                 context,
                 packet,
@@ -606,6 +657,19 @@ class AnswerOperations:
                         "I cannot verify that current information because live web search is not "
                         "connected. Please check an up-to-date source; I will not guess from "
                         "model knowledge or historical notes."
+                    ),
+                ),
+                render=render,
+            )
+        if packet.assessment and packet.assessment.route == "clarification":
+            return self.release_answer(
+                context,
+                packet,
+                AnswerProposal(
+                    status="clarification",
+                    text=(
+                        "Please clarify who or what you mean, and the information you need. "
+                        "I do not have enough context to resolve that reference reliably."
                     ),
                 ),
                 render=render,
@@ -620,7 +684,6 @@ class AnswerOperations:
                 ),
                 render=render,
             )
-        calls = []
         if (
             packet.request.representation == "auto"
             and packet.evidence.strategy == "ranked_sources_and_memories"
@@ -657,6 +720,8 @@ class AnswerOperations:
                 raise ApplicationError(ErrorCode.PROVIDER_RESPONSE) from None
             except ApplicationError as error:
                 self.finish_call(context, call_id, error=error.code)
+                if error.code == ErrorCode.INVALID_INPUT:
+                    raise ApplicationError(ErrorCode.PROVIDER_RESPONSE) from None
                 raise
             except Exception:
                 self.finish_call(context, call_id, error=ErrorCode.PROVIDER_FAILED)
@@ -672,9 +737,19 @@ class AnswerOperations:
                 if completion.input_tokens + completion.output_tokens > reservation:
                     raise ApplicationError(ErrorCode.BUDGET_EXHAUSTED)
                 with stage("answer_validation"):
-                    proposal = parse_answer(completion.content, packet)
-                    if proposal.status == "clock":
-                        raise ApplicationError(ErrorCode.INVALID_INPUT)
+                    try:
+                        proposal = parse_answer(completion.content, packet)
+                        if proposal.status == "clock":
+                            raise ApplicationError(ErrorCode.INVALID_INPUT)
+                        self._validate_answer(packet, proposal)
+                    except ApplicationError as error:
+                        if error.code in {
+                            ErrorCode.INVALID_INPUT,
+                            ErrorCode.INVALID_PASSAGE,
+                            ErrorCode.REFERENCE_UNAVAILABLE,
+                        }:
+                            raise ApplicationError(ErrorCode.PROVIDER_RESPONSE) from None
+                        raise
                 return self.release_answer(context, packet, proposal, calls, render)
             except ApplicationError as error:
                 self.finish_call(context, call_id, error=error.code)
@@ -713,7 +788,7 @@ class AnswerOperations:
                     ModelCall.id == command.call_id, ModelCall.owner_id == context.owner_id
                 )
             )
-            if call is None or call.request_hash != digest(command.request.model_dump(mode="json")):
+            if call is None or call.request_hash != assessment_hash(command.request):
                 raise ApplicationError(ErrorCode.REFERENCE_UNAVAILABLE)
             if command.diagnosis in guidance:
                 result = {"status": "needs_detail", "guidance": guidance[command.diagnosis]}

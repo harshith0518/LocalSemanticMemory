@@ -8,7 +8,7 @@ const stages = [
   [
     "Observe",
     "Give Jarvis a note",
-    "Type, paste or import notes. Normal Ask preserves personal/project messages and checks them for useful facts. Clear public questions stay in the current chat, with no source or learning job. Questions do not assert their answers; generated replies never become learned evidence.",
+    "Type, paste or import notes. Normal Ask assesses what is worth remembering and preserves useful personal or project assertions. Pure questions, greetings and temporary instructions stay in the current chat, with no source or learning job. Questions do not assert their answers; generated replies never become learned evidence.",
     "Conversation / Sources",
   ],
   [

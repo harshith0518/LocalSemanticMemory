@@ -1,5 +1,32 @@
 # Run and verify Hey Jarvis
 
+## Interview hardening: metrics, bounded retrieval and local backup (22 September 2026)
+
+The browser response inspector is now a collapsed **Request metrics** panel rather than a raw timing string. Its summary gives the round-trip time and recorded model-call count. The open panel has four overview cards (browser total, model calls split by assessment/learning/answer, known input tokens and known output tokens), an evidence row (sources, learned memories, citations, byte payload and context mode), a phase/timing table with plain-language descriptions, and a per-call result table with green success/red failure status. Nested server spans remain explicitly non-additive. Model/call identifiers and raw spans are in a closed technical-details section. The running page was inspected with a public question: it showed two calls, 0 evidence sources, 0 memories, 0 citations and a 0-byte payload, then separated its 1.06-second assessment from its 1.58-second answer call.
+
+Automatic contextual retrieval now selects active learned memories first and includes only their exact supporting originals. It can add a bounded lexical original for an unextracted detail. It no longer puts an entire small collection in the provider prompt; complete small-collection review is reserved for an explicit inventory. A no-word-overlap fallback is a bounded structured-diversity sample, not vector similarity. The `qwen3-embedding:0.6b` installation is documented but not called by this version.
+
+Google `gemini-3.5-flash-lite` remains the default demo route. The optional local backup is explicitly selected with `JARVIS_INFERENCE_PROVIDER=ollama` and `JARVIS_OLLAMA_ENABLED=true`, followed by a Compose restart. It uses only `http://host.docker.internal:11434/v1`, dummy value `ollama`, and `qwen3:4b`; invalid endpoints/models are rejected and there is no automatic fallback. A disposable Docker-to-host synthetic probe received HTTP 200, structured JSON, `finish_reason: stop` and provider token usage. It tested connectivity only, not answer quality. To return to Google, set `JARVIS_INFERENCE_PROVIDER=google` and `JARVIS_OLLAMA_ENABLED=false` before the restart.
+
+Focused contract checks passed: **84 PostgreSQL tests** covering answer policy, semantic turn assessment, bounded automatic retrieval and Ollama configuration/transport doubles. The complete isolated PostgreSQL suite then passed: **369 tests in 136.13 seconds**. Ruff lint/format, frontend Prettier/TypeScript and the production Vite build also passed. No Google request was made for these checks. The rebuilt API reported `ready` at `http://127.0.0.1:18000/ready` on schema `0006_turn_assessment`, and the request-metrics view was inspected in the local browser.
+
+The retained [live semantic-turn report](eval/reports/regression-semantic-turn-live.json) completed its 14-case schedule but is explicitly incomplete as a quality evaluation: eight cases met all scripted screens, one answer request failed operationally after a successful assessment, and the final five capture attempts were rate-limited. Its semantic review is still pending. Preserve it as failure evidence; do not spend more provider allowance on a casual rerun while the browser cancellation acceptance is unresolved.
+
+### Browser acceptance resume point
+
+The current aggregate Chromium run completed 18 journeys through **Private cancels pending capture**, then stopped making progress at **Private cancels pending learning**. The process was stopped; this checkpoint does not call that case passed or failed, and the remaining browser journeys are unverified. The earlier readable-source-label expectation was updated from the raw `dict_0008` key to the user-facing `dict 0008` label before this run.
+
+Resume against the isolated browser profile, not the retained demo database:
+
+```powershell
+docker compose -f compose.test.yaml --profile browser up -d --no-build --wait --wait-timeout 120 web
+Push-Location tests/browser
+node --test --test-concurrency=1 --test-name-pattern "Private cancels pending learning" workspace.test.mjs
+Pop-Location
+```
+
+Inspect the delayed request, cancellation and cleanup after that focused result. Then run the complete browser suite from the same isolated profile. Do not use a passing local Ollama transport probe, an old browser run or a partial aggregate run as a substitute for this acceptance evidence.
+
 ## Public questions and selective context (22 September 2026)
 
 At **http://127.0.0.1:18000/**, clear public/date questions now stay only in the current chat. Public routing performs a local workspace-reference search, then sends no saved evidence when no match is found; there is no source, job or extraction call for that turn. Personal and mixed messages still preserve the original and learn selectively. Completed `no_memory` chat records no longer enter Automatic evidence unless they support a claim. Existing source history remains available. This supersedes the blanket preserve-every-message wording in earlier dated sections.

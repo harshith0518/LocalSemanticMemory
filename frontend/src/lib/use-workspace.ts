@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ApiSession, isCancelled, messageFor } from "./api";
+import { ApiSession, RequestError, isCancelled, messageFor } from "./api";
 import type {
   Answer,
   AnswerRequest,
@@ -60,6 +60,7 @@ export function useWorkspace(session: ApiSession) {
     setBusy(label);
     setNotice({ text: "", error: false });
     session.timings = [];
+    session.requestTimings = [];
     const started = performance.now();
     let outcome: Timing["outcome"] = "completed";
     try {
@@ -73,6 +74,7 @@ export function useWorkspace(session: ApiSession) {
         setTiming({
           elapsed_ms: performance.now() - started,
           stages: session.timings.join(", "),
+          requests: [...session.requestTimings],
           outcome,
         });
         running.current = false;
@@ -277,7 +279,16 @@ export function useWorkspace(session: ApiSession) {
       setTurns((previous) =>
         previous.map((item) =>
           item.id === turn.id
-            ? { ...item, learning, learningError: undefined }
+            ? {
+                ...item,
+                learning: {
+                  ...learning,
+                  assessment: learning.assessment ?? item.learning?.assessment,
+                  assessment_id:
+                    learning.assessment_id ?? item.learning?.assessment_id,
+                },
+                learningError: undefined,
+              }
             : item,
         ),
       );
@@ -292,6 +303,7 @@ export function useWorkspace(session: ApiSession) {
       const measured = (outcome: Timing["outcome"]): Timing => ({
         elapsed_ms: performance.now() - started,
         stages: session.timings.join(", "),
+        requests: [...session.requestTimings],
         outcome,
       });
       const turn: Turn = {
@@ -299,24 +311,68 @@ export function useWorkspace(session: ApiSession) {
         conversation_id: retry?.conversation_id ?? conversationId.current,
         question: request.question,
         request,
+        learning: retry?.learning,
       };
       setTurns((previous) =>
         retry
           ? previous.map((item) => (item.id === turn.id ? turn : item))
           : [...previous.slice(-11), turn],
       );
+      let answerStarted = false;
       try {
-        const saved = await session.post<MessageLearning>(
-          "/conversation/messages",
-          {
-            message_id: turn.id,
-            conversation_id: turn.conversation_id,
-            request,
-          },
-        );
+        let saved: MessageLearning;
+        const assessmentDeadline = performance.now() + 390000;
+        for (let poll = 0; ; poll++) {
+          if (!active.current || ticket !== epoch.current)
+            throw new DOMException("Cancelled", "AbortError");
+          saved = await session.post<MessageLearning>(
+            "/conversation/messages",
+            {
+              message_id: turn.id,
+              conversation_id: turn.conversation_id,
+              request,
+              retry_failed: !!retry && poll === 0,
+            },
+          );
+          const captured = saved;
+          setTurns((previous) =>
+            previous.map((item) =>
+              item.id === turn.id ? { ...item, learning: captured } : item,
+            ),
+          );
+          if (
+            saved.assessment?.status !== "running" ||
+            performance.now() >= assessmentDeadline
+          )
+            break;
+          setBusy("Waiting for this message's memory check to finish");
+          // Poll the same in-flight assessment. This never retries a failed provider call.
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+        if (
+          saved.assessment?.status === "failed" ||
+          saved.assessment?.status === "running" ||
+          (!saved.source_id && saved.status === "failed")
+        ) {
+          const failedTiming = measured("failed");
+          setTurns((previous) =>
+            previous.map((item) =>
+              item.id === turn.id
+                ? { ...item, timing: failedTiming, answerCalls: [] }
+                : item,
+            ),
+          );
+          return;
+        }
+        const answerRequest = {
+          ...request,
+          ...(saved.assessment_id
+            ? { assessment_id: saved.assessment_id }
+            : {}),
+        };
         setTurns((previous) =>
           previous.map((item) =>
-            item.id === turn.id ? { ...item, learning: saved } : item,
+            item.id === turn.id ? { ...item, request: answerRequest } : item,
           ),
         );
         setContentVersion((previous) => previous + 1);
@@ -326,7 +382,17 @@ export function useWorkspace(session: ApiSession) {
             const learning = await learnMessage(saved.source_id);
             setTurns((previous) =>
               previous.map((item) =>
-                item.id === turn.id ? { ...item, learning } : item,
+                item.id === turn.id
+                  ? {
+                      ...item,
+                      learning: {
+                        ...learning,
+                        assessment: learning.assessment ?? saved.assessment,
+                        assessment_id:
+                          learning.assessment_id ?? saved.assessment_id,
+                      },
+                    }
+                  : item,
               ),
             );
           } catch (error) {
@@ -340,15 +406,18 @@ export function useWorkspace(session: ApiSession) {
             );
           }
         setBusy("Reading evidence and checking the answer");
-        const answer = await session.post<Answer>("/ask", request);
+        answerStarted = true;
+        const answer = await session.post<Answer>("/ask", answerRequest);
+        const completedTiming = measured("completed");
         setTurns((previous) =>
           previous.map((item) =>
             item.id === turn.id
-              ? { ...item, answer, timing: measured("completed") }
+              ? { ...item, answer, timing: completedTiming }
               : item,
           ),
         );
       } catch (error) {
+        const failedTiming = measured("failed");
         if (!isCancelled(error))
           setTurns((previous) =>
             previous.map((item) =>
@@ -356,7 +425,12 @@ export function useWorkspace(session: ApiSession) {
                 ? {
                     ...item,
                     error: messageFor(error),
-                    timing: measured("failed"),
+                    timing: failedTiming,
+                    answerCalls: answerStarted
+                      ? error instanceof RequestError
+                        ? error.calls
+                        : undefined
+                      : [],
                   }
                 : item,
             ),

@@ -93,7 +93,11 @@ class MetricsOperations:
                 ).all()
             )
             known = ModelCall.input_tokens.is_not(None) & ModelCall.output_tokens.is_not(None)
-            role = case((ModelCall.job_id.is_(None), "answer"), else_="extraction")
+            role = case(
+                (ModelCall.prompt_version == "turn-assessment-v1", "assessment"),
+                (ModelCall.job_id.is_(None), "answer"),
+                else_="extraction",
+            )
             calls = (
                 session.execute(
                     select(

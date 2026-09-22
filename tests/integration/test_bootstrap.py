@@ -65,6 +65,7 @@ def test_migrations_from_empty_schema_and_repeat_without_drift(engine, migration
             "source_exclusions",
             "passage_exclusions",
             "feedback_receipts",
+            "turn_assessments",
         }
     finally:
         migrations(command.upgrade, "head")
@@ -73,7 +74,7 @@ def test_migrations_from_empty_schema_and_repeat_without_drift(engine, migration
 def test_api_cli_and_service_report_identical_readiness(service):
     expected = service.ready()
     assert expected["status"] == "ready"
-    assert expected["schema"] == "0005_user_controls"
+    assert expected["schema"] == "0006_turn_assessment"
     assert expected["pgvector"] == "0.8.6"
     response, health = api_responses(service)
     assert response.status_code == 200

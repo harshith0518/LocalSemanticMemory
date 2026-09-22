@@ -13,11 +13,11 @@ import {
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
-import { Activity, OriginalButton, Sprout } from "./common";
+import { Activity, OriginalButton, sourceLabel, Sprout } from "./common";
 import type { Workspace } from "@/lib/use-workspace";
 import type { Representation, Turn } from "@/lib/types";
 import { errors } from "@/lib/api";
-import { formatBytes } from "@/lib/utils";
+import { RequestMetrics } from "./request-metrics";
 import "./conversation-help.css";
 
 type ModelSetup = {
@@ -42,20 +42,73 @@ type ModelSetup = {
   warning: string;
 };
 
+const retentionReasons: Record<string, string> = {
+  general_request:
+    "This asks for general information without adding a personal fact.",
+  personal_question: "This asks about your context without adding a new fact.",
+  useful_assertion:
+    "This includes personal or project information worth checking for future use.",
+  hypothetical: "A hypothetical example does not establish a fact about you.",
+  one_off: "This is a one-time request without lasting personal context.",
+  small_talk: "This is conversational, without a lasting fact to learn.",
+  ambiguous: "The meaning needs clarification before anything can be learned.",
+  current_information:
+    "This asks for current information without adding a personal fact.",
+  clock: "The date or time can be answered without saving a personal fact.",
+};
+
 function Reply({ turn, workspace }: { turn: Turn; workspace: Workspace }) {
   const [diagnosis, setDiagnosis] = useState("unclear");
   const answer = turn.answer;
+  const assessment = turn.learning?.assessment;
+  const assessmentFailed =
+    assessment?.status === "failed" ||
+    (!turn.learning?.source_id && turn.learning?.status === "failed");
+  const assessmentWaiting = assessment?.status === "running" && !!turn.timing;
+  const assessmentStopped = assessmentFailed || assessmentWaiting;
   return (
     <article className="conversation-turn">
       <div className="user-message">
         <span className="eyebrow">You</span>
         <p>{turn.question}</p>
       </div>
-      {turn.learning?.status === "not_saved" && (
-        <p className="message-learning" role="status">
-          General question · Only in this chat · No source or memory saved
-        </p>
+      {assessmentFailed && (
+        <div
+          className="message-learning message-learning-warning"
+          role="status"
+        >
+          <p>Memory check could not finish · No message was saved</p>
+          <p className="meta">
+            {turn.learningError ??
+              errors[
+                assessment?.error_code ?? turn.learning?.error_code ?? ""
+              ] ??
+              "The check did not establish whether this message contains a lasting fact."}
+          </p>
+        </div>
       )}
+      {assessmentWaiting && (
+        <div
+          className="message-learning message-learning-warning"
+          role="status"
+        >
+          <p>The memory check is still running · No message was saved</p>
+          <p className="meta">Check progress to resume this same request.</p>
+        </div>
+      )}
+      {turn.learning?.status === "not_saved" &&
+        !assessmentFailed &&
+        assessment?.status !== "running" && (
+          <div className="message-learning" role="status">
+            <p>Nothing new to remember · Only in this chat</p>
+            <p className="meta">
+              No source or memory saved.
+              {assessment?.decision?.reason &&
+                retentionReasons[assessment.decision.reason] &&
+                ` ${retentionReasons[assessment.decision.reason]}`}
+            </p>
+          </div>
+        )}
       {turn.learning?.source_id && (
         <div className="message-learning" role="status">
           <p>
@@ -97,24 +150,6 @@ function Reply({ turn, workspace }: { turn: Turn; workspace: Workspace }) {
               Retry learning
             </Button>
           )}
-          {!!turn.learning.calls.length && (
-            <details className="query-metrics">
-              <summary>
-                Learning metrics · {turn.learning.calls.length} model call(s)
-              </summary>
-              {turn.learning.calls.map((call) => (
-                <p key={call.id}>
-                  {call.status}; {call.elapsed_ms ?? "unknown"} ms; input{" "}
-                  {call.input_tokens ?? "unknown"} / output{" "}
-                  {call.output_tokens ?? "unknown"} tokens.
-                  {call.error_code && ` ${call.error_code}`}
-                </p>
-              ))}
-              <p className="meta">
-                These extraction calls are additional to the answer calls below.
-              </p>
-            </details>
-          )}
         </div>
       )}
       {answer ? (
@@ -135,6 +170,7 @@ function Reply({ turn, workspace }: { turn: Turn; workspace: Workspace }) {
                   unknown: "Not established by available evidence",
                   clarification: "Clarification needed",
                   general: "General knowledge · not from your notes",
+                  mixed: "Recorded context and general explanation",
                   clock: "From the application clock",
                 }[answer.status]
               }
@@ -142,6 +178,11 @@ function Reply({ turn, workspace }: { turn: Turn; workspace: Workspace }) {
           </div>
           {answer.notice && (
             <p className="meta answer-notice">{answer.notice}</p>
+          )}
+          {answer.status === "mixed" && (
+            <h3 className="answer-section-heading">
+              From your recorded evidence
+            </h3>
           )}
           <p className="reply-text">{answer.text}</p>
           {answer.retrieval && answer.status !== "clock" && (
@@ -165,62 +206,19 @@ function Reply({ turn, workspace }: { turn: Turn; workspace: Workspace }) {
                 : ""}
             </p>
           )}
-          <details className="query-metrics">
-            <summary>Query metrics and model calls</summary>
-            <p>
-              {answer.sources.length} evidence sources;{" "}
-              {answer.citations.length} citations;{" "}
-              <span title={`${answer.evidence_bytes.toLocaleString()} bytes`}>
-                {formatBytes(answer.evidence_bytes)}
-              </span>{" "}
-              of evidence. Context: {answer.representation}.
-            </p>
-            <p>
-              {turn.timing
-                ? `Browser round trip: ${turn.timing.elapsed_ms.toFixed(1)} ms. ${turn.timing.stages || "Server timing unavailable."}`
-                : "Browser timing unavailable for this response."}
-            </p>
-            <p>
-              Model: {answer.model ?? "No model call"}.{" "}
-              {answer.metrics?.calls.length ?? answer.call_ids.length} recorded
-              attempt(s), including validation repairs.
-            </p>
-            {answer.metrics?.calls.map((call) => (
-              <article key={call.id} className="call-metric">
-                <code>{call.id}</code>
-                <p>
-                  {call.status}
-                  {call.error_code ? `: ${call.error_code}` : ""};{" "}
-                  {call.elapsed_ms ?? "unknown"} ms; input{" "}
-                  {call.input_tokens ?? "unknown"} / output{" "}
-                  {call.output_tokens ?? "unknown"} tokens.
-                </p>
-                {(call.input_tokens === null ||
-                  call.output_tokens === null) && (
-                  <p>
-                    Conservative reservation: {call.reserved_tokens} tokens, not
-                    measured usage.
-                  </p>
-                )}
-              </article>
-            ))}
-            <p className="meta">
-              Provider billing is unmeasured. Timings include nested work; do
-              not add them together. Valid citations are not proof of semantic
-              correctness.
-            </p>
-          </details>
           <div className="citations">
             {answer.citations.map((passage, index) => (
               <details key={`${passage.source_id}-${index}`}>
                 <summary>
                   <BookOpen aria-hidden="true" />
                   <span>
-                    Source:{" "}
-                    {answer.sources
-                      .find((source) => source.id === passage.source_id)
-                      ?.source_key.split(":")
-                      .at(-1) ?? "Original record"}{" "}
+                    Original:{" "}
+                    {(() => {
+                      const source = answer.sources.find(
+                        (item) => item.id === passage.source_id,
+                      );
+                      return source ? sourceLabel(source) : "Recorded source";
+                    })()}{" "}
                     · {passage.variant}
                   </span>
                 </summary>
@@ -234,6 +232,20 @@ function Reply({ turn, workspace }: { turn: Turn; workspace: Workspace }) {
               </details>
             ))}
           </div>
+          {answer.general_text && (
+            <section
+              className="general-explanation"
+              aria-label="General explanation"
+            >
+              <h3>General explanation · not from your notes</h3>
+              <p className="reply-text">{answer.general_text}</p>
+              <p className="meta">
+                Uses general model knowledge; not verified by live web search
+                and not saved as a memory. Source citations support the recorded
+                context above.
+              </p>
+            </section>
+          )}
           {!!answer.call_ids.length && (
             <details className="reply-feedback">
               <summary>Something off? Review this answer</summary>
@@ -288,10 +300,26 @@ function Reply({ turn, workspace }: { turn: Turn; workspace: Workspace }) {
             Try question again
           </Button>
         </div>
+      ) : assessmentStopped ? (
+        <div className="reply assessment-actions">
+          <p className="meta">
+            Answering is paused until the message check finishes.
+          </p>
+          <Button
+            variant="outline"
+            disabled={!!workspace.busy}
+            onClick={() => void workspace.ask(turn.request, turn)}
+          >
+            {assessmentWaiting ? "Check progress" : "Retry memory check"}
+          </Button>
+        </div>
       ) : (
         <Activity
           label={workspace.busy || "Reading evidence and checking the answer"}
         />
+      )}
+      {(answer || turn.error || (assessmentStopped && turn.timing)) && (
+        <RequestMetrics turn={turn} />
       )}
     </article>
   );
@@ -458,11 +486,11 @@ export function Conversation({
           <section className="setup-card" role="status">
             <strong>Hello! I help you find the details in your notes.</strong>
             <p>
-              Share a fact or ask a question here. Clear general questions stay
-              only in this chat. Personal and project context is saved, useful
-              new facts are learned, and answers link back to evidence. I can
-              recall supported details and draft text; I do not send messages or
-              perform external actions.
+              Share a fact or ask a question here. Questions, small talk and
+              one-time instructions stay in this chat. Messages with useful
+              personal or project facts are saved and checked for learning.
+              Answers link back to evidence. I can recall supported details and
+              draft text; I do not send messages or perform external actions.
             </p>
             <small>
               This help text is built in. Your submitted message and its
@@ -630,18 +658,18 @@ export function Conversation({
         <p className="composer-footnote">
           Typed or pasted text stands in for a transcript. No microphone needed.
           <br />
-          Clear general questions stay only in this chat. Personal and project
-          messages are saved; Jarvis learns useful facts, checks repeats and
-          preserves updates. AI replies are not learned as evidence. Private
-          chat does not read or save workspace context.
+          Jarvis checks what is worth remembering. Questions and one-time requests
+          stay in this chat; useful personal or project facts are checked for
+          learning, repeats and updates. AI replies are not learned as evidence.
+          Private chat does not read or save workspace context.
         </p>
         <details className="setup-card">
           <summary>Model setup and 30 showcase questions</summary>
           <p>
             Start in Sources: import the sample or the 540-note fictional
             corpus. In Memory, choose Process sources, then return here. A
-            Normal Ask message with personal or project context is also saved
-            and checked for useful new information.
+            Normal Ask message is first assessed for useful personal or project
+            facts. Eligible messages are saved and checked for new information.
           </p>
           <div className="setup-actions">
             <Button

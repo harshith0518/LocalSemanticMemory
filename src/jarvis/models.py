@@ -271,6 +271,35 @@ class ModelCall(Base):
     )
 
 
+class TurnAssessment(Base):
+    """Bounded decision receipt; skipped message text is never retained."""
+
+    __tablename__ = "turn_assessments"
+    __table_args__ = (
+        UniqueConstraint("owner_id", "message_id", name="assessment_owner_message"),
+        CheckConstraint("request_hash ~ '^[0-9a-f]{64}$'", name="assessment_request_hash"),
+        CheckConstraint("policy_revision >= 0", name="assessment_policy_revision"),
+        CheckConstraint("attempts BETWEEN 0 AND 4", name="assessment_attempts"),
+        CheckConstraint("status IN ('running', 'ready', 'failed')", name="assessment_status"),
+    )
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    owner_id: Mapped[UUID] = mapped_column(ForeignKey("jarvis.policies.owner_id"))
+    message_id: Mapped[UUID]
+    request_hash: Mapped[str] = mapped_column(String(64))
+    policy_revision: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(16), server_default="running")
+    attempts: Mapped[int] = mapped_column(Integer, server_default="0")
+    decision: Mapped[dict | None] = mapped_column(JSONB)
+    call_ids: Mapped[list] = mapped_column(JSONB, server_default="[]")
+    lease_token: Mapped[UUID | None]
+    lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    error_code: Mapped[str | None] = mapped_column(String(40))
+    recorded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
 class ControlReceipt(Base):
     __tablename__ = "control_receipts"
     __table_args__ = (

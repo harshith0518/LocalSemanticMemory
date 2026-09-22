@@ -32,6 +32,7 @@ COPY eval/fixtures/corpus-cases.json eval/fixtures/corpus-cases.json
 COPY eval/fixtures/corpus-manifest.json eval/fixtures/corpus-manifest.json
 COPY eval/corpus.py eval/corpus.py
 COPY eval/showcase.py eval/showcase.py
+COPY eval/semantic_turns.py eval/semantic_turns.py
 COPY eval/build_corpus.py eval/build_corpus.py
 COPY eval/reports/*-review.json eval/reports/
 RUN useradd --uid 10001 --create-home jarvis

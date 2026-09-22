@@ -116,6 +116,7 @@ def test_all_saved_operations_reject_private_before_parsing_or_io(
         lambda: service.prepare_search(private, SENTINEL),
         lambda: service.release_search(private, SENTINEL),
         lambda: service.ask(private, SENTINEL),
+        lambda: service.assess_turn(private, SENTINEL, SENTINEL),
         lambda: service.prepare_answer(private, SENTINEL),
         lambda: service.reserve_answer_call(private, None, 100),
         lambda: service.release_answer(private, None, SENTINEL),

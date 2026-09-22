@@ -27,9 +27,13 @@ class ErrorCode(StrEnum):
 class ApplicationError(Exception):
     """Only fixed categories cross adapter boundaries, never input/driver exceptions."""
 
-    def __init__(self, code: ErrorCode):
+    def __init__(self, code: ErrorCode, *, calls=None):
         self.code = ErrorCode(code)
+        self.calls = calls
         super().__init__(self.code.value)
 
     def response(self) -> dict:
-        return {"status": "error", "reason": self.code.value}
+        result = {"status": "error", "reason": self.code.value}
+        if self.calls is not None:
+            result["metrics"] = {"calls": self.calls}
+        return result

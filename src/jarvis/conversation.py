@@ -7,14 +7,13 @@ from pydantic import Field
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 
-from jarvis.answer_policy import is_date_question
 from jarvis.answers import AskRequest
 from jarvis.contracts import Contract, ObservationInput, parse_contract
 from jarvis.controls import blocked_sources
 from jarvis.errors import ApplicationError, ErrorCode
 from jarvis.extraction import MAX_ATTEMPTS
 from jarvis.imports import source_key, validate_json_text
-from jarvis.models import Job, ModelCall, Policy, ProcessingReceipt, Source
+from jarvis.models import Job, ModelCall, Policy, ProcessingReceipt, Source, TurnAssessment
 from jarvis.worker import process_one
 
 
@@ -22,6 +21,7 @@ class ConversationMessage(Contract):
     message_id: UUID
     conversation_id: UUID
     request: AskRequest
+    retry_failed: Annotated[bool, Field(strict=True)] = False
 
 
 class LearningRequest(Contract):
@@ -39,6 +39,50 @@ class ConversationOperations:
         if not command.request.question.strip():
             raise ApplicationError(ErrorCode.INVALID_INPUT)
         key = source_key(command.request.namespace, f"chat-{command.message_id}")
+        # An exact replay of an already retained turn needs no new model decision.
+        with self._session(context) as session:
+            existing = session.scalar(
+                select(Source).where(Source.owner_id == context.owner_id, Source.source_key == key)
+            )
+            if existing is not None:
+                metadata = existing.capture_metadata or {}
+                if (
+                    existing.kind != "user_message"
+                    or existing.raw_text != command.request.question
+                    or metadata.get("conversation_id") != str(command.conversation_id)
+                    or (
+                        "assessment_request" in metadata
+                        and metadata["assessment_request"]
+                        != command.request.model_dump(
+                            mode="json", exclude={"question", "assessment_id"}
+                        )
+                    )
+                ):
+                    raise ApplicationError(ErrorCode.IMPORT_CONFLICT)
+                existing_id = existing.id
+            else:
+                existing_id = None
+        if existing_id is not None:
+            return self.message_learning(context, existing_id)
+
+        assessment = self.assess_turn(
+            context, command.request, command.message_id, retry_failed=command.retry_failed
+        )
+        if assessment["status"] != "ready" or assessment["decision"]["retention"] == "skip":
+            return {
+                "source_id": None,
+                "status": "not_saved",
+                "decision": "no_memory" if assessment["status"] == "ready" else None,
+                "revision_ids": [],
+                "error_code": assessment["error_code"],
+                "attempts": 0,
+                "calls": [],
+                "assessment_id": assessment["assessment_id"],
+                "assessment": assessment,
+            }
+        request = command.request.model_copy(
+            update={"assessment_id": UUID(assessment["assessment_id"])}
+        )
         with self._session(context, write=True) as session:
             session.execute(
                 insert(Policy).values(owner_id=context.owner_id).on_conflict_do_nothing()
@@ -46,6 +90,9 @@ class ConversationOperations:
             policy = session.scalar(
                 select(Policy).where(Policy.owner_id == context.owner_id).with_for_update()
             )
+            decision = self._read_turn_decision(session, context, request)
+            if decision.retention != "candidate":
+                raise ApplicationError(ErrorCode.INVALID_TRANSITION)
             source = session.scalar(
                 select(Source).where(Source.owner_id == context.owner_id, Source.source_key == key)
             )
@@ -58,20 +105,6 @@ class ConversationOperations:
                 ):
                     raise ApplicationError(ErrorCode.IMPORT_CONFLICT)
             else:
-                if command.request.representation == "auto" and (
-                    is_date_question(command.request.question)
-                    or self._general_question_evidence(session, context, command.request)
-                    is not None
-                ):
-                    return {
-                        "source_id": None,
-                        "status": "not_saved",
-                        "decision": "no_memory",
-                        "revision_ids": [],
-                        "error_code": None,
-                        "attempts": 0,
-                        "calls": [],
-                    }
                 # Only earlier USER messages from this collection/conversation can resolve
                 # follow-up references. No client-provided history or assistant answers.
                 previous = session.scalars(
@@ -95,6 +128,11 @@ class ConversationOperations:
                             "origin": "ask_jarvis",
                             "conversation_id": str(command.conversation_id),
                             "previous_user_source_ids": [str(s.id) for s in reversed(previous)],
+                            "assessment_id": assessment["assessment_id"],
+                            "assessment_request": request.model_dump(
+                                mode="json", exclude={"question", "assessment_id"}
+                            ),
+                            "memory_excerpts": list(decision.memory_excerpts),
                         },
                     },
                 )
@@ -131,6 +169,19 @@ class ConversationOperations:
                 .where(ModelCall.owner_id == context.owner_id, ModelCall.job_id == job.id)
                 .order_by(ModelCall.id)
             ).all()
+            # Inspection is historical, not authority to answer or relearn. Keep
+            # cancelled sources inspectable after a later control changes policy.
+            assessment_id = (source.capture_metadata or {}).get("assessment_id")
+            try:
+                parsed_id = UUID(str(assessment_id)) if assessment_id else None
+            except (ValueError, TypeError):
+                parsed_id = None
+            record = session.get(TurnAssessment, parsed_id) if parsed_id else None
+            assessment = (
+                self._assessment_receipt(session, context, record)
+                if record is not None and record.owner_id == context.owner_id
+                else None
+            )
             return {
                 "source_id": str(source.id),
                 "status": "cancelled" if excluded else job.status,
@@ -138,6 +189,8 @@ class ConversationOperations:
                 "revision_ids": receipt.result["revision_ids"] if receipt and not excluded else [],
                 "error_code": "excluded_source" if excluded else job.error_code,
                 "attempts": job.attempts,
+                "assessment_id": assessment["assessment_id"] if assessment else None,
+                "assessment": assessment,
                 "calls": [
                     {
                         "id": str(c.id),

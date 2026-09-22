@@ -269,7 +269,7 @@ test("imports and reimports exact paired evidence through isolated PostgreSQL", 
   const namespace = `source-${randomUUID()}`;
   await importFile(page, namespace);
   assert.equal(await page.locator("#source-list li").count(), 8);
-  await page.getByRole("button", { name: /dict_0008/ }).click();
+  await page.getByRole("button", { name: /dict[ _]0008/ }).click();
   await page.getByRole("dialog").waitFor();
   assert.match(
     await page.locator("#raw-text").textContent(),
@@ -278,7 +278,7 @@ test("imports and reimports exact paired evidence through isolated PostgreSQL", 
   assert.match(await page.locator("#formatted-text").textContent(), /₹50,000/);
   await importFile(page, namespace);
   await notice(page, /Saved 0 new.*8 unchanged/);
-  await page.getByRole("button", { name: /dict_0007/ }).click();
+  await page.getByRole("button", { name: /dict[ _]0007/ }).click();
   await page.getByRole("dialog").waitFor();
   assert.equal(
     await page.locator("#captured-at").textContent(),
@@ -554,7 +554,7 @@ test("Private unmounts Normal content and clears an unsent direct draft without 
   assert.equal(await page.locator("#normal-panel").count(), 0);
   assert.doesNotMatch(
     await page.locator("body").textContent(),
-    /SYNTHETIC_NORMAL_DRAFT|dict_0008/,
+    /SYNTHETIC_NORMAL_DRAFT|dict[ _]0008/,
   );
   await page.getByLabel("Direct question").fill("SYNTHETIC_PRIVATE_DRAFT");
   await screenshot(page, "private-desktop");
@@ -624,7 +624,7 @@ for (const target of [
     };
     const pending = await hold(page, patterns[target]);
     if (target === "source")
-      await page.getByRole("button", { name: /dict_0008/ }).click();
+      await page.getByRole("button", { name: /dict[ _]0008/ }).click();
     if (target === "search") {
       await page
         .getByLabel("Search saved evidence", { exact: true })
@@ -706,7 +706,7 @@ test("Normal Ask automatically saves, learns, skips repeats and preserves a chan
     [rows[0].raw_transcript, /1 memory change/],
     [rows[0].raw_transcript, /Already known/],
     [rows[2].raw_transcript, /2 memory change/],
-    ["Who approved the Atlas launch?", /No lasting fact/],
+    ["Who approved the Atlas launch?", /Nothing new to remember/],
   ]) {
     await page.getByLabel("Ask a question").fill(text);
     await page.getByLabel("Ask a question").press("Enter");
@@ -723,7 +723,7 @@ test("Normal Ask automatically saves, learns, skips repeats and preserves a chan
   const memories = await fetch(`${origin}/memories?namespace=${namespace}`, {
     headers,
   }).then((r) => r.json());
-  assert.equal(sources.observations.length, 4);
+  assert.equal(sources.observations.length, 3);
   assert.equal(memories.memories.length, 2);
   const launch = memories.memories.find(
     (m) => m.content.predicate === "launch_date",
@@ -740,7 +740,7 @@ test("Normal Ask automatically saves, learns, skips repeats and preserves a chan
   await screenshot(page, "conversation-learning-mobile");
 });
 
-test("Answer retry reuses the saved message and completed learning", async (t) => {
+test("Answer retry reuses the completed assessment without saving a pure question", async (t) => {
   const page = await pageFor(t);
   const namespace = `retry-chat-${randomUUID()}`;
   await page.getByLabel("Collection name", { exact: true }).fill(namespace);
@@ -750,20 +750,26 @@ test("Answer retry reuses the saved message and completed learning", async (t) =
   await idle(page);
   assert.match(
     await page.locator(".message-learning").innerText(),
-    /Message saved/,
+    /No source or memory saved/,
   );
   await page.unroute("**/ask");
   await button(page, "Try question again").click();
   await idle(page);
   assert.equal(await page.locator(".conversation-turn").count(), 1);
-  assert.match(
-    await page.locator(".message-learning").innerText(),
-    /1 model call/,
+  await page.locator(".request-metrics > summary").click();
+  const callRows = page.getByRole("table", { name: "Model calls by phase" });
+  assert.equal(
+    await callRows.getByRole("row").filter({ hasText: "Assessment" }).count(),
+    1,
+  );
+  assert.equal(
+    await callRows.getByRole("row").filter({ hasText: "Learning" }).count(),
+    0,
   );
   const data = await fetch(`${origin}/sources?namespace=${namespace}`, {
     headers: { "X-Jarvis-Mode": "normal" },
   }).then((r) => r.json());
-  assert.equal(data.observations.length, 1);
+  assert.equal(data.observations.length, 0);
 });
 
 test("sample import is idempotent; usage reports measured payloads, timings and unknown billing", async (t) => {
@@ -809,7 +815,7 @@ test("mobile keyboard, dialog focus and back navigation do not restore personal 
   await notice(page, /Collection opened/);
   await idle(page);
   await importFile(page, `mobile-${randomUUID()}`);
-  await page.getByRole("button", { name: /dict_0008/ }).click();
+  await page.getByRole("button", { name: /dict[ _]0008/ }).click();
   await page.getByRole("dialog").waitFor();
   await page.keyboard.press("Tab");
   assert.equal(
@@ -859,7 +865,7 @@ test("Private direct draft is cleared before browser-history restoration", async
     assert.equal(await page.locator("#private-draft").inputValue(), "");
 });
 
-test("Normal greeting is preserved without learning a fact and evidence choices stay collapsed", async (t) => {
+test("Normal greeting stays transient and evidence choices stay collapsed", async (t) => {
   const page = await pageFor(t);
   const calls = [];
   page.on("request", (request) => {
@@ -878,7 +884,11 @@ test("Normal greeting is preserved without learning a fact and evidence choices 
   assert.ok(calls.some((url) => url.endsWith("/conversation/messages")));
   assert.match(
     await page.locator(".message-learning").innerText(),
-    /No lasting fact to learn/,
+    /Nothing new to remember/,
+  );
+  assert.equal(
+    calls.some((url) => url.endsWith("/learn")),
+    false,
   );
   await page.getByText("Context: automatic", { exact: true }).click();
   await page.getByLabel("Answer evidence").selectOption("sources_and_memories");
@@ -904,13 +914,15 @@ test("automatic date uses the clock and makes its provenance visible", async (t)
   await page.getByText("From the application clock", { exact: true }).waitFor();
   const answer = await page.locator(".reply").innerText();
   assert.match(answer, /Today is/);
-  assert.match(answer, /no model call or saved note was needed/);
-  await page
-    .getByText("Query metrics and model calls", { exact: true })
-    .click();
+  assert.match(answer, /no answer model call/);
+  await page.locator(".request-metrics > summary").click();
   assert.match(
-    await page.locator(".reply .query-metrics").innerText(),
-    /0 recorded/,
+    await page.locator(".request-metrics").innerText(),
+    /1 recorded/,
+  );
+  assert.match(
+    await page.getByRole("table", { name: "Model calls by phase" }).innerText(),
+    /Assessment/,
   );
   assert.equal(await page.getByLabel("Ask a question").inputValue(), "");
 });
@@ -1032,7 +1044,7 @@ test("mobile Correct, world change and Forget review effects and clear revoked c
   await nav(page, "Sources");
   await button(page, "Open collection").click();
   await idle(page);
-  await page.getByRole("button", { name: /dict_0003/ }).click();
+  await page.getByRole("button", { name: /dict[ _]0003/ }).click();
   await page.getByRole("dialog").waitFor();
   assert.match(
     await page.locator("#raw-text").textContent(),
@@ -1046,7 +1058,7 @@ test("mobile Correct, world change and Forget review effects and clear revoked c
   await idle(page);
   assert.doesNotMatch(
     await page.locator("#search-results").innerText(),
-    /dict_0001|dict_0003/,
+    /dict[ _]0001|dict[ _]0003/,
   );
 });
 
@@ -1119,22 +1131,254 @@ test("query exposes evidence selection and actual model-call metrics", async (t)
     .selectOption("sources_and_memories");
   await page
     .getByLabel("Ask a question", { exact: true })
-    .fill("What is the latest recorded Atlas launch date?");
+    .fill(
+      "For the Atlas project, I prefer PostgreSQL. What is its latest recorded launch date?",
+    );
   await button(page, "Ask").click();
   await idle(page);
-  await page.locator(".reply .query-metrics > summary").click();
+  await page.locator(".request-metrics > summary").click();
   assert.match(
-    await page.locator(".reply .query-metrics").innerText(),
-    /Browser round trip:/,
+    await page.locator(".request-metrics").innerText(),
+    /Browser total/,
   );
   assert.match(
-    await page.locator(".reply .query-metrics").innerText(),
-    /tokens/,
+    await page.getByRole("table", { name: "Where time went" }).innerText(),
+    /Retrieve answer context/,
   );
-  assert.ok(await page.locator(".call-metric").count());
-  await page.locator(".message-learning .query-metrics > summary").click();
+  const calls = page.getByRole("table", {
+    name: "Model calls by phase",
+  });
   assert.match(
-    await page.locator(".message-learning .query-metrics").innerText(),
-    /input 100 \/ output 100 tokens/,
+    await calls.getByRole("row").filter({ hasText: "Learning" }).innerText(),
+    /succeeded.*100.*100/s,
+  );
+  assert.match(await calls.innerText(), /Answer/);
+  assert.match(await calls.innerText(), /Assessment/);
+  assert.match(await calls.innerText(), /Input tokens.*Output tokens/s);
+  assert.match(
+    await page.locator(".request-metrics").innerText(),
+    /not additive portions/,
+  );
+  assert.equal(
+    await page.locator(".metrics-diagnostics pre").isVisible(),
+    false,
+  );
+  await page.locator(".metrics-diagnostics > summary").click();
+  assert.match(
+    await page.locator(".metrics-diagnostics pre").innerText(),
+    /dur=/,
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.equal(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+    true,
+  );
+});
+
+test("failed answers keep learning metrics and label unavailable answer usage", async (t) => {
+  const page = await pageFor(t);
+  await page
+    .getByLabel("Collection name")
+    .fill(`failed-metrics-${randomUUID()}`);
+  await page.route("**/ask", (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      headers: { "Server-Timing": "answer_context;dur=12.5, request;dur=50" },
+      body: JSON.stringify({ reason: "provider_failed" }),
+    }),
+  );
+  await page
+    .getByLabel("Ask a question")
+    .fill(
+      "For the Atlas project, I prefer PostgreSQL. What is its recorded launch date?",
+    );
+  await button(page, "Ask").click();
+  await idle(page);
+  await page
+    .getByText("The answer could not finish", { exact: true })
+    .waitFor();
+  await page.locator(".request-metrics > summary").click();
+  const metrics = await page.locator(".request-metrics").innerText();
+  assert.match(metrics, /Latest submission failed/);
+  assert.match(metrics, /model usage is unknown here, not zero/);
+  assert.match(metrics, /Learning/);
+  assert.match(
+    await page.getByRole("table", { name: "Where time went" }).innerText(),
+    /Retrieve answer context.*12.5 ms/s,
+  );
+});
+
+test("failed assessment pauses saving and answering; explicit retry polls the same receipt", async (t) => {
+  const page = await pageFor(t);
+  const assessmentId = randomUUID();
+  const captureBodies = [];
+  const answerBodies = [];
+  const failedCall = {
+    id: randomUUID(),
+    model: "synthetic-assessor",
+    status: "failed",
+    input_tokens: null,
+    output_tokens: null,
+    elapsed_ms: 1100,
+    error_code: "provider_response_invalid",
+    reserved_tokens: 2048,
+  };
+  const completedCall = {
+    ...failedCall,
+    id: randomUUID(),
+    status: "succeeded",
+    input_tokens: 100,
+    output_tokens: 30,
+    elapsed_ms: 900,
+    error_code: null,
+  };
+  await page.route("**/conversation/messages", (route) => {
+    captureBodies.push(route.request().postDataJSON());
+    const status =
+      captureBodies.length === 1
+        ? "failed"
+        : captureBodies.length === 2
+          ? "running"
+          : "ready";
+    return route.fulfill({
+      status: 200,
+      headers: {
+        "Server-Timing": "turn_assessment;dur=1100, request;dur=1200",
+      },
+      json: {
+        assessment_id: assessmentId,
+        assessment: {
+          assessment_id: assessmentId,
+          status,
+          decision:
+            status === "ready"
+              ? {
+                  retention: "skip",
+                  route: "general",
+                  reason: "general_request",
+                  memory_excerpts: [],
+                }
+              : null,
+          calls:
+            status === "ready" ? [failedCall, completedCall] : [failedCall],
+          error_code: status === "failed" ? "provider_response_invalid" : null,
+        },
+        source_id: null,
+        status: status === "ready" ? "not_saved" : status,
+        decision: status === "ready" ? "no_memory" : null,
+        revision_ids: [],
+        error_code: status === "failed" ? "provider_response_invalid" : null,
+        attempts: 0,
+        calls: [],
+      },
+    });
+  });
+  await page.route("**/ask", (route) => {
+    answerBodies.push(route.request().postDataJSON());
+    return route.fulfill({
+      json: {
+        status: "general",
+        text: "Synthetic general answer.",
+        citations: [],
+        sources: [],
+        representation: "auto",
+        call_ids: [],
+        evidence_bytes: 0,
+        model: null,
+      },
+    });
+  });
+  await page.getByLabel("Ask a question").fill("Tell me a joke.");
+  await button(page, "Ask").click();
+  await idle(page);
+  assert.equal(answerBodies.length, 0);
+  assert.match(
+    await page.locator(".message-learning-warning").innerText(),
+    /No message was saved/,
+  );
+  assert.equal(await page.locator(".reply.error-card").count(), 0);
+  await page.locator(".request-metrics > summary").click();
+  assert.match(
+    await page.getByRole("table", { name: "Model calls by phase" }).innerText(),
+    /Assessment.*failed.*Unknown/s,
+  );
+  await button(page, "Retry memory check").click();
+  await idle(page);
+  assert.equal(captureBodies.length, 3);
+  assert.deepEqual(
+    captureBodies.map((body) => body.retry_failed),
+    [false, true, false],
+  );
+  assert.equal(new Set(captureBodies.map((body) => body.message_id)).size, 1);
+  assert.equal(
+    new Set(captureBodies.map((body) => body.conversation_id)).size,
+    1,
+  );
+  assert.equal(answerBodies.length, 1);
+  assert.equal(answerBodies[0].assessment_id, assessmentId);
+  assert.match(
+    await page.locator(".message-learning").innerText(),
+    /No source or memory saved/,
+  );
+  assert.equal(await page.locator(".message-learning-warning").count(), 0);
+});
+
+test("failed answer call metrics retain unknown usage without turning it into zero", async (t) => {
+  const page = await pageFor(t);
+  await page
+    .getByLabel("Collection name")
+    .fill(`known-failure-${randomUUID()}`);
+  const callId = randomUUID();
+  await page.route("**/ask", (route) =>
+    route.fulfill({
+      status: 503,
+      json: {
+        status: "error",
+        reason: "provider_failed",
+        metrics: {
+          calls: [
+            {
+              id: callId,
+              model: "synthetic-answer",
+              status: "failed",
+              input_tokens: null,
+              output_tokens: null,
+              elapsed_ms: 1250,
+              error_code: "provider_failed",
+              reserved_tokens: 4096,
+            },
+          ],
+        },
+      },
+    }),
+  );
+  await page
+    .getByLabel("Ask a question")
+    .fill(
+      "For the Atlas project, I prefer PostgreSQL. What is its recorded launch date?",
+    );
+  await button(page, "Ask").click();
+  await idle(page);
+  await page.locator(".request-metrics > summary").click();
+  const calls = page.getByRole("table", { name: "Model calls by phase" });
+  assert.match(
+    await calls.getByRole("row").filter({ hasText: "Answer" }).innerText(),
+    /failed.*1.25 s.*Unknown.*Unknown/s,
+  );
+  assert.match(
+    await page.locator(".metrics-overview").innerText(),
+    /\+ unknown/,
+  );
+  await page.locator(".metrics-diagnostics > summary").click();
+  assert.match(
+    await page.locator(".metrics-diagnostics").innerText(),
+    new RegExp(callId),
+  );
+  assert.match(
+    await page.locator(".metrics-diagnostics").innerText(),
+    /4,096 tokens; not measured usage/,
   );
 });

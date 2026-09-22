@@ -216,9 +216,26 @@ def test_free_provider_consent_and_no_unfamiliar_inheritance(monkeypatch, provid
     "provider,model", [("google", "gemini-3.8-flash"), ("openrouter", "google/gemma-4-31b-it:free")]
 )
 def test_free_transport_exact_route_accounting_and_rate_limit(monkeypatch, provider, model):
+    from jarvis.answers import AnswerProposal
+    from jarvis.contracts import excerpt_schema
     from jarvis.providers import FreeChatProvider
 
-    monkeypatch.setattr("jarvis.answers.answer_messages", lambda *a, **kw: [])
+    schema = excerpt_schema(AnswerProposal.model_json_schema())
+    messages = [
+        {"role": "system", "content": "Return a source-grounded answer matching OUTPUT_SCHEMA."},
+        {
+            "role": "user",
+            "content": json.dumps(
+                {
+                    "QUESTION": "What is Atlas's recorded launch date?",
+                    "SOURCES": [],
+                    "MEMORIES": [],
+                    "OUTPUT_SCHEMA": schema,
+                }
+            ),
+        },
+    ]
+    monkeypatch.setattr("jarvis.answers.answer_messages", lambda *a, **kw: messages)
     captured = []
 
     def transport(request):
@@ -243,8 +260,18 @@ def test_free_transport_exact_route_accounting_and_rate_limit(monkeypatch, provi
     answer = proposer.complete(body)
     assert answer.input_tokens == 12 and answer.output_tokens == 7
     assert reservation > body["max_tokens"] and "chat_template_kwargs" not in body
+    assert reservation >= (
+        len(json.dumps(body, ensure_ascii=False).encode("utf-8")) + body["max_tokens"] + 512
+    )
     assert str(captured[0].url) == proposer.endpoint
-    if provider == "openrouter":
+    assert json.loads(captured[0].content) == body
+    if provider == "google":
+        assert body["response_format"] == {
+            "type": "json_schema",
+            "json_schema": {"name": "jarvis_answer", "strict": True, "schema": schema},
+        }
+    else:
+        assert body["response_format"] == {"type": "json_object"}
         assert body["provider"]["max_price"] == {"prompt": 0, "completion": 0, "request": 0}
         assert body["provider"]["allow_fallbacks"] is False
         assert body["provider"]["data_collection"] == "deny"
@@ -415,7 +442,7 @@ def test_specific_project_evidence_survives_generic_query_distractors(engine):
     assert {"old", "update", "access"} <= ids
     assert packet.evidence.request.limit == 12
     assert packet.evidence.evidence_bytes <= 24000
-    assert packet.evidence.search_version == "s14-lexical-specificity-v3"
+    assert packet.evidence.search_version == "s15-memory-first-v1"
 
 
 def test_blank_free_model_overrides_use_supported_provider_defaults(monkeypatch):

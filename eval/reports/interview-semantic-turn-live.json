@@ -1,0 +1,2495 @@
+{
+  "status": "completed",
+  "started_at": "2026-09-22T10:53:03.792583+00:00",
+  "base_url": "http://127.0.0.1:18000",
+  "namespace": "semantic-20260922-a",
+  "scope": "Curated synthetic persona facts and public questions only; no reset, deletion or provider fallback.",
+  "planned_cases": 14,
+  "nominal_model_calls": 31,
+  "maximum_additional_model_calls": 45,
+  "lifetime_stop": 1060,
+  "shared_lifetime_ceiling": 1100,
+  "reserved_demo_calls": 30,
+  "automatic_checks": "Contract/count/term screens only; not an independent semantic-quality score. Inspect all answer text, qualifications, citations and learned content.",
+  "semantic_review": "pending",
+  "cases": [
+    {
+      "id": "long-capital-1",
+      "question": "what is the capital of USA ? I just want to know the city and in which state it is present",
+      "expected": {
+        "retention": "skip",
+        "route": "general",
+        "status": "general",
+        "source_delta": 0,
+        "memory_delta": 0,
+        "answer_terms": [
+          "washington"
+        ],
+        "district_explanation": true
+      },
+      "message_id": "c8d3c643-6476-45b7-a15d-02a1e0c2d2da",
+      "usage_before_attempts": 997,
+      "counts_before": {
+        "sources": 0,
+        "memories": 0
+      },
+      "capture": {
+        "http_status": 200,
+        "elapsed_ms": 1497.34,
+        "server_timing": "model;dur=1327.660, accounting;dur=11.951, assessment_validation;dur=0.086, turn_assessment;dur=1375.216, request;dur=1379.833",
+        "status": "not_saved",
+        "source_id": null,
+        "decision": "no_memory",
+        "revision_ids": [],
+        "attempts": 0,
+        "error_code": null,
+        "assessment_id": "4a9df948-2184-43dd-a6ab-6fb83596b7d6",
+        "assessment": {
+          "assessment_id": "4a9df948-2184-43dd-a6ab-6fb83596b7d6",
+          "status": "ready",
+          "decision": {
+            "retention": "skip",
+            "route": "general",
+            "reason": "general_request",
+            "memory_excerpts": []
+          },
+          "error_code": null,
+          "calls": [
+            {
+              "id": "8917731a-7952-45b1-945d-d4890dd86b2f",
+              "status": "succeeded",
+              "input_tokens": 852,
+              "output_tokens": 30,
+              "elapsed_ms": 1327,
+              "error_code": null
+            }
+          ]
+        },
+        "calls": []
+      },
+      "answer": {
+        "http_status": 200,
+        "elapsed_ms": 1800.52,
+        "server_timing": "answer_context;dur=6.932, model;dur=1618.929, accounting;dur=8.910, answer_validation;dur=0.087, answer_release;dur=12.511, answer;dur=1657.685, request;dur=1658.746",
+        "status": "general",
+        "text": "The capital of the USA is Washington, D.C. It is a federal district rather than part of any specific U.S. state, located along the Potomac River between the states of Maryland and Virginia.",
+        "general_text": null,
+        "notice": "No workspace evidence was sent to the answer model. The general explanation uses model knowledge or your current input, is not verified by live web search, and is not saved as a memory.",
+        "basis": "general_knowledge",
+        "model": "gemini-3.5-flash-lite",
+        "prompt_version": "semantic-turn-routing-v3",
+        "retrieval": {
+          "strategy": "general_question",
+          "sources_reviewed": 0,
+          "memories_reviewed": 0,
+          "eligible_sources": null,
+          "eligible_memories": null,
+          "partial": false,
+          "query_expanded": false
+        },
+        "evidence_bytes": 0,
+        "call_ids": [
+          "f471181d-c66f-4477-ae91-d15be548d469"
+        ],
+        "assessment": {
+          "assessment_id": "4a9df948-2184-43dd-a6ab-6fb83596b7d6",
+          "status": "ready",
+          "decision": {
+            "route": "general",
+            "reason": "general_request",
+            "retention": "skip",
+            "memory_excerpts": []
+          },
+          "error_code": null,
+          "calls": [
+            {
+              "id": "8917731a-7952-45b1-945d-d4890dd86b2f",
+              "status": "succeeded",
+              "input_tokens": 852,
+              "output_tokens": 30,
+              "elapsed_ms": 1327,
+              "error_code": null
+            }
+          ]
+        },
+        "policy_revision": 0,
+        "citations": [],
+        "calls": [
+          {
+            "id": "f471181d-c66f-4477-ae91-d15be548d469",
+            "status": "succeeded",
+            "model": "gemini-3.5-flash-lite",
+            "input_tokens": 1342,
+            "output_tokens": 59,
+            "reserved_tokens": 12675,
+            "elapsed_ms": 1618,
+            "error_code": null
+          }
+        ]
+      },
+      "counts_after": {
+        "sources": 0,
+        "memories": 0
+      },
+      "new_or_revised_memories": [],
+      "checks": {
+        "retention": {
+          "passed": true,
+          "expected": "skip",
+          "actual": "skip"
+        },
+        "route": {
+          "passed": true,
+          "expected": "general",
+          "actual": "general"
+        },
+        "answer_status": {
+          "passed": true,
+          "expected": "general",
+          "actual": "general"
+        },
+        "source_delta": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "active_memory_delta": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "no_workspace_sources_sent": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "no_workspace_memories_sent": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "text_contains_washington": {
+          "passed": true,
+          "expected": true,
+          "actual": true
+        },
+        "district_or_nonstate_explanation": {
+          "passed": true,
+          "expected": true,
+          "actual": true
+        }
+      },
+      "all_automatic_screens_passed": true
+    },
+    {
+      "id": "us-capital",
+      "question": "What is the capital of the US?",
+      "expected": {
+        "retention": "skip",
+        "route": "general",
+        "status": "general",
+        "source_delta": 0,
+        "memory_delta": 0,
+        "answer_terms": [
+          "washington"
+        ],
+        "district_explanation": true
+      },
+      "message_id": "ef7a383e-44cc-4d97-90c9-7c9b820860a8",
+      "usage_before_attempts": 999,
+      "counts_before": {
+        "sources": 0,
+        "memories": 0
+      },
+      "capture": {
+        "http_status": 200,
+        "elapsed_ms": 1163.95,
+        "server_timing": "model;dur=1028.686, accounting;dur=8.962, assessment_validation;dur=0.067, turn_assessment;dur=1067.460, request;dur=1070.489",
+        "status": "not_saved",
+        "source_id": null,
+        "decision": "no_memory",
+        "revision_ids": [],
+        "attempts": 0,
+        "error_code": null,
+        "assessment_id": "927731de-fe1a-4c4d-a66c-23bc16e95488",
+        "assessment": {
+          "assessment_id": "927731de-fe1a-4c4d-a66c-23bc16e95488",
+          "status": "ready",
+          "decision": {
+            "retention": "skip",
+            "route": "general",
+            "reason": "general_request",
+            "memory_excerpts": []
+          },
+          "error_code": null,
+          "calls": [
+            {
+              "id": "efa4f453-021e-4409-b63f-bc85d085dc9a",
+              "status": "succeeded",
+              "input_tokens": 838,
+              "output_tokens": 30,
+              "elapsed_ms": 1028,
+              "error_code": null
+            }
+          ]
+        },
+        "calls": []
+      },
+      "answer": {
+        "http_status": 422,
+        "elapsed_ms": 48159.6,
+        "server_timing": "answer_context;dur=6.089, model;dur=45101.637, accounting;dur=23.243, answer;dur=45146.537, request;dur=45147.546",
+        "status": "error",
+        "reason": "provider_failed",
+        "calls": [
+          {
+            "id": "4dd5e220-7d1f-4e9c-a57b-e011e603c924",
+            "status": "failed",
+            "model": "gemini-3.5-flash-lite",
+            "input_tokens": null,
+            "output_tokens": null,
+            "elapsed_ms": 45103,
+            "error_code": "provider_failed"
+          }
+        ]
+      },
+      "counts_after": {
+        "sources": 0,
+        "memories": 0
+      },
+      "new_or_revised_memories": [],
+      "checks": {
+        "retention": {
+          "passed": true,
+          "expected": "skip",
+          "actual": "skip"
+        },
+        "route": {
+          "passed": true,
+          "expected": "general",
+          "actual": "general"
+        },
+        "answer_status": {
+          "passed": false,
+          "expected": "general",
+          "actual": "error"
+        },
+        "source_delta": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "active_memory_delta": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "no_workspace_sources_sent": {
+          "passed": false,
+          "expected": 0,
+          "actual": null
+        },
+        "no_workspace_memories_sent": {
+          "passed": false,
+          "expected": 0,
+          "actual": null
+        },
+        "text_contains_washington": {
+          "passed": false,
+          "expected": true,
+          "actual": false
+        },
+        "district_or_nonstate_explanation": {
+          "passed": false,
+          "expected": true,
+          "actual": false
+        }
+      },
+      "all_automatic_screens_passed": false
+    },
+    {
+      "id": "photosynthesis-to-me",
+      "question": "Explain photosynthesis to me in two sentences.",
+      "expected": {
+        "retention": "skip",
+        "route": "general",
+        "status": "general",
+        "source_delta": 0,
+        "memory_delta": 0,
+        "answer_terms": [
+          "light"
+        ]
+      },
+      "message_id": "2687fefa-de2e-43aa-b729-eadc0c970347",
+      "usage_before_attempts": 1001,
+      "counts_before": {
+        "sources": 0,
+        "memories": 0
+      },
+      "capture": {
+        "http_status": 200,
+        "elapsed_ms": 1226.97,
+        "server_timing": "model;dur=1095.484, accounting;dur=10.777, assessment_validation;dur=0.477, turn_assessment;dur=1134.832, request;dur=1138.358",
+        "status": "not_saved",
+        "source_id": null,
+        "decision": "no_memory",
+        "revision_ids": [],
+        "attempts": 0,
+        "error_code": null,
+        "assessment_id": "0f94e307-a947-4127-869e-e3cfd3816034",
+        "assessment": {
+          "assessment_id": "0f94e307-a947-4127-869e-e3cfd3816034",
+          "status": "ready",
+          "decision": {
+            "retention": "skip",
+            "route": "general",
+            "reason": "general_request",
+            "memory_excerpts": []
+          },
+          "error_code": null,
+          "calls": [
+            {
+              "id": "d55b4a8a-fdd9-4192-b68e-04182ea21cb9",
+              "status": "succeeded",
+              "input_tokens": 838,
+              "output_tokens": 30,
+              "elapsed_ms": 1095,
+              "error_code": null
+            }
+          ]
+        },
+        "calls": []
+      },
+      "answer": {
+        "http_status": 200,
+        "elapsed_ms": 1777.81,
+        "server_timing": "answer_context;dur=6.218, model;dur=1629.876, accounting;dur=7.732, answer_validation;dur=0.094, answer_release;dur=13.697, answer;dur=1669.396, request;dur=1670.404",
+        "status": "general",
+        "text": "Photosynthesis is the process by which plants, algae, and some bacteria convert sunlight, water, and carbon dioxide into oxygen and energy in the form of sugar. This vital biochemical pathway sustains plant growth and provides the primary source of oxygen and organic matter for nearly all life on Earth.",
+        "general_text": null,
+        "notice": "No workspace evidence was sent to the answer model. The general explanation uses model knowledge or your current input, is not verified by live web search, and is not saved as a memory.",
+        "basis": "general_knowledge",
+        "model": "gemini-3.5-flash-lite",
+        "prompt_version": "semantic-turn-routing-v3",
+        "retrieval": {
+          "strategy": "general_question",
+          "sources_reviewed": 0,
+          "memories_reviewed": 0,
+          "eligible_sources": null,
+          "eligible_memories": null,
+          "partial": false,
+          "query_expanded": false
+        },
+        "evidence_bytes": 0,
+        "call_ids": [
+          "20a093a9-33c3-4199-8f43-8a8869fd91e8"
+        ],
+        "assessment": {
+          "assessment_id": "0f94e307-a947-4127-869e-e3cfd3816034",
+          "status": "ready",
+          "decision": {
+            "route": "general",
+            "reason": "general_request",
+            "retention": "skip",
+            "memory_excerpts": []
+          },
+          "error_code": null,
+          "calls": [
+            {
+              "id": "d55b4a8a-fdd9-4192-b68e-04182ea21cb9",
+              "status": "succeeded",
+              "input_tokens": 838,
+              "output_tokens": 30,
+              "elapsed_ms": 1095,
+              "error_code": null
+            }
+          ]
+        },
+        "policy_revision": 0,
+        "citations": [],
+        "calls": [
+          {
+            "id": "20a093a9-33c3-4199-8f43-8a8869fd91e8",
+            "status": "succeeded",
+            "model": "gemini-3.5-flash-lite",
+            "input_tokens": 1329,
+            "output_tokens": 73,
+            "reserved_tokens": 12631,
+            "elapsed_ms": 1629,
+            "error_code": null
+          }
+        ]
+      },
+      "counts_after": {
+        "sources": 0,
+        "memories": 0
+      },
+      "new_or_revised_memories": [],
+      "checks": {
+        "retention": {
+          "passed": true,
+          "expected": "skip",
+          "actual": "skip"
+        },
+        "route": {
+          "passed": true,
+          "expected": "general",
+          "actual": "general"
+        },
+        "answer_status": {
+          "passed": true,
+          "expected": "general",
+          "actual": "general"
+        },
+        "source_delta": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "active_memory_delta": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "no_workspace_sources_sent": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "no_workspace_memories_sent": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "text_contains_light": {
+          "passed": true,
+          "expected": true,
+          "actual": true
+        }
+      },
+      "all_automatic_screens_passed": true
+    },
+    {
+      "id": "project-manager",
+      "question": "What does a project manager do? Explain it to me.",
+      "expected": {
+        "retention": "skip",
+        "route": "general",
+        "status": "general",
+        "source_delta": 0,
+        "memory_delta": 0
+      },
+      "message_id": "a41d622f-f78f-4088-ab02-c510fc57dc42",
+      "usage_before_attempts": 1003,
+      "counts_before": {
+        "sources": 0,
+        "memories": 0
+      },
+      "capture": {
+        "http_status": 200,
+        "elapsed_ms": 1088.09,
+        "server_timing": "model;dur=987.410, accounting;dur=7.890, assessment_validation;dur=0.085, turn_assessment;dur=1019.128, request;dur=1021.692",
+        "status": "not_saved",
+        "source_id": null,
+        "decision": "no_memory",
+        "revision_ids": [],
+        "attempts": 0,
+        "error_code": null,
+        "assessment_id": "001282e0-cfba-4b22-86f7-97a1f6cacbbe",
+        "assessment": {
+          "assessment_id": "001282e0-cfba-4b22-86f7-97a1f6cacbbe",
+          "status": "ready",
+          "decision": {
+            "retention": "skip",
+            "route": "general",
+            "reason": "general_request",
+            "memory_excerpts": []
+          },
+          "error_code": null,
+          "calls": [
+            {
+              "id": "04d0d7af-adf4-4fb7-9d9f-0c329dd5395c",
+              "status": "succeeded",
+              "input_tokens": 842,
+              "output_tokens": 30,
+              "elapsed_ms": 987,
+              "error_code": null
+            }
+          ]
+        },
+        "calls": []
+      },
+      "answer": {
+        "http_status": 200,
+        "elapsed_ms": 2217.07,
+        "server_timing": "answer_context;dur=6.179, model;dur=2052.190, accounting;dur=6.553, answer_validation;dur=0.090, answer_release;dur=8.200, answer;dur=2084.108, request;dur=2085.061",
+        "status": "general",
+        "text": "A project manager is responsible for planning, executing, and closing projects. They serve as the single point of contact for project success, managing resources, timelines, budgets, and communication among stakeholders and team members to ensure the project meets its goals.",
+        "general_text": null,
+        "notice": "No workspace evidence was sent to the answer model. The general explanation uses model knowledge or your current input, is not verified by live web search, and is not saved as a memory.",
+        "basis": "general_knowledge",
+        "model": "gemini-3.5-flash-lite",
+        "prompt_version": "semantic-turn-routing-v3",
+        "retrieval": {
+          "strategy": "general_question",
+          "sources_reviewed": 0,
+          "memories_reviewed": 0,
+          "eligible_sources": null,
+          "eligible_memories": null,
+          "partial": false,
+          "query_expanded": false
+        },
+        "evidence_bytes": 0,
+        "call_ids": [
+          "1da30e3c-3f46-4010-af2a-3282332ae4f5"
+        ],
+        "assessment": {
+          "assessment_id": "001282e0-cfba-4b22-86f7-97a1f6cacbbe",
+          "status": "ready",
+          "decision": {
+            "route": "general",
+            "reason": "general_request",
+            "retention": "skip",
+            "memory_excerpts": []
+          },
+          "error_code": null,
+          "calls": [
+            {
+              "id": "04d0d7af-adf4-4fb7-9d9f-0c329dd5395c",
+              "status": "succeeded",
+              "input_tokens": 842,
+              "output_tokens": 30,
+              "elapsed_ms": 987,
+              "error_code": null
+            }
+          ]
+        },
+        "policy_revision": 0,
+        "citations": [],
+        "calls": [
+          {
+            "id": "1da30e3c-3f46-4010-af2a-3282332ae4f5",
+            "status": "succeeded",
+            "model": "gemini-3.5-flash-lite",
+            "input_tokens": 1333,
+            "output_tokens": 65,
+            "reserved_tokens": 12634,
+            "elapsed_ms": 2052,
+            "error_code": null
+          }
+        ]
+      },
+      "counts_after": {
+        "sources": 0,
+        "memories": 0
+      },
+      "new_or_revised_memories": [],
+      "checks": {
+        "retention": {
+          "passed": true,
+          "expected": "skip",
+          "actual": "skip"
+        },
+        "route": {
+          "passed": true,
+          "expected": "general",
+          "actual": "general"
+        },
+        "answer_status": {
+          "passed": true,
+          "expected": "general",
+          "actual": "general"
+        },
+        "source_delta": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "active_memory_delta": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "no_workspace_sources_sent": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "no_workspace_memories_sent": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        }
+      },
+      "all_automatic_screens_passed": true
+    },
+    {
+      "id": "joke",
+      "question": "Tell me a joke.",
+      "expected": {
+        "retention": "skip",
+        "route": "general",
+        "status": "general",
+        "source_delta": 0,
+        "memory_delta": 0
+      },
+      "message_id": "aad0e2e3-4750-457e-9336-c2d6f5ceb883",
+      "usage_before_attempts": 1005,
+      "counts_before": {
+        "sources": 0,
+        "memories": 0
+      },
+      "capture": {
+        "http_status": 200,
+        "elapsed_ms": 1231.96,
+        "server_timing": "model;dur=1120.950, accounting;dur=7.934, assessment_validation;dur=0.069, turn_assessment;dur=1153.290, request;dur=1156.303",
+        "status": "not_saved",
+        "source_id": null,
+        "decision": "no_memory",
+        "revision_ids": [],
+        "attempts": 0,
+        "error_code": null,
+        "assessment_id": "03c00ec2-fbd5-4287-a44e-65d5d9b911bd",
+        "assessment": {
+          "assessment_id": "03c00ec2-fbd5-4287-a44e-65d5d9b911bd",
+          "status": "ready",
+          "decision": {
+            "retention": "skip",
+            "route": "general",
+            "reason": "small_talk",
+            "memory_excerpts": []
+          },
+          "error_code": null,
+          "calls": [
+            {
+              "id": "a3b38075-5bd4-464d-9c5d-1c3d5584d339",
+              "status": "succeeded",
+              "input_tokens": 835,
+              "output_tokens": 40,
+              "elapsed_ms": 1120,
+              "error_code": null
+            }
+          ]
+        },
+        "calls": []
+      },
+      "answer": {
+        "http_status": 200,
+        "elapsed_ms": 1597.25,
+        "server_timing": "answer_context;dur=6.904, model;dur=1455.221, accounting;dur=10.423, answer_validation;dur=0.316, answer_release;dur=14.320, answer;dur=1497.747, request;dur=1498.919",
+        "status": "general",
+        "text": "Why don't scientists trust atoms? Because they make up everything!",
+        "general_text": null,
+        "notice": "No workspace evidence was sent to the answer model. The general explanation uses model knowledge or your current input, is not verified by live web search, and is not saved as a memory.",
+        "basis": "general_knowledge",
+        "model": "gemini-3.5-flash-lite",
+        "prompt_version": "semantic-turn-routing-v3",
+        "retrieval": {
+          "strategy": "general_question",
+          "sources_reviewed": 0,
+          "memories_reviewed": 0,
+          "eligible_sources": null,
+          "eligible_memories": null,
+          "partial": false,
+          "query_expanded": false
+        },
+        "evidence_bytes": 0,
+        "call_ids": [
+          "0ce092ed-e145-4fd9-b876-b2d84da1b86e"
+        ],
+        "assessment": {
+          "assessment_id": "03c00ec2-fbd5-4287-a44e-65d5d9b911bd",
+          "status": "ready",
+          "decision": {
+            "route": "general",
+            "reason": "small_talk",
+            "retention": "skip",
+            "memory_excerpts": []
+          },
+          "error_code": null,
+          "calls": [
+            {
+              "id": "a3b38075-5bd4-464d-9c5d-1c3d5584d339",
+              "status": "succeeded",
+              "input_tokens": 835,
+              "output_tokens": 40,
+              "elapsed_ms": 1120,
+              "error_code": null
+            }
+          ]
+        },
+        "policy_revision": 0,
+        "citations": [],
+        "calls": [
+          {
+            "id": "0ce092ed-e145-4fd9-b876-b2d84da1b86e",
+            "status": "succeeded",
+            "model": "gemini-3.5-flash-lite",
+            "input_tokens": 1326,
+            "output_tokens": 31,
+            "reserved_tokens": 12595,
+            "elapsed_ms": 1455,
+            "error_code": null
+          }
+        ]
+      },
+      "counts_after": {
+        "sources": 0,
+        "memories": 0
+      },
+      "new_or_revised_memories": [],
+      "checks": {
+        "retention": {
+          "passed": true,
+          "expected": "skip",
+          "actual": "skip"
+        },
+        "route": {
+          "passed": true,
+          "expected": "general",
+          "actual": "general"
+        },
+        "answer_status": {
+          "passed": true,
+          "expected": "general",
+          "actual": "general"
+        },
+        "source_delta": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "active_memory_delta": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "no_workspace_sources_sent": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "no_workspace_memories_sent": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        }
+      },
+      "all_automatic_screens_passed": true
+    },
+    {
+      "id": "hypothetical-job",
+      "question": "Suppose I worked at Acme. What might a project manager do?",
+      "expected": {
+        "retention": "skip",
+        "route": "general",
+        "status": "general",
+        "source_delta": 0,
+        "memory_delta": 0,
+        "reason": "hypothetical"
+      },
+      "message_id": "337f5eff-be5b-4557-bbee-62184266f213",
+      "usage_before_attempts": 1007,
+      "counts_before": {
+        "sources": 0,
+        "memories": 0
+      },
+      "capture": {
+        "http_status": 200,
+        "elapsed_ms": 1642.0,
+        "server_timing": "model;dur=1500.121, accounting;dur=6.981, assessment_validation;dur=0.060, turn_assessment;dur=1536.365, request;dur=1540.948",
+        "status": "not_saved",
+        "source_id": null,
+        "decision": "no_memory",
+        "revision_ids": [],
+        "attempts": 0,
+        "error_code": null,
+        "assessment_id": "e9792930-2248-471a-b5da-1e7775331227",
+        "assessment": {
+          "assessment_id": "e9792930-2248-471a-b5da-1e7775331227",
+          "status": "ready",
+          "decision": {
+            "retention": "skip",
+            "route": "general",
+            "reason": "hypothetical",
+            "memory_excerpts": []
+          },
+          "error_code": null,
+          "calls": [
+            {
+              "id": "ec4699c8-7f74-4978-aa23-389a80c022fc",
+              "status": "succeeded",
+              "input_tokens": 843,
+              "output_tokens": 30,
+              "elapsed_ms": 1500,
+              "error_code": null
+            }
+          ]
+        },
+        "calls": []
+      },
+      "answer": {
+        "http_status": 200,
+        "elapsed_ms": 1879.62,
+        "server_timing": "answer_context;dur=6.093, model;dur=1724.258, accounting;dur=9.359, answer_validation;dur=0.095, answer_release;dur=13.805, answer;dur=1764.183, request;dur=1765.310",
+        "status": "general",
+        "text": "A project manager is typically responsible for planning, executing, and closing projects. Their duties often include defining project scope, allocating resources, managing budgets, scheduling timelines, facilitating communication between team members and stakeholders, and mitigating risks to ensure the project is delivered successfully on time and within scope.",
+        "general_text": null,
+        "notice": "No workspace evidence was sent to the answer model. The general explanation uses model knowledge or your current input, is not verified by live web search, and is not saved as a memory.",
+        "basis": "general_knowledge",
+        "model": "gemini-3.5-flash-lite",
+        "prompt_version": "semantic-turn-routing-v3",
+        "retrieval": {
+          "strategy": "general_question",
+          "sources_reviewed": 0,
+          "memories_reviewed": 0,
+          "eligible_sources": null,
+          "eligible_memories": null,
+          "partial": false,
+          "query_expanded": false
+        },
+        "evidence_bytes": 0,
+        "call_ids": [
+          "c05a934d-0a04-44af-8df1-a45aab56fabf"
+        ],
+        "assessment": {
+          "assessment_id": "e9792930-2248-471a-b5da-1e7775331227",
+          "status": "ready",
+          "decision": {
+            "route": "general",
+            "reason": "hypothetical",
+            "retention": "skip",
+            "memory_excerpts": []
+          },
+          "error_code": null,
+          "calls": [
+            {
+              "id": "ec4699c8-7f74-4978-aa23-389a80c022fc",
+              "status": "succeeded",
+              "input_tokens": 843,
+              "output_tokens": 30,
+              "elapsed_ms": 1500,
+              "error_code": null
+            }
+          ]
+        },
+        "policy_revision": 0,
+        "citations": [],
+        "calls": [
+          {
+            "id": "c05a934d-0a04-44af-8df1-a45aab56fabf",
+            "status": "succeeded",
+            "model": "gemini-3.5-flash-lite",
+            "input_tokens": 1334,
+            "output_tokens": 64,
+            "reserved_tokens": 12640,
+            "elapsed_ms": 1724,
+            "error_code": null
+          }
+        ]
+      },
+      "counts_after": {
+        "sources": 0,
+        "memories": 0
+      },
+      "new_or_revised_memories": [],
+      "checks": {
+        "retention": {
+          "passed": true,
+          "expected": "skip",
+          "actual": "skip"
+        },
+        "route": {
+          "passed": true,
+          "expected": "general",
+          "actual": "general"
+        },
+        "reason": {
+          "passed": true,
+          "expected": "hypothetical",
+          "actual": "hypothetical"
+        },
+        "answer_status": {
+          "passed": true,
+          "expected": "general",
+          "actual": "general"
+        },
+        "source_delta": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "active_memory_delta": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "no_workspace_sources_sent": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "no_workspace_memories_sent": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        }
+      },
+      "all_automatic_screens_passed": true
+    },
+    {
+      "id": "one-response-style",
+      "question": "For this answer only, use three bullet points. Explain gravity.",
+      "expected": {
+        "retention": "skip",
+        "route": "general",
+        "status": "general",
+        "source_delta": 0,
+        "memory_delta": 0,
+        "reason": "one_off"
+      },
+      "message_id": "13e5b5c0-c2a9-47c3-848f-1a3a4b7ac6e2",
+      "usage_before_attempts": 1009,
+      "counts_before": {
+        "sources": 0,
+        "memories": 0
+      },
+      "capture": {
+        "http_status": 200,
+        "elapsed_ms": 1309.62,
+        "server_timing": "model;dur=1181.555, accounting;dur=9.620, assessment_validation;dur=0.069, turn_assessment;dur=1224.668, request;dur=1228.728",
+        "status": "not_saved",
+        "source_id": null,
+        "decision": "no_memory",
+        "revision_ids": [],
+        "attempts": 0,
+        "error_code": null,
+        "assessment_id": "fa314a87-343e-4b55-98cc-0b551e2dd8a7",
+        "assessment": {
+          "assessment_id": "fa314a87-343e-4b55-98cc-0b551e2dd8a7",
+          "status": "ready",
+          "decision": {
+            "retention": "skip",
+            "route": "general",
+            "reason": "one_off",
+            "memory_excerpts": []
+          },
+          "error_code": null,
+          "calls": [
+            {
+              "id": "585ff304-d082-4360-a967-a803019e3df5",
+              "status": "succeeded",
+              "input_tokens": 843,
+              "output_tokens": 30,
+              "elapsed_ms": 1181,
+              "error_code": null
+            }
+          ]
+        },
+        "calls": []
+      },
+      "answer": {
+        "http_status": 200,
+        "elapsed_ms": 2127.14,
+        "server_timing": "answer_context;dur=8.219, model;dur=1934.167, accounting;dur=8.219, answer_validation;dur=0.085, answer_release;dur=11.464, answer;dur=1976.693, request;dur=1977.845",
+        "status": "general",
+        "text": "- Gravity is a natural phenomenon by which all things with mass or energy are brought toward one another.\n- On Earth, gravity gives weight to physical objects and causes them to fall to the ground when dropped.\n- In general relativity, gravity is described not as a force, but as the curvature of spacetime caused by mass and energy.",
+        "general_text": null,
+        "notice": "No workspace evidence was sent to the answer model. The general explanation uses model knowledge or your current input, is not verified by live web search, and is not saved as a memory.",
+        "basis": "general_knowledge",
+        "model": "gemini-3.5-flash-lite",
+        "prompt_version": "semantic-turn-routing-v3",
+        "retrieval": {
+          "strategy": "general_question",
+          "sources_reviewed": 0,
+          "memories_reviewed": 0,
+          "eligible_sources": null,
+          "eligible_memories": null,
+          "partial": false,
+          "query_expanded": false
+        },
+        "evidence_bytes": 0,
+        "call_ids": [
+          "46fe36b7-3ccf-45da-aa31-86620ed79217"
+        ],
+        "assessment": {
+          "assessment_id": "fa314a87-343e-4b55-98cc-0b551e2dd8a7",
+          "status": "ready",
+          "decision": {
+            "route": "general",
+            "reason": "one_off",
+            "retention": "skip",
+            "memory_excerpts": []
+          },
+          "error_code": null,
+          "calls": [
+            {
+              "id": "585ff304-d082-4360-a967-a803019e3df5",
+              "status": "succeeded",
+              "input_tokens": 843,
+              "output_tokens": 30,
+              "elapsed_ms": 1181,
+              "error_code": null
+            }
+          ]
+        },
+        "policy_revision": 0,
+        "citations": [],
+        "calls": [
+          {
+            "id": "46fe36b7-3ccf-45da-aa31-86620ed79217",
+            "status": "succeeded",
+            "model": "gemini-3.5-flash-lite",
+            "input_tokens": 1334,
+            "output_tokens": 84,
+            "reserved_tokens": 12640,
+            "elapsed_ms": 1934,
+            "error_code": null
+          }
+        ]
+      },
+      "counts_after": {
+        "sources": 0,
+        "memories": 0
+      },
+      "new_or_revised_memories": [],
+      "checks": {
+        "retention": {
+          "passed": true,
+          "expected": "skip",
+          "actual": "skip"
+        },
+        "route": {
+          "passed": true,
+          "expected": "general",
+          "actual": "general"
+        },
+        "reason": {
+          "passed": true,
+          "expected": "one_off",
+          "actual": "one_off"
+        },
+        "answer_status": {
+          "passed": true,
+          "expected": "general",
+          "actual": "general"
+        },
+        "source_delta": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "active_memory_delta": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "no_workspace_sources_sent": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "no_workspace_memories_sent": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        }
+      },
+      "all_automatic_screens_passed": true
+    },
+    {
+      "id": "conditional-tea",
+      "question": "I prefer tea only when tired.",
+      "expected": {
+        "retention": "candidate",
+        "route": "general",
+        "status": "general",
+        "source_delta": 1,
+        "memory_delta": null,
+        "reason": "useful_assertion",
+        "minimum_memory_delta": 1,
+        "learning_decision": "extracted",
+        "exact_excerpt": "I prefer tea only when tired."
+      },
+      "message_id": "3bac1a38-311d-43a3-b652-11340b4460c2",
+      "usage_before_attempts": 1011,
+      "counts_before": {
+        "sources": 0,
+        "memories": 0
+      },
+      "capture": {
+        "http_status": 200,
+        "elapsed_ms": 1448.04,
+        "server_timing": "model;dur=1240.756, accounting;dur=7.018, assessment_validation;dur=0.112, turn_assessment;dur=1276.675, request;dur=1333.860",
+        "status": "pending",
+        "source_id": "afafae34-e098-41ea-b731-5efe7738299d",
+        "decision": null,
+        "revision_ids": [],
+        "attempts": 0,
+        "error_code": null,
+        "assessment_id": "dcb95c6c-dd98-4433-a8d5-63393f387631",
+        "assessment": {
+          "assessment_id": "dcb95c6c-dd98-4433-a8d5-63393f387631",
+          "status": "ready",
+          "decision": {
+            "route": "general",
+            "reason": "useful_assertion",
+            "retention": "candidate",
+            "memory_excerpts": [
+              "I prefer tea only when tired."
+            ]
+          },
+          "error_code": null,
+          "calls": [
+            {
+              "id": "8e1e238f-becd-4836-87f1-fa93166207ae",
+              "status": "succeeded",
+              "input_tokens": 837,
+              "output_tokens": 53,
+              "elapsed_ms": 1240,
+              "error_code": null
+            }
+          ]
+        },
+        "calls": []
+      },
+      "learning": {
+        "http_status": 200,
+        "elapsed_ms": 4569.66,
+        "server_timing": "lease;dur=163.295, reserve;dur=265.187, model;dur=3515.566, accounting;dur=28.280, proposal_validation;dur=0.980, memory_commit;dur=191.210, request;dur=4216.202",
+        "status": "succeeded",
+        "source_id": "afafae34-e098-41ea-b731-5efe7738299d",
+        "decision": "extracted",
+        "revision_ids": [
+          "27c25caf-527e-4d22-99ba-b0f7a7b3db42"
+        ],
+        "attempts": 1,
+        "error_code": null,
+        "assessment_id": "dcb95c6c-dd98-4433-a8d5-63393f387631",
+        "assessment": {
+          "assessment_id": "dcb95c6c-dd98-4433-a8d5-63393f387631",
+          "status": "ready",
+          "decision": {
+            "route": "general",
+            "reason": "useful_assertion",
+            "retention": "candidate",
+            "memory_excerpts": [
+              "I prefer tea only when tired."
+            ]
+          },
+          "error_code": null,
+          "calls": [
+            {
+              "id": "8e1e238f-becd-4836-87f1-fa93166207ae",
+              "status": "succeeded",
+              "input_tokens": 837,
+              "output_tokens": 53,
+              "elapsed_ms": 1240,
+              "error_code": null
+            }
+          ]
+        },
+        "calls": [
+          {
+            "id": "049e0fa6-ffe0-449e-bb22-ddb37a28c55d",
+            "status": "succeeded",
+            "input_tokens": 2936,
+            "output_tokens": 317,
+            "elapsed_ms": 2211,
+            "error_code": null
+          },
+          {
+            "id": "a6ac92b1-65d9-47b0-9195-3f7600d64a82",
+            "status": "failed",
+            "input_tokens": 2905,
+            "output_tokens": 165,
+            "elapsed_ms": 1304,
+            "error_code": "invalid_input"
+          }
+        ]
+      },
+      "answer": {
+        "http_status": 200,
+        "elapsed_ms": 1422.39,
+        "server_timing": "answer_context;dur=8.275, model;dur=1284.571, accounting;dur=8.704, answer_validation;dur=0.085, answer_release;dur=13.964, answer;dur=1331.285, request;dur=1332.597",
+        "status": "general",
+        "text": "Got it. I have noted your preference for tea when you are tired.",
+        "general_text": null,
+        "notice": "No workspace evidence was sent to the answer model. The general explanation uses model knowledge or your current input, is not verified by live web search, and is not saved as a memory.",
+        "basis": "general_knowledge",
+        "model": "gemini-3.5-flash-lite",
+        "prompt_version": "semantic-turn-routing-v3",
+        "retrieval": {
+          "strategy": "general_question",
+          "sources_reviewed": 0,
+          "memories_reviewed": 0,
+          "eligible_sources": null,
+          "eligible_memories": null,
+          "partial": false,
+          "query_expanded": false
+        },
+        "evidence_bytes": 0,
+        "call_ids": [
+          "3c7f3ae3-9773-46ab-a9a9-80de09841124"
+        ],
+        "assessment": {
+          "assessment_id": "dcb95c6c-dd98-4433-a8d5-63393f387631",
+          "status": "ready",
+          "decision": {
+            "route": "general",
+            "reason": "useful_assertion",
+            "retention": "candidate",
+            "memory_excerpts": [
+              "I prefer tea only when tired."
+            ]
+          },
+          "error_code": null,
+          "calls": [
+            {
+              "id": "8e1e238f-becd-4836-87f1-fa93166207ae",
+              "status": "succeeded",
+              "input_tokens": 837,
+              "output_tokens": 53,
+              "elapsed_ms": 1240,
+              "error_code": null
+            }
+          ]
+        },
+        "policy_revision": 0,
+        "citations": [],
+        "calls": [
+          {
+            "id": "3c7f3ae3-9773-46ab-a9a9-80de09841124",
+            "status": "succeeded",
+            "model": "gemini-3.5-flash-lite",
+            "input_tokens": 1335,
+            "output_tokens": 32,
+            "reserved_tokens": 12653,
+            "elapsed_ms": 1284,
+            "error_code": null
+          }
+        ]
+      },
+      "counts_after": {
+        "sources": 1,
+        "memories": 1
+      },
+      "new_or_revised_memories": [
+        {
+          "id": "27c25caf-527e-4d22-99ba-b0f7a7b3db42",
+          "claim_id": "b4c72e2b-365b-4049-8101-839a7f015751",
+          "owner_id": "ce9e9be0-bcfa-4d45-b875-6ea50815910a",
+          "revision": 1,
+          "policy_revision": 0,
+          "recorded_at": "2026-09-22T10:54:19.433767Z",
+          "lifecycle": "active",
+          "content": {
+            "subject": {
+              "label": "user",
+              "entity_id": null
+            },
+            "predicate": "prefer",
+            "value": {
+              "kind": "text",
+              "value": "tea"
+            },
+            "scope": {
+              "kind": "global",
+              "key": null
+            },
+            "attribution": {
+              "label": "user",
+              "entity_id": null
+            },
+            "evidence_status": "tentative",
+            "modality": "conditional",
+            "negated": false,
+            "condition": "tired",
+            "time": {
+              "event": null,
+              "valid_from": null,
+              "valid_to": null
+            }
+          },
+          "passages": [
+            {
+              "source_id": "afafae34-e098-41ea-b731-5efe7738299d",
+              "source_revision": 1,
+              "variant": "raw",
+              "start": 0,
+              "end": 29,
+              "exact_text": "I prefer tea only when tired."
+            }
+          ]
+        }
+      ],
+      "checks": {
+        "retention": {
+          "passed": true,
+          "expected": "candidate",
+          "actual": "candidate"
+        },
+        "route": {
+          "passed": true,
+          "expected": "general",
+          "actual": "general"
+        },
+        "reason": {
+          "passed": true,
+          "expected": "useful_assertion",
+          "actual": "useful_assertion"
+        },
+        "answer_status": {
+          "passed": true,
+          "expected": "general",
+          "actual": "general"
+        },
+        "source_delta": {
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        "minimum_active_memory_delta": {
+          "passed": true,
+          "expected_minimum": 1,
+          "actual": 1
+        },
+        "learning_decision": {
+          "passed": true,
+          "expected": "extracted",
+          "actual": "extracted"
+        },
+        "qualifier_preserved_in_selection": {
+          "passed": true,
+          "expected": true,
+          "actual": true
+        },
+        "no_workspace_sources_sent": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "no_workspace_memories_sent": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        }
+      },
+      "all_automatic_screens_passed": true
+    },
+    {
+      "id": "personal-recall",
+      "question": "What do I prefer to drink, and under what condition?",
+      "expected": {
+        "retention": "skip",
+        "route": "contextual",
+        "status": "answered",
+        "source_delta": 0,
+        "memory_delta": 0,
+        "answer_terms": [
+          "tea",
+          "tired"
+        ],
+        "citations": true
+      },
+      "message_id": "07682b8a-d365-4348-8154-ac67ffbd402c",
+      "usage_before_attempts": 1015,
+      "counts_before": {
+        "sources": 1,
+        "memories": 1
+      },
+      "capture": {
+        "http_status": 200,
+        "elapsed_ms": 1167.65,
+        "server_timing": "model;dur=1061.506, accounting;dur=7.234, assessment_validation;dur=0.069, turn_assessment;dur=1095.618, request;dur=1098.683",
+        "status": "not_saved",
+        "source_id": null,
+        "decision": "no_memory",
+        "revision_ids": [],
+        "attempts": 0,
+        "error_code": null,
+        "assessment_id": "3351a835-9279-4c0a-aea4-90165d054bb6",
+        "assessment": {
+          "assessment_id": "3351a835-9279-4c0a-aea4-90165d054bb6",
+          "status": "ready",
+          "decision": {
+            "retention": "skip",
+            "route": "contextual",
+            "reason": "personal_question",
+            "memory_excerpts": []
+          },
+          "error_code": null,
+          "calls": [
+            {
+              "id": "74ee42a0-e36a-47aa-b967-7fd1cb2f32d0",
+              "status": "succeeded",
+              "input_tokens": 842,
+              "output_tokens": 31,
+              "elapsed_ms": 1061,
+              "error_code": null
+            }
+          ]
+        },
+        "calls": []
+      },
+      "answer": {
+        "http_status": 200,
+        "elapsed_ms": 3382.8,
+        "server_timing": "answer_context;dur=610.092, model;dur=1489.896, accounting;dur=6.504, answer_validation;dur=0.378, answer_release;dur=516.490, answer;dur=3187.962, request;dur=3188.835",
+        "status": "answered",
+        "text": "You prefer tea only when you are tired.",
+        "general_text": null,
+        "notice": null,
+        "basis": "saved_evidence",
+        "model": "gemini-3.5-flash-lite",
+        "prompt_version": "semantic-turn-routing-v3",
+        "retrieval": {
+          "strategy": "complete_collection",
+          "sources_reviewed": 1,
+          "memories_reviewed": 1,
+          "eligible_sources": 1,
+          "eligible_memories": 1,
+          "partial": false,
+          "query_expanded": false
+        },
+        "evidence_bytes": 1570,
+        "call_ids": [
+          "cf21aad3-efcd-43be-98ec-40deef80724f"
+        ],
+        "assessment": {
+          "assessment_id": "3351a835-9279-4c0a-aea4-90165d054bb6",
+          "status": "ready",
+          "decision": {
+            "route": "contextual",
+            "reason": "personal_question",
+            "retention": "skip",
+            "memory_excerpts": []
+          },
+          "error_code": null,
+          "calls": [
+            {
+              "id": "74ee42a0-e36a-47aa-b967-7fd1cb2f32d0",
+              "status": "succeeded",
+              "input_tokens": 842,
+              "output_tokens": 31,
+              "elapsed_ms": 1061,
+              "error_code": null
+            }
+          ]
+        },
+        "policy_revision": 0,
+        "citations": [
+          {
+            "source_id": "afafae34-e098-41ea-b731-5efe7738299d",
+            "source_revision": 1,
+            "variant": "raw",
+            "start": 0,
+            "end": 29,
+            "exact_text": "I prefer tea only when tired."
+          }
+        ],
+        "calls": [
+          {
+            "id": "cf21aad3-efcd-43be-98ec-40deef80724f",
+            "status": "succeeded",
+            "model": "gemini-3.5-flash-lite",
+            "input_tokens": 1791,
+            "output_tokens": 113,
+            "reserved_tokens": 13946,
+            "elapsed_ms": 1489,
+            "error_code": null
+          }
+        ]
+      },
+      "counts_after": {
+        "sources": 1,
+        "memories": 1
+      },
+      "new_or_revised_memories": [],
+      "checks": {
+        "retention": {
+          "passed": true,
+          "expected": "skip",
+          "actual": "skip"
+        },
+        "route": {
+          "passed": true,
+          "expected": "contextual",
+          "actual": "contextual"
+        },
+        "answer_status": {
+          "passed": true,
+          "expected": "answered",
+          "actual": "answered"
+        },
+        "source_delta": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "active_memory_delta": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "personal_answer_has_citation": {
+          "passed": true,
+          "expected": true,
+          "actual": true
+        },
+        "text_contains_tea": {
+          "passed": true,
+          "expected": true,
+          "actual": true
+        },
+        "text_contains_tired": {
+          "passed": true,
+          "expected": true,
+          "actual": true
+        }
+      },
+      "all_automatic_screens_passed": true
+    },
+    {
+      "id": "same-fact-again",
+      "question": "I prefer tea only when tired.",
+      "expected": {
+        "retention": "candidate",
+        "route": "general",
+        "status": "general",
+        "source_delta": 1,
+        "memory_delta": 0,
+        "reason": "useful_assertion",
+        "learning_decision": "duplicate",
+        "exact_excerpt": "I prefer tea only when tired."
+      },
+      "message_id": "a9b90323-6af3-46bb-8efc-30623dc4e16e",
+      "usage_before_attempts": 1017,
+      "counts_before": {
+        "sources": 1,
+        "memories": 1
+      },
+      "capture": {
+        "http_status": 200,
+        "elapsed_ms": 423.68,
+        "server_timing": "model;dur=349.551, accounting;dur=15.624, turn_assessment;dur=393.073, request;dur=396.336",
+        "status": "not_saved",
+        "source_id": null,
+        "decision": null,
+        "revision_ids": [],
+        "attempts": 0,
+        "error_code": "rate_limited",
+        "assessment_id": "f63b3cc5-7631-4788-ad2b-68b0e52c74ed",
+        "assessment": {
+          "assessment_id": "f63b3cc5-7631-4788-ad2b-68b0e52c74ed",
+          "status": "failed",
+          "decision": null,
+          "error_code": "rate_limited",
+          "calls": [
+            {
+              "id": "61905964-19c5-4c76-b950-ed267e68e3cb",
+              "status": "failed",
+              "input_tokens": null,
+              "output_tokens": null,
+              "elapsed_ms": 350,
+              "error_code": "rate_limited"
+            }
+          ]
+        },
+        "calls": []
+      },
+      "answer": {
+        "status": "not_attempted"
+      },
+      "counts_after": {
+        "sources": 1,
+        "memories": 1
+      },
+      "new_or_revised_memories": [],
+      "checks": {
+        "retention": {
+          "passed": false,
+          "expected": "candidate",
+          "actual": null
+        },
+        "route": {
+          "passed": false,
+          "expected": "general",
+          "actual": null
+        },
+        "reason": {
+          "passed": false,
+          "expected": "useful_assertion",
+          "actual": null
+        },
+        "answer_status": {
+          "passed": false,
+          "expected": "general",
+          "actual": "not_attempted"
+        },
+        "source_delta": {
+          "passed": false,
+          "expected": 1,
+          "actual": 0
+        },
+        "active_memory_delta": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "learning_decision": {
+          "passed": false,
+          "expected": "duplicate",
+          "actual": null
+        },
+        "qualifier_preserved_in_selection": {
+          "passed": false,
+          "expected": true,
+          "actual": false
+        },
+        "no_workspace_sources_sent": {
+          "passed": false,
+          "expected": 0,
+          "actual": null
+        },
+        "no_workspace_memories_sent": {
+          "passed": false,
+          "expected": 0,
+          "actual": null
+        }
+      },
+      "all_automatic_screens_passed": false
+    },
+    {
+      "id": "mixed-recall-public",
+      "question": "What do I prefer to drink, and what is caffeine?",
+      "expected": {
+        "retention": "skip",
+        "route": "mixed",
+        "status": "mixed",
+        "source_delta": 0,
+        "memory_delta": 0,
+        "answer_terms": [
+          "tea",
+          "tired"
+        ],
+        "general_terms": [
+          "caffeine"
+        ],
+        "citations": true
+      },
+      "message_id": "f6e2fc37-44a4-4158-9ef5-ba5e9d341f8d",
+      "usage_before_attempts": 1018,
+      "counts_before": {
+        "sources": 1,
+        "memories": 1
+      },
+      "capture": {
+        "http_status": 200,
+        "elapsed_ms": 405.16,
+        "server_timing": "model;dur=336.566, accounting;dur=15.865, turn_assessment;dur=376.614, request;dur=379.439",
+        "status": "not_saved",
+        "source_id": null,
+        "decision": null,
+        "revision_ids": [],
+        "attempts": 0,
+        "error_code": "rate_limited",
+        "assessment_id": "ddfb2822-69b4-4513-a859-6f1a19c5ce24",
+        "assessment": {
+          "assessment_id": "ddfb2822-69b4-4513-a859-6f1a19c5ce24",
+          "status": "failed",
+          "decision": null,
+          "error_code": "rate_limited",
+          "calls": [
+            {
+              "id": "9d83c130-3b02-4d31-a09c-43b675444588",
+              "status": "failed",
+              "input_tokens": null,
+              "output_tokens": null,
+              "elapsed_ms": 337,
+              "error_code": "rate_limited"
+            }
+          ]
+        },
+        "calls": []
+      },
+      "answer": {
+        "status": "not_attempted"
+      },
+      "counts_after": {
+        "sources": 1,
+        "memories": 1
+      },
+      "new_or_revised_memories": [],
+      "checks": {
+        "retention": {
+          "passed": false,
+          "expected": "skip",
+          "actual": null
+        },
+        "route": {
+          "passed": false,
+          "expected": "mixed",
+          "actual": null
+        },
+        "answer_status": {
+          "passed": false,
+          "expected": "mixed",
+          "actual": "not_attempted"
+        },
+        "source_delta": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "active_memory_delta": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "personal_answer_has_citation": {
+          "passed": false,
+          "expected": true,
+          "actual": false
+        },
+        "text_contains_tea": {
+          "passed": false,
+          "expected": true,
+          "actual": false
+        },
+        "text_contains_tired": {
+          "passed": false,
+          "expected": true,
+          "actual": false
+        },
+        "general_text_contains_caffeine": {
+          "passed": false,
+          "expected": true,
+          "actual": false
+        }
+      },
+      "all_automatic_screens_passed": false
+    },
+    {
+      "id": "new-project-plus-public",
+      "question": "I work on the Cedar prototype. What does a project manager do?",
+      "expected": {
+        "retention": "candidate",
+        "route": "general",
+        "status": "general",
+        "source_delta": 1,
+        "memory_delta": null,
+        "minimum_memory_delta": 1,
+        "learning_decision": "extracted",
+        "exact_excerpt": "I work on the Cedar prototype."
+      },
+      "message_id": "6819a917-8463-4137-a5f2-0f9b25e814df",
+      "usage_before_attempts": 1019,
+      "counts_before": {
+        "sources": 1,
+        "memories": 1
+      },
+      "capture": {
+        "http_status": 200,
+        "elapsed_ms": 426.06,
+        "server_timing": "model;dur=361.197, accounting;dur=11.897, turn_assessment;dur=396.239, request;dur=399.385",
+        "status": "not_saved",
+        "source_id": null,
+        "decision": null,
+        "revision_ids": [],
+        "attempts": 0,
+        "error_code": "rate_limited",
+        "assessment_id": "f47061af-06ea-4fb6-b0e9-d24f63aff693",
+        "assessment": {
+          "assessment_id": "f47061af-06ea-4fb6-b0e9-d24f63aff693",
+          "status": "failed",
+          "decision": null,
+          "error_code": "rate_limited",
+          "calls": [
+            {
+              "id": "0a5df0b6-2aa4-45d8-8fc2-4c1155a41890",
+              "status": "failed",
+              "input_tokens": null,
+              "output_tokens": null,
+              "elapsed_ms": 361,
+              "error_code": "rate_limited"
+            }
+          ]
+        },
+        "calls": []
+      },
+      "answer": {
+        "status": "not_attempted"
+      },
+      "counts_after": {
+        "sources": 1,
+        "memories": 1
+      },
+      "new_or_revised_memories": [],
+      "checks": {
+        "retention": {
+          "passed": false,
+          "expected": "candidate",
+          "actual": null
+        },
+        "route": {
+          "passed": false,
+          "expected": "general",
+          "actual": null
+        },
+        "answer_status": {
+          "passed": false,
+          "expected": "general",
+          "actual": "not_attempted"
+        },
+        "source_delta": {
+          "passed": false,
+          "expected": 1,
+          "actual": 0
+        },
+        "minimum_active_memory_delta": {
+          "passed": false,
+          "expected_minimum": 1,
+          "actual": 0
+        },
+        "learning_decision": {
+          "passed": false,
+          "expected": "extracted",
+          "actual": null
+        },
+        "qualifier_preserved_in_selection": {
+          "passed": false,
+          "expected": true,
+          "actual": false
+        },
+        "no_workspace_sources_sent": {
+          "passed": false,
+          "expected": 0,
+          "actual": null
+        },
+        "no_workspace_memories_sent": {
+          "passed": false,
+          "expected": 0,
+          "actual": null
+        }
+      },
+      "all_automatic_screens_passed": false
+    },
+    {
+      "id": "long-capital-2-after-facts",
+      "question": "what is the capital of USA ? I just want to know the city and in which state it is present",
+      "expected": {
+        "retention": "skip",
+        "route": "general",
+        "status": "general",
+        "source_delta": 0,
+        "memory_delta": 0,
+        "answer_terms": [
+          "washington"
+        ],
+        "district_explanation": true
+      },
+      "message_id": "19d7b16f-a3cc-4633-a23c-a6a90d2c753e",
+      "usage_before_attempts": 1020,
+      "counts_before": {
+        "sources": 1,
+        "memories": 1
+      },
+      "capture": {
+        "http_status": 200,
+        "elapsed_ms": 377.75,
+        "server_timing": "model;dur=316.303, accounting;dur=11.415, turn_assessment;dur=350.970, request;dur=353.412",
+        "status": "not_saved",
+        "source_id": null,
+        "decision": null,
+        "revision_ids": [],
+        "attempts": 0,
+        "error_code": "rate_limited",
+        "assessment_id": "a0a47350-5915-4f90-959d-335e239324ae",
+        "assessment": {
+          "assessment_id": "a0a47350-5915-4f90-959d-335e239324ae",
+          "status": "failed",
+          "decision": null,
+          "error_code": "rate_limited",
+          "calls": [
+            {
+              "id": "9de78c46-5c2c-4101-9a49-315bca425197",
+              "status": "failed",
+              "input_tokens": null,
+              "output_tokens": null,
+              "elapsed_ms": 316,
+              "error_code": "rate_limited"
+            }
+          ]
+        },
+        "calls": []
+      },
+      "answer": {
+        "status": "not_attempted"
+      },
+      "counts_after": {
+        "sources": 1,
+        "memories": 1
+      },
+      "new_or_revised_memories": [],
+      "checks": {
+        "retention": {
+          "passed": false,
+          "expected": "skip",
+          "actual": null
+        },
+        "route": {
+          "passed": false,
+          "expected": "general",
+          "actual": null
+        },
+        "answer_status": {
+          "passed": false,
+          "expected": "general",
+          "actual": "not_attempted"
+        },
+        "source_delta": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "active_memory_delta": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "no_workspace_sources_sent": {
+          "passed": false,
+          "expected": 0,
+          "actual": null
+        },
+        "no_workspace_memories_sent": {
+          "passed": false,
+          "expected": 0,
+          "actual": null
+        },
+        "text_contains_washington": {
+          "passed": false,
+          "expected": true,
+          "actual": false
+        },
+        "district_or_nonstate_explanation": {
+          "passed": false,
+          "expected": true,
+          "actual": false
+        }
+      },
+      "all_automatic_screens_passed": false
+    },
+    {
+      "id": "long-capital-3-repeat",
+      "question": "what is the capital of USA ? I just want to know the city and in which state it is present",
+      "expected": {
+        "retention": "skip",
+        "route": "general",
+        "status": "general",
+        "source_delta": 0,
+        "memory_delta": 0,
+        "answer_terms": [
+          "washington"
+        ],
+        "district_explanation": true
+      },
+      "message_id": "50125677-93e7-4dd2-8cba-6e7473200f44",
+      "usage_before_attempts": 1021,
+      "counts_before": {
+        "sources": 1,
+        "memories": 1
+      },
+      "capture": {
+        "http_status": 200,
+        "elapsed_ms": 377.72,
+        "server_timing": "model;dur=314.729, accounting;dur=13.678, turn_assessment;dur=351.315, request;dur=353.704",
+        "status": "not_saved",
+        "source_id": null,
+        "decision": null,
+        "revision_ids": [],
+        "attempts": 0,
+        "error_code": "rate_limited",
+        "assessment_id": "3aa54d4b-8ea0-4e8b-84c4-ba4305bcfce3",
+        "assessment": {
+          "assessment_id": "3aa54d4b-8ea0-4e8b-84c4-ba4305bcfce3",
+          "status": "failed",
+          "decision": null,
+          "error_code": "rate_limited",
+          "calls": [
+            {
+              "id": "ace9e17f-cb31-4ded-9bbd-08072ca9a9c9",
+              "status": "failed",
+              "input_tokens": null,
+              "output_tokens": null,
+              "elapsed_ms": 315,
+              "error_code": "rate_limited"
+            }
+          ]
+        },
+        "calls": []
+      },
+      "answer": {
+        "status": "not_attempted"
+      },
+      "counts_after": {
+        "sources": 1,
+        "memories": 1
+      },
+      "new_or_revised_memories": [],
+      "checks": {
+        "retention": {
+          "passed": false,
+          "expected": "skip",
+          "actual": null
+        },
+        "route": {
+          "passed": false,
+          "expected": "general",
+          "actual": null
+        },
+        "answer_status": {
+          "passed": false,
+          "expected": "general",
+          "actual": "not_attempted"
+        },
+        "source_delta": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "active_memory_delta": {
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "no_workspace_sources_sent": {
+          "passed": false,
+          "expected": 0,
+          "actual": null
+        },
+        "no_workspace_memories_sent": {
+          "passed": false,
+          "expected": 0,
+          "actual": null
+        },
+        "text_contains_washington": {
+          "passed": false,
+          "expected": true,
+          "actual": false
+        },
+        "district_or_nonstate_explanation": {
+          "passed": false,
+          "expected": true,
+          "actual": false
+        }
+      },
+      "all_automatic_screens_passed": false
+    }
+  ],
+  "concurrency_limit": "Run as the only evaluation client. Usage guards include all owner models; unrelated concurrent calls count conservatively against this run and remain possible between HTTP requests.",
+  "usage_before": {
+    "attempts": 997,
+    "models": [
+      {
+        "model": "gemini-3.5-flash-lite",
+        "allowance": "s07-synthetic-v1",
+        "role": "answer",
+        "attempts": 139,
+        "succeeded": 106,
+        "failed": 33,
+        "in_flight": 0,
+        "known_usage_calls": 137,
+        "unknown_usage_calls": 2,
+        "known_input_tokens": 426688,
+        "known_output_tokens": 20518,
+        "unsettled_reserved_tokens": 29159,
+        "timed_calls": 139,
+        "latency_p50_ms": 1547.0,
+        "latency_p95_ms": 4779.399999999993
+      },
+      {
+        "model": "gemini-3.5-flash-lite",
+        "allowance": "s07-synthetic-v1",
+        "role": "assessment",
+        "attempts": 4,
+        "succeeded": 4,
+        "failed": 0,
+        "in_flight": 0,
+        "known_usage_calls": 4,
+        "unknown_usage_calls": 0,
+        "known_input_tokens": 3370,
+        "known_output_tokens": 116,
+        "unsettled_reserved_tokens": 0,
+        "timed_calls": 4,
+        "latency_p50_ms": 1123.5,
+        "latency_p95_ms": 1224.8
+      },
+      {
+        "model": "gemini-3.5-flash-lite",
+        "allowance": "s07-synthetic-v1",
+        "role": "extraction",
+        "attempts": 556,
+        "succeeded": 356,
+        "failed": 198,
+        "in_flight": 2,
+        "known_usage_calls": 552,
+        "unknown_usage_calls": 4,
+        "known_input_tokens": 4508763,
+        "known_output_tokens": 162301,
+        "unsettled_reserved_tokens": 123913,
+        "timed_calls": 554,
+        "latency_p50_ms": 1728.0,
+        "latency_p95_ms": 2450.8500000000004
+      },
+      {
+        "model": "gemini-3.8-flash",
+        "allowance": "s07-synthetic-v1",
+        "role": "answer",
+        "attempts": 11,
+        "succeeded": 3,
+        "failed": 8,
+        "in_flight": 0,
+        "known_usage_calls": 3,
+        "unknown_usage_calls": 8,
+        "known_input_tokens": 5015,
+        "known_output_tokens": 338,
+        "unsettled_reserved_tokens": 83315,
+        "timed_calls": 11,
+        "latency_p50_ms": 6380.0,
+        "latency_p95_ms": 15930.5
+      },
+      {
+        "model": "google/gemma-4-31b-it:free",
+        "allowance": "s07-synthetic-v1",
+        "role": "answer",
+        "attempts": 11,
+        "succeeded": 0,
+        "failed": 11,
+        "in_flight": 0,
+        "known_usage_calls": 0,
+        "unknown_usage_calls": 11,
+        "known_input_tokens": 0,
+        "known_output_tokens": 0,
+        "unsettled_reserved_tokens": 114647,
+        "timed_calls": 11,
+        "latency_p50_ms": 651.0,
+        "latency_p95_ms": 1364.5
+      },
+      {
+        "model": "moonshotai/kimi-k3",
+        "allowance": "s07-synthetic-v1",
+        "role": "answer",
+        "attempts": 17,
+        "succeeded": 0,
+        "failed": 17,
+        "in_flight": 0,
+        "known_usage_calls": 0,
+        "unknown_usage_calls": 17,
+        "known_input_tokens": 0,
+        "known_output_tokens": 0,
+        "unsettled_reserved_tokens": 246781,
+        "timed_calls": 13,
+        "latency_p50_ms": 30144.0,
+        "latency_p95_ms": 180375.6
+      },
+      {
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "allowance": "s07-synthetic-v1",
+        "role": "answer",
+        "attempts": 95,
+        "succeeded": 75,
+        "failed": 20,
+        "in_flight": 0,
+        "known_usage_calls": 76,
+        "unknown_usage_calls": 19,
+        "known_input_tokens": 189064,
+        "known_output_tokens": 17375,
+        "unsettled_reserved_tokens": 213798,
+        "timed_calls": 95,
+        "latency_p50_ms": 7356.0,
+        "latency_p95_ms": 31273.199999999997
+      },
+      {
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "allowance": "s07-synthetic-v1",
+        "role": "extraction",
+        "attempts": 132,
+        "succeeded": 86,
+        "failed": 45,
+        "in_flight": 1,
+        "known_usage_calls": 120,
+        "unknown_usage_calls": 12,
+        "known_input_tokens": 652362,
+        "known_output_tokens": 34741,
+        "unsettled_reserved_tokens": 259413,
+        "timed_calls": 126,
+        "latency_p50_ms": 9458.0,
+        "latency_p95_ms": 83622.0
+      },
+      {
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "allowance": "s07-synthetic-v1",
+        "role": "answer",
+        "attempts": 12,
+        "succeeded": 11,
+        "failed": 1,
+        "in_flight": 0,
+        "known_usage_calls": 11,
+        "unknown_usage_calls": 1,
+        "known_input_tokens": 18895,
+        "known_output_tokens": 2242,
+        "unsettled_reserved_tokens": 10502,
+        "timed_calls": 12,
+        "latency_p50_ms": 2611.0,
+        "latency_p95_ms": 63925.9
+      },
+      {
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "allowance": "s07-synthetic-v1",
+        "role": "extraction",
+        "attempts": 8,
+        "succeeded": 4,
+        "failed": 4,
+        "in_flight": 0,
+        "known_usage_calls": 5,
+        "unknown_usage_calls": 3,
+        "known_input_tokens": 16057,
+        "known_output_tokens": 1767,
+        "unsettled_reserved_tokens": 51408,
+        "timed_calls": 8,
+        "latency_p50_ms": 82197.0,
+        "latency_p95_ms": 90183.0
+      },
+      {
+        "model": "poolside/laguna-xs-2.1",
+        "allowance": "s07-synthetic-v1",
+        "role": "answer",
+        "attempts": 12,
+        "succeeded": 8,
+        "failed": 4,
+        "in_flight": 0,
+        "known_usage_calls": 8,
+        "unknown_usage_calls": 4,
+        "known_input_tokens": 13216,
+        "known_output_tokens": 1341,
+        "unsettled_reserved_tokens": 41505,
+        "timed_calls": 12,
+        "latency_p50_ms": 3274.5,
+        "latency_p95_ms": 36946.749999999985
+      }
+    ]
+  },
+  "collection_before": {
+    "sources": 0,
+    "memories": 0
+  },
+  "conversation_id": "d14a418f-afd4-49b7-a3d0-d1df36308180",
+  "usage_after": {
+    "attempts": 1022,
+    "models": [
+      {
+        "model": "gemini-3.5-flash-lite",
+        "allowance": "s07-synthetic-v1",
+        "role": "answer",
+        "attempts": 148,
+        "succeeded": 114,
+        "failed": 34,
+        "in_flight": 0,
+        "known_usage_calls": 145,
+        "unknown_usage_calls": 3,
+        "known_input_tokens": 437812,
+        "known_output_tokens": 21039,
+        "unsettled_reserved_tokens": 41774,
+        "timed_calls": 148,
+        "latency_p50_ms": 1557.0,
+        "latency_p95_ms": 5436.100000000007
+      },
+      {
+        "model": "gemini-3.5-flash-lite",
+        "allowance": "s07-synthetic-v1",
+        "role": "assessment",
+        "attempts": 18,
+        "succeeded": 13,
+        "failed": 5,
+        "in_flight": 0,
+        "known_usage_calls": 13,
+        "unknown_usage_calls": 5,
+        "known_input_tokens": 10940,
+        "known_output_tokens": 420,
+        "unsettled_reserved_tokens": 31264,
+        "timed_calls": 18,
+        "latency_p50_ms": 1070.5,
+        "latency_p95_ms": 1352.9499999999998
+      },
+      {
+        "model": "gemini-3.5-flash-lite",
+        "allowance": "s07-synthetic-v1",
+        "role": "extraction",
+        "attempts": 558,
+        "succeeded": 357,
+        "failed": 199,
+        "in_flight": 2,
+        "known_usage_calls": 554,
+        "unknown_usage_calls": 4,
+        "known_input_tokens": 4514604,
+        "known_output_tokens": 162783,
+        "unsettled_reserved_tokens": 123913,
+        "timed_calls": 556,
+        "latency_p50_ms": 1728.0,
+        "latency_p95_ms": 2449.75
+      },
+      {
+        "model": "gemini-3.8-flash",
+        "allowance": "s07-synthetic-v1",
+        "role": "answer",
+        "attempts": 11,
+        "succeeded": 3,
+        "failed": 8,
+        "in_flight": 0,
+        "known_usage_calls": 3,
+        "unknown_usage_calls": 8,
+        "known_input_tokens": 5015,
+        "known_output_tokens": 338,
+        "unsettled_reserved_tokens": 83315,
+        "timed_calls": 11,
+        "latency_p50_ms": 6380.0,
+        "latency_p95_ms": 15930.5
+      },
+      {
+        "model": "google/gemma-4-31b-it:free",
+        "allowance": "s07-synthetic-v1",
+        "role": "answer",
+        "attempts": 11,
+        "succeeded": 0,
+        "failed": 11,
+        "in_flight": 0,
+        "known_usage_calls": 0,
+        "unknown_usage_calls": 11,
+        "known_input_tokens": 0,
+        "known_output_tokens": 0,
+        "unsettled_reserved_tokens": 114647,
+        "timed_calls": 11,
+        "latency_p50_ms": 651.0,
+        "latency_p95_ms": 1364.5
+      },
+      {
+        "model": "moonshotai/kimi-k3",
+        "allowance": "s07-synthetic-v1",
+        "role": "answer",
+        "attempts": 17,
+        "succeeded": 0,
+        "failed": 17,
+        "in_flight": 0,
+        "known_usage_calls": 0,
+        "unknown_usage_calls": 17,
+        "known_input_tokens": 0,
+        "known_output_tokens": 0,
+        "unsettled_reserved_tokens": 246781,
+        "timed_calls": 13,
+        "latency_p50_ms": 30144.0,
+        "latency_p95_ms": 180375.6
+      },
+      {
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "allowance": "s07-synthetic-v1",
+        "role": "answer",
+        "attempts": 95,
+        "succeeded": 75,
+        "failed": 20,
+        "in_flight": 0,
+        "known_usage_calls": 76,
+        "unknown_usage_calls": 19,
+        "known_input_tokens": 189064,
+        "known_output_tokens": 17375,
+        "unsettled_reserved_tokens": 213798,
+        "timed_calls": 95,
+        "latency_p50_ms": 7356.0,
+        "latency_p95_ms": 31273.199999999997
+      },
+      {
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "allowance": "s07-synthetic-v1",
+        "role": "extraction",
+        "attempts": 132,
+        "succeeded": 86,
+        "failed": 45,
+        "in_flight": 1,
+        "known_usage_calls": 120,
+        "unknown_usage_calls": 12,
+        "known_input_tokens": 652362,
+        "known_output_tokens": 34741,
+        "unsettled_reserved_tokens": 259413,
+        "timed_calls": 126,
+        "latency_p50_ms": 9458.0,
+        "latency_p95_ms": 83622.0
+      },
+      {
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "allowance": "s07-synthetic-v1",
+        "role": "answer",
+        "attempts": 12,
+        "succeeded": 11,
+        "failed": 1,
+        "in_flight": 0,
+        "known_usage_calls": 11,
+        "unknown_usage_calls": 1,
+        "known_input_tokens": 18895,
+        "known_output_tokens": 2242,
+        "unsettled_reserved_tokens": 10502,
+        "timed_calls": 12,
+        "latency_p50_ms": 2611.0,
+        "latency_p95_ms": 63925.9
+      },
+      {
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "allowance": "s07-synthetic-v1",
+        "role": "extraction",
+        "attempts": 8,
+        "succeeded": 4,
+        "failed": 4,
+        "in_flight": 0,
+        "known_usage_calls": 5,
+        "unknown_usage_calls": 3,
+        "known_input_tokens": 16057,
+        "known_output_tokens": 1767,
+        "unsettled_reserved_tokens": 51408,
+        "timed_calls": 8,
+        "latency_p50_ms": 82197.0,
+        "latency_p95_ms": 90183.0
+      },
+      {
+        "model": "poolside/laguna-xs-2.1",
+        "allowance": "s07-synthetic-v1",
+        "role": "answer",
+        "attempts": 12,
+        "succeeded": 8,
+        "failed": 4,
+        "in_flight": 0,
+        "known_usage_calls": 8,
+        "unknown_usage_calls": 4,
+        "known_input_tokens": 13216,
+        "known_output_tokens": 1341,
+        "unsettled_reserved_tokens": 41505,
+        "timed_calls": 12,
+        "latency_p50_ms": 3274.5,
+        "latency_p95_ms": 36946.749999999985
+      }
+    ]
+  },
+  "additional_model_calls": 25,
+  "collection_after": {
+    "sources": 1,
+    "memories": 1
+  },
+  "finished_at": "2026-09-22T10:54:28.512071+00:00",
+  "automatic_screen_failures": [
+    "us-capital",
+    "same-fact-again",
+    "mixed-recall-public",
+    "new-project-plus-public",
+    "long-capital-2-after-facts",
+    "long-capital-3-repeat"
+  ]
+}

@@ -5,6 +5,10 @@ x-app: &app
   build: .
   init: true
   networks: [application]
+  # Docker Desktop resolves this name itself; host-gateway supplies the same mapping on Linux.
+  # Ollama remains on the host loopback interface rather than becoming a Compose service.
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
 
 x-runtime-environment: &runtime-environment
   JARVIS_DB_HOST: db
@@ -16,14 +20,24 @@ x-runtime-environment: &runtime-environment
   JARVIS_UNFAMILIAR_DATA_POLICY_ACK: ${JARVIS_UNFAMILIAR_DATA_POLICY_ACK:-}
   JARVIS_MAX_REQUESTS: ${JARVIS_MAX_REQUESTS:-1100}
   JARVIS_MAX_TOTAL_TOKENS: ${JARVIS_MAX_TOTAL_TOKENS:-10000000}
-  JARVIS_INFERENCE_PROVIDER: ${JARVIS_INFERENCE_PROVIDER:-nvidia}
+  # Google is the normal demo route. Set this explicitly to ollama to use the local backup.
+  JARVIS_INFERENCE_PROVIDER: ${JARVIS_INFERENCE_PROVIDER:-google}
   JARVIS_FREE_SYNTHETIC_TRIAL_APPROVED: ${JARVIS_FREE_SYNTHETIC_TRIAL_APPROVED:-false}
   JARVIS_FREE_SYNTHETIC_QUESTIONS_APPROVED: ${JARVIS_FREE_SYNTHETIC_QUESTIONS_APPROVED:-false}
   JARVIS_FREE_SYNTHETIC_SOURCES_APPROVED: ${JARVIS_FREE_SYNTHETIC_SOURCES_APPROVED:-false}
   JARVIS_PRIVATE_DIRECT_APPROVED: ${JARVIS_PRIVATE_DIRECT_APPROVED:-false}
   JARVIS_FREE_DATA_POLICY_ACK: ${JARVIS_FREE_DATA_POLICY_ACK:-}
-  JARVIS_FREE_EXTRACTOR_MODEL: ${JARVIS_FREE_EXTRACTOR_MODEL:-}
-  JARVIS_FREE_RESPONDER_MODEL: ${JARVIS_FREE_RESPONDER_MODEL:-}
+  JARVIS_FREE_EXTRACTOR_MODEL: ${JARVIS_FREE_EXTRACTOR_MODEL:-gemini-3.5-flash-lite}
+  JARVIS_FREE_RESPONDER_MODEL: ${JARVIS_FREE_RESPONDER_MODEL:-gemini-3.5-flash-lite}
+  # Local-only Ollama backup. Its Python configuration accepts only this host gateway and /v1.
+  JARVIS_OLLAMA_ENABLED: ${JARVIS_OLLAMA_ENABLED:-false}
+  JARVIS_OLLAMA_BASE_URL: "${JARVIS_OLLAMA_BASE_URL:-http://host.docker.internal:11434/v1}"
+  JARVIS_OLLAMA_API_KEY: ${JARVIS_OLLAMA_API_KEY:-ollama}
+  JARVIS_OLLAMA_EXTRACTOR_MODEL: ${JARVIS_OLLAMA_EXTRACTOR_MODEL:-qwen3:4b}
+  JARVIS_OLLAMA_RESPONDER_MODEL: ${JARVIS_OLLAMA_RESPONDER_MODEL:-qwen3:4b}
+  # Declared for a future retrieval experiment only; the application does not call embeddings.
+  JARVIS_OLLAMA_EMBEDDING_MODEL: ${JARVIS_OLLAMA_EMBEDDING_MODEL:-qwen3-embedding:0.6b}
+  JARVIS_OLLAMA_PRIVATE_DIRECT: ${JARVIS_OLLAMA_PRIVATE_DIRECT:-false}
 
 services:
   db:

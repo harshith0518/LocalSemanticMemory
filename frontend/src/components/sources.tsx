@@ -3,7 +3,13 @@ import { BookOpen, FileText, Search as SearchIcon, Upload } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Badge } from "./ui/badge";
-import { Empty, Heading, OriginalButton, Qualifiers } from "./common";
+import {
+  Empty,
+  Heading,
+  OriginalButton,
+  Qualifiers,
+  sourceLabel,
+} from "./common";
 import type { Workspace } from "@/lib/use-workspace";
 import type { Search } from "@/lib/types";
 import { isCancelled } from "@/lib/api";
@@ -167,7 +173,7 @@ export function Sources({ workspace: w }: { workspace: Workspace }) {
                       <FileText />
                     </span>
                     <span>
-                      <strong>{source.source_key.split(":").at(-1)}</strong>
+                      <strong>{sourceLabel(source)}</strong>
                       <small>
                         Captured: {source.captured_at ?? "Not provided"} ·
                         revision {source.revision}
@@ -307,7 +313,7 @@ export function Sources({ workspace: w }: { workspace: Workspace }) {
         <div id="search-results">
           {result?.sources.map((source) => (
             <article className="search-result" key={source.id}>
-              <h3>{source.source_key.split(":").at(-1)}</h3>
+              <h3>{sourceLabel(source)}</h3>
               <p className="meta">
                 {result.matches.some((match) => match.source_id === source.id)
                   ? "Matching source"

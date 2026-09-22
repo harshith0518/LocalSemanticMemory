@@ -22,7 +22,7 @@ from jarvis.errors import ApplicationError, ErrorCode
 from jarvis.imports import Identifier as Namespace
 from jarvis.imports import reject_constant, unique_object
 
-PROMPT_VERSION = "conversation-learning-v3"
+PROMPT_VERSION = "conversation-learning-v4"
 MAX_OPERATIONS = 16
 MAX_CONTEXT_CLAIMS = 64
 MAX_ATTEMPTS = 3
@@ -141,6 +141,7 @@ class ExtractionPacket(Contract):
     context_claim_count: int = 0
     context_bounded: bool = False
     previous_user_source_ids: tuple[UUID, ...] = ()
+    memory_excerpts: tuple[str, ...] | None = None
 
 
 SYSTEM_PROMPT = """You propose selective memories from the CURRENT_SOURCE only.
@@ -192,6 +193,11 @@ project facts/changes. Do not turn public trivia, generic definitions, or a one-
 request (such as 'just tell me the city') into a personal preference. A momentary feeling alone
 is not a durable preference. A mixed message can contain both a useful assertion and a question;
 learn only the assertion and preserve its original scope, conditions, and uncertainty.
+If MEMORY_CANDIDATES is a list, these are the exact current-turn assertions selected as
+potentially useful. Reconcile only those assertions against existing memory. Every passage
+from CURRENT_SOURCE must lie entirely within one selected excerpt. Other current-turn text
+may explain context but is not eligible for a new memory. You may still choose no_memory,
+duplicate or needs_clarification; selection is not proof that a lasting fact exists.
 RECENT_USER_MESSAGES are chronological earlier user-authored context, not new observations.
 Use them only to resolve an unambiguous reference such as 'that project'; quote both the new
 assertion and its antecedent when needed. If multiple projects fit, choose needs_clarification.
@@ -210,7 +216,7 @@ and it requires tentative or disputed evidence_status. Never add fields outside 
 def messages(packet: ExtractionPacket, *, repair: bool | str = False) -> list[dict]:
     def evidence(source):
         # Collection names, owner identity and import/activity times are not model evidence.
-        return source.model_dump(
+        result = source.model_dump(
             mode="json",
             include={
                 "id",
@@ -221,6 +227,13 @@ def messages(packet: ExtractionPacket, *, repair: bool | str = False) -> list[di
                 "capture_metadata",
             },
         )
+        if result.get("capture_metadata"):
+            result["capture_metadata"] = {
+                key: value
+                for key, value in result["capture_metadata"].items()
+                if key not in {"assessment_id", "assessment_request", "memory_excerpts"}
+            }
+        return result
 
     payload = {
         "CURRENT_SOURCE": evidence(packet.source),
@@ -231,6 +244,9 @@ def messages(packet: ExtractionPacket, *, repair: bool | str = False) -> list[di
         },
         "SOURCES": [evidence(source) for source in packet.sources if source.id != packet.source.id],
         "SOURCE_KIND": packet.source.kind,
+        "MEMORY_CANDIDATES": list(packet.memory_excerpts)
+        if packet.memory_excerpts is not None
+        else None,
         "RECENT_USER_MESSAGES": [
             evidence(source)
             for source_id in packet.previous_user_source_ids

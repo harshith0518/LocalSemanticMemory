@@ -1,3 +1,5 @@
+import type { ModelMetric, Timing } from "./types";
+
 export const errors: Record<string, string> = {
   network_error:
     "The connection was interrupted. A submitted save may have completed; retry the same input safely.",
@@ -30,12 +32,60 @@ export const errors: Record<string, string> = {
   retry_limit_reached: "This operation has reached its retry limit.",
 };
 export class RequestError extends Error {
-  constructor(readonly reason: string) {
+  constructor(
+    readonly reason: string,
+    readonly calls?: ModelMetric[],
+  ) {
     super(
       errors[reason] ??
         "The action could not finish. No external action was performed.",
     );
   }
+}
+
+function errorCalls(result: unknown): ModelMetric[] | undefined {
+  if (!result || typeof result !== "object" || !("metrics" in result)) return;
+  const metrics = result.metrics;
+  if (
+    !metrics ||
+    typeof metrics !== "object" ||
+    !("calls" in metrics) ||
+    !Array.isArray(metrics.calls)
+  )
+    return;
+  const numeric = (value: unknown): value is number | null =>
+    value === null ||
+    (typeof value === "number" && Number.isFinite(value) && value >= 0);
+  if (
+    !metrics.calls.every(
+      (call) =>
+        call &&
+        typeof call === "object" &&
+        typeof call.id === "string" &&
+        typeof call.status === "string" &&
+        numeric(call.input_tokens) &&
+        numeric(call.output_tokens) &&
+        numeric(call.elapsed_ms),
+    )
+  )
+    return;
+  return metrics.calls.map((call) => ({
+    id: call.id,
+    status: call.status,
+    model: typeof call.model === "string" ? call.model : undefined,
+    input_tokens: call.input_tokens,
+    output_tokens: call.output_tokens,
+    elapsed_ms: call.elapsed_ms,
+    reserved_tokens:
+      typeof call.reserved_tokens === "number" && numeric(call.reserved_tokens)
+        ? call.reserved_tokens
+        : undefined,
+    error_code:
+      typeof call.error_code === "string" &&
+      /^[a-z_0-9]+$/.test(call.error_code)
+        ? call.error_code
+        : null,
+  }));
 }
 export const isCancelled = (error: unknown) =>
   error instanceof DOMException && error.name === "AbortError";
@@ -50,6 +100,7 @@ export class ApiSession {
   private generation = 0;
   private controllers = new Set<AbortController>();
   timings: string[] = [];
+  requestTimings: NonNullable<Timing["requests"]> = [];
   dispose() {
     this.disposed = true;
     this.invalidate();
@@ -59,6 +110,7 @@ export class ApiSession {
     for (const controller of this.controllers) controller.abort();
     this.controllers.clear();
     this.timings = [];
+    this.requestTimings = [];
   }
   async request<T>(path: string, options: RequestInit = {}): Promise<T> {
     if (this.disposed) throw new DOMException("Cancelled", "AbortError");
@@ -80,6 +132,7 @@ export class ApiSession {
           controller.signal,
           AbortSignal.timeout(
             path === "/ask" ||
+              path === "/conversation/messages" ||
               path === "/feedback" ||
               /^\/conversation\/messages\/[^/]+\/learn$/.test(path) ||
               path.startsWith("/processing/step?")
@@ -89,15 +142,29 @@ export class ApiSession {
         ]),
       });
       assertCurrent();
+      const timing = response.headers.get("Server-Timing");
+      if (timing && /^[a-z_0-9.;= ,]+$/.test(timing)) {
+        this.timings.push(timing);
+        this.requestTimings.push({
+          phase:
+            path === "/conversation/messages"
+              ? "assessment"
+              : /^\/conversation\/messages\/[^/]+\/learn$/.test(path)
+                ? "learn"
+                : path === "/ask"
+                  ? "answer"
+                  : "server",
+          stages: timing,
+        });
+      }
       const result = await response.json();
       assertCurrent();
-      const timing = response.headers.get("Server-Timing");
-      if (timing && /^[a-z_0-9.;= ,]+$/.test(timing)) this.timings.push(timing);
       if (!response.ok)
         throw new RequestError(
           typeof result.reason === "string"
             ? result.reason
             : "operation_failed",
+          errorCalls(result),
         );
       return result as T;
     } catch (error) {

@@ -19,7 +19,7 @@ from jarvis.api import create_app
 from jarvis.db import make_engine
 from jarvis.errors import ApplicationError
 from jarvis.models import ModelBudget, ModelCall, Policy, Source
-from jarvis.providers import MAX_REQUESTS, FreeChatProvider, NvidiaResponder
+from jarvis.providers import MAX_REQUESTS, Completion, FreeChatProvider, NvidiaResponder
 from jarvis.services import Service
 
 
@@ -86,6 +86,22 @@ def test_invalid_citations_never_release(answering, fault):
         service.ask(context, request(), published.append)
     assert not published
     assert service.responder.calls <= 2
+
+
+def test_answer_text_never_exposes_internal_source_ids(answering):
+    service, context = answering
+
+    def raw_identifier(data, result):
+        return {
+            **result,
+            "text": f"Recorded fact [{result['citations'][0]['source_id']}]",
+        }
+
+    service.responder = FixtureResponder(raw_identifier)
+    with pytest.raises(ApplicationError, match="provider_response_invalid"):
+        service.ask(context, request(representation="sources"))
+    # Both bounded attempts are rejected before any answer is released.
+    assert service.responder.calls == 2
 
 
 @pytest.mark.parametrize("failure", ["timeout", "malformed", "missing_key"])
@@ -256,6 +272,92 @@ def test_api_cli_parity_and_private_unread_body(answering, monkeypatch):
     assert output.exit_code == 0, output.output
     cli = json.loads(output.output)
     assert cli["citations"] == result["citations"] and cli["text"] == result["text"]
+
+
+@pytest.mark.parametrize(
+    "failure,reason,attempt_count",
+    [("malformed", "provider_response_invalid", 2), ("timeout", "provider_failed", 1)],
+)
+def test_api_answer_failure_exposes_only_owned_current_attempt_metrics(
+    answering, engine, caplog, failure, reason, attempt_count
+):
+    service, context = answering
+    previous = service.ask(context, request(representation="sources"))
+    foreign_owner, foreign_call = uuid4(), uuid4()
+    with Session(engine) as session, session.begin():
+        session.add(Policy(owner_id=foreign_owner))
+        session.flush()
+        session.add(
+            ModelCall(
+                id=foreign_call,
+                owner_id=foreign_owner,
+                budget_key=service.responder.budget_key,
+                configured_model="foreign-model-must-not-appear",
+                prompt_version="synthetic-fixture",
+                reserved_tokens=100,
+                status="failed",
+                error_code="provider_failed",
+            )
+        )
+
+    sentinel = "RAW_PROVIDER_FAILURE_SENTINEL"
+    attempts = []
+
+    def fail(body):
+        attempts.append(body)
+        if failure == "timeout":
+            raise TimeoutError(sentinel)
+        return Completion("{malformed " + sentinel, service.responder.model, 11, 7, 3)
+
+    service.responder.complete = fail
+
+    async def check():
+        app = create_app(service)
+        async with (
+            app.router.lifespan_context(app),
+            httpx.AsyncClient(
+                transport=httpx.ASGITransport(app), base_url="http://jarvis.test"
+            ) as client,
+        ):
+            return await client.post(
+                "/ask",
+                headers={"X-Jarvis-Mode": "normal"},
+                json=request(representation="sources"),
+            )
+
+    response = asyncio.run(check())
+    assert response.status_code == 422 and response.headers["Cache-Control"] == "no-store"
+    result = response.json()
+    assert result["status"] == "error" and result["reason"] == reason
+    calls = result["metrics"]["calls"]
+    assert len(calls) == len(attempts) == attempt_count
+    previous_ids = set(previous["call_ids"])
+    assert not previous_ids.intersection(call["id"] for call in calls)
+    assert str(foreign_call) not in {call["id"] for call in calls}
+    with Session(engine) as session:
+        stored = {
+            str(call.id): call
+            for call in session.scalars(
+                select(ModelCall).where(ModelCall.owner_id == context.owner_id)
+            )
+            if str(call.id) not in previous_ids
+        }
+        assert {call["id"] for call in calls} == set(stored)
+        for call in calls:
+            record = stored[call["id"]]
+            assert call["status"] == "failed" and call["error_code"] == reason
+            assert call["reserved_tokens"] == record.reserved_tokens > 0
+            assert call["model"] == service.responder.model
+            assert call["elapsed_ms"] == record.elapsed_ms and call["elapsed_ms"] >= 0
+            assert call["input_tokens"] == record.input_tokens
+            assert call["output_tokens"] == record.output_tokens
+            if failure == "timeout":
+                assert call["input_tokens"] is None and call["output_tokens"] is None
+            else:
+                assert (call["input_tokens"], call["output_tokens"]) == (11, 7)
+    assert sentinel not in response.text and sentinel not in caplog.text
+    assert request()["question"] not in response.text
+    assert "foreign-model-must-not-appear" not in response.text
 
 
 def test_responder_transport_uses_configured_model_and_drops_reasoning(answering):

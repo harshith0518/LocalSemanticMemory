@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./ui/dialog";
-import type { Claim, Inspection } from "@/lib/types";
+import type { Claim, Inspection, Source, SourceSummary } from "@/lib/types";
 import jarvisBird from "@/assets/jarvis-app-icon-64.png";
 
 export function Sprout({ className = "" }: { className?: string }) {
@@ -85,6 +85,28 @@ export const memoryLabel = (claim: Pick<Claim, "content">) => {
   const c = claim.content;
   return `${c.subject.label} · ${c.negated ? "Not: " : ""}${c.predicate.replaceAll("_", " ")}: ${c.value.value}${c.value.unit ? ` ${c.value.unit}` : ""}`;
 };
+
+type SourceForLabel = Pick<SourceSummary, "source_key"> &
+  Partial<Pick<Source, "raw_text">>;
+
+function shortText(value: string) {
+  const normalized = value.replaceAll(/\s+/g, " ").trim();
+  const sentence =
+    normalized.match(/^(.{1,88}?)(?:[.!?](?:\s|$)|$)/)?.[1] ?? normalized;
+  return sentence.length > 88
+    ? `${sentence.slice(0, 85).trimEnd()}…`
+    : sentence;
+}
+
+/** Human-facing title only; immutable source keys and IDs remain backend references. */
+export function sourceLabel(source: SourceForLabel) {
+  if (source.raw_text?.trim()) return shortText(source.raw_text);
+  const tail = source.source_key.split(":").at(-1) ?? "";
+  if (/^chat-[0-9a-f-]{16,}$/i.test(tail)) return "Conversation message";
+  if (/^note-[0-9a-f-]{16,}$/i.test(tail)) return "Saved note";
+  const words = tail.replaceAll(/[_-]+/g, " ").replaceAll(/\s+/g, " ").trim();
+  return words ? `Imported note · ${words}` : "Original note";
+}
 export function Qualifiers({ claim }: { claim: Claim }) {
   const c = claim.content;
   return (
@@ -132,9 +154,7 @@ export function SourceDialog({
         {s && (
           <div id="evidence">
             <div className="tags">
-              <Badge variant="secondary">
-                {s.source_key.split(":").at(-1)}
-              </Badge>
+              <Badge variant="secondary">{sourceLabel(s)}</Badge>
               <Badge variant="outline">Revision {s.revision}</Badge>
               <Badge variant="outline">
                 {inspection?.job?.status ?? "No job"}
@@ -153,11 +173,18 @@ export function SourceDialog({
               <dd id="captured-at">{s.captured_at ?? "Not provided"}</dd>
               <dt>Imported</dt>
               <dd>{s.imported_at}</dd>
-              <dt>Source ID</dt>
-              <dd>{s.id}</dd>
               <dt>Job attempts</dt>
               <dd>{inspection?.job?.attempts ?? "Not available"}</dd>
             </dl>
+            <details>
+              <summary>Technical reference</summary>
+              <dl className="metadata">
+                <dt>Immutable source ID</dt>
+                <dd>{s.id}</dd>
+                <dt>Internal source key</dt>
+                <dd>{s.source_key}</dd>
+              </dl>
+            </details>
             <details>
               <summary>Capture metadata</summary>
               <pre>
