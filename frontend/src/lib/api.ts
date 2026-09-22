@@ -4,7 +4,7 @@ export const errors: Record<string, string> = {
   provider_disabled:
     "Live answers are not enabled or a model key is missing. Check model setup below; repeating the question will not enable it. Sources and memory controls still work.",
   trial_input_denied:
-    "This installation permits only the approved synthetic corpus and questions. Unfamiliar notes need the operator's explicit unfamiliar opt-in. Your note stays saved locally.",
+    "This installation permits only approved synthetic sources and questions. The operator can separately enable new questions over approved synthetic database evidence. Unfamiliar sources need unfamiliar opt-in; saved notes remain local.",
   budget_exhausted:
     "The evaluation allowance is exhausted. Your saved sources and memories remain available.",
   rate_limited:

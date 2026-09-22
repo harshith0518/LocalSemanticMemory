@@ -57,11 +57,20 @@ class NvidiaExtractor:
     live = True
     timeout_seconds = 90
 
-    def __init__(self, *, approved: bool = False, key: str = "", transport=None, unfamiliar=False):
+    def __init__(
+        self,
+        *,
+        approved: bool = False,
+        key: str = "",
+        transport=None,
+        unfamiliar=False,
+        unfamiliar_questions=False,
+    ):
         self.enabled = approved
         self._key = key
         self._transport = transport
         self.unfamiliar_mode = unfamiliar
+        self.unfamiliar_questions = bool(unfamiliar_questions)
         self.max_requests = configured_limit("JARVIS_MAX_REQUESTS", MAX_REQUESTS)
         self.max_total_tokens = configured_limit("JARVIS_MAX_TOTAL_TOKENS", MAX_TOTAL_TOKENS)
 
@@ -255,6 +264,9 @@ class FreeChatProvider(NvidiaExtractor):
             model=os.environ.get(f"JARVIS_FREE_{role.upper()}_MODEL") or models[0],
             approved=enabled,
             key=os.environ.get(key_name, ""),
+            unfamiliar_questions=(
+                enabled and os.environ.get("JARVIS_FREE_SYNTHETIC_QUESTIONS_APPROVED") == "true"
+            ),
         )
 
     def prepare(self, packet, *, repair=False):

@@ -731,6 +731,7 @@ class ProcessingOperations:
                 "enabled": provider.enabled,
                 "key_configured": bool(provider._key) or not provider.live,
                 "unfamiliar_mode": provider.unfamiliar_mode,
+                "unfamiliar_questions": getattr(provider, "unfamiliar_questions", False),
                 "provider": getattr(provider, "provider_name", "test_double"),
             }
 
@@ -743,8 +744,9 @@ class ProcessingOperations:
             "warning": (
                 "Hosted inference follows the selected provider's data terms. Google free "
                 "inputs/outputs may be used for product improvement and human review. "
-                "Free Google/OpenRouter routes accept only approved public synthetic data; "
-                "unfamiliar input requires explicit NVIDIA unfamiliar mode. "
+                "Free Google/OpenRouter routes accept only approved public synthetic data. "
+                "New questions require the separate synthetic-question approval; unfamiliar "
+                "sources require explicit NVIDIA unfamiliar mode. "
                 "Private never calls any provider."
             ),
         }

@@ -208,6 +208,7 @@ class AnswerOperations:
         if (
             self.responder.live
             and not self.responder.unfamiliar_mode
+            and not getattr(self.responder, "unfamiliar_questions", False)
             and request.question not in trial_questions()
         ):
             raise ApplicationError(ErrorCode.TRIAL_INPUT_DENIED)

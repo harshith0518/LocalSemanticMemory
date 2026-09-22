@@ -247,3 +247,9 @@ The user expressly authorized the final dev-to-main merge and push after final c
 ## Final evaluation extension approved 12 September 2026, 23:07 IST
 
 The user explicitly approved a combined persisted ceiling of 1,100 requests / 10,000,000 accounted tokens / $0 paid, preserving 30 requests for the demo and all prior consumption under `s07-synthetic-v1`. This supersedes earlier 750-request limits, not the token, retention, lifecycle or no-paid-fallback boundaries. The final batch cutoff is 23:40 IST, followed by the already authorized dev push and main merge/push. Resume the same saved corpus; do not reset counters or re-create history. Current provider quotas remain unverified, so a completed or successful 540-record run cannot be promised.
+
+## Flexible questions over approved synthetic sources (22 September 2026)
+
+For the local walkthrough demo, the operator may separately enable `JARVIS_FREE_SYNTHETIC_QUESTIONS_APPROVED=true` after the existing free synthetic-data consent. This permits new question wording through Google/OpenRouter while retaining the backend's exact checked-in-source validation for every retrieved source. It does not authorize unfamiliar sources, real personal inputs, Private inference, paid fallback, automatic retries or budget resets.
+
+The distinction matters: a new question can now reach retrieval and the model, while an unapproved source still fails before provider access. An evidence-backed `unknown` remains a successful semantic outcome when the database does not establish the requested fact.

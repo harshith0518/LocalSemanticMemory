@@ -24,12 +24,14 @@ type ModelSetup = {
     enabled: boolean;
     key_configured: boolean;
     unfamiliar_mode: boolean;
+    unfamiliar_questions: boolean;
   };
   extractor: {
     model: string;
     enabled: boolean;
     key_configured: boolean;
     unfamiliar_mode: boolean;
+    unfamiliar_questions: boolean;
   };
   warning: string;
 };
@@ -524,7 +526,9 @@ export function Conversation({
               <p>
                 {setup.responder.unfamiliar_mode
                   ? "Unfamiliar opt-in is enabled for Normal-mode notes and questions."
-                  : "Synthetic-only mode: use bundled sources and showcase questions. Unfamiliar input needs explicit unfamiliar opt-in."}
+                  : setup.responder.unfamiliar_questions
+                    ? "Flexible questions are enabled over approved synthetic database sources. Unfamiliar sources remain blocked."
+                    : "Synthetic-only mode: use bundled sources and showcase questions. New questions need explicit synthetic-question approval."}
               </p>
               <p>{setup.warning}</p>
             </div>
