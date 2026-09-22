@@ -1,0 +1,385 @@
+{
+  "checked_on": "2026-09-22",
+  "scope": "Bounded local regression; not a full-corpus accuracy benchmark",
+  "provider": "google",
+  "model": "gemini-3.5-flash-lite",
+  "namespace": "my-notes",
+  "research": [
+    "https://www.anthropic.com/engineering/contextual-retrieval",
+    "https://arxiv.org/abs/2401.15884",
+    "https://ai.google.dev/gemini-api/docs/google-search"
+  ],
+  "initial_api_cases": [
+    {
+      "question": "what i like to drink ?",
+      "status": "answered",
+      "citations": 1,
+      "retrieval": {
+        "strategy": "complete_collection",
+        "sources_reviewed": 16,
+        "memories_reviewed": 10,
+        "eligible_sources": 16,
+        "eligible_memories": 10,
+        "partial": false,
+        "query_expanded": false
+      },
+      "elapsed_ms": 4416,
+      "calls": [
+        {
+          "id": "dea063cb-87b6-40d3-ace6-26ae92061e4a",
+          "model": "gemini-3.5-flash-lite",
+          "input_tokens": 5258,
+          "output_tokens": 134,
+          "reserved_tokens": 21939,
+          "elapsed_ms": 2085,
+          "status": "succeeded",
+          "error_code": null
+        }
+      ],
+      "review": "Tea recovered with its feeling-good condition."
+    },
+    {
+      "question": "do you know any projects mentioned in the data memory ?",
+      "status": "answered",
+      "citations": 2,
+      "retrieval": {
+        "strategy": "complete_collection",
+        "sources_reviewed": 16,
+        "memories_reviewed": 10,
+        "eligible_sources": 16,
+        "eligible_memories": 10,
+        "partial": false,
+        "query_expanded": false
+      },
+      "elapsed_ms": 4307,
+      "calls": [
+        {
+          "id": "84dc233a-8780-412e-9228-3e811c889e72",
+          "model": "gemini-3.5-flash-lite",
+          "input_tokens": 5263,
+          "output_tokens": 220,
+          "reserved_tokens": 21972,
+          "elapsed_ms": 2379,
+          "status": "succeeded",
+          "error_code": null
+        }
+      ],
+      "review": "Atlas and Orion returned as mentioned projects."
+    },
+    {
+      "question": "what are all the things you have remembered so far?",
+      "status": "answered",
+      "citations": 10,
+      "retrieval": {
+        "strategy": "complete_collection",
+        "sources_reviewed": 16,
+        "memories_reviewed": 10,
+        "eligible_sources": 16,
+        "eligible_memories": 10,
+        "partial": false,
+        "query_expanded": false
+      },
+      "elapsed_ms": 6102,
+      "calls": [
+        {
+          "id": "69c1102f-b4dd-4e51-b358-c3d8a9c0d06c",
+          "model": "gemini-3.5-flash-lite",
+          "input_tokens": 5263,
+          "output_tokens": 1138,
+          "reserved_tokens": 21968,
+          "elapsed_ms": 3827,
+          "status": "succeeded",
+          "error_code": null
+        }
+      ],
+      "review": "Partial semantic failure: both amounts mentioned, but one led as the spending limit."
+    },
+    {
+      "question": "Which projects have I completed?",
+      "status": "unknown",
+      "citations": 0,
+      "retrieval": {
+        "strategy": "complete_collection",
+        "sources_reviewed": 16,
+        "memories_reviewed": 10,
+        "eligible_sources": 16,
+        "eligible_memories": 10,
+        "partial": false,
+        "query_expanded": false
+      },
+      "elapsed_ms": 3645,
+      "calls": [
+        {
+          "id": "e14405c1-c635-4566-ab32-3fa0e4293cf3",
+          "model": "gemini-3.5-flash-lite",
+          "input_tokens": 5258,
+          "output_tokens": 55,
+          "reserved_tokens": 21949,
+          "elapsed_ms": 1537,
+          "status": "succeeded",
+          "error_code": null
+        }
+      ],
+      "review": "No invented completion history."
+    },
+    {
+      "question": "What is my passport number?",
+      "status": "unknown",
+      "citations": 0,
+      "retrieval": {
+        "strategy": "complete_collection",
+        "sources_reviewed": 16,
+        "memories_reviewed": 10,
+        "eligible_sources": 16,
+        "eligible_memories": 10,
+        "partial": false,
+        "query_expanded": false
+      },
+      "elapsed_ms": 3758,
+      "calls": [
+        {
+          "id": "f471a8ad-9402-4cc8-95e2-856a5b1e74e1",
+          "model": "gemini-3.5-flash-lite",
+          "input_tokens": 5258,
+          "output_tokens": 53,
+          "reserved_tokens": 21944,
+          "elapsed_ms": 1791,
+          "status": "succeeded",
+          "error_code": null
+        }
+      ],
+      "review": "No invented passport number."
+    },
+    {
+      "question": "What is today's weather in Bengaluru?",
+      "status": "unknown",
+      "citations": 0,
+      "retrieval": {
+        "strategy": "complete_collection",
+        "sources_reviewed": 16,
+        "memories_reviewed": 10,
+        "eligible_sources": 16,
+        "eligible_memories": 10,
+        "partial": false,
+        "query_expanded": false
+      },
+      "elapsed_ms": 4165,
+      "calls": [
+        {
+          "id": "b3cf90ae-fbe2-46df-bbfb-ab68a3788556",
+          "model": "gemini-3.5-flash-lite",
+          "input_tokens": 5261,
+          "output_tokens": 39,
+          "reserved_tokens": 21954,
+          "elapsed_ms": 2171,
+          "status": "succeeded",
+          "error_code": null
+        }
+      ],
+      "review": "Wording failure: abstained but did not explain missing live web verification."
+    },
+    {
+      "question": "Explain photosynthesis in two simple sentences.",
+      "status": "general",
+      "citations": 0,
+      "retrieval": {
+        "strategy": "complete_collection",
+        "sources_reviewed": 16,
+        "memories_reviewed": 10,
+        "eligible_sources": 16,
+        "eligible_memories": 10,
+        "partial": false,
+        "query_expanded": false
+      },
+      "elapsed_ms": 3493,
+      "calls": [
+        {
+          "id": "6914563d-98fe-4e1b-8dd8-0290e658c1d5",
+          "model": "gemini-3.5-flash-lite",
+          "input_tokens": 5259,
+          "output_tokens": 67,
+          "reserved_tokens": 21963,
+          "elapsed_ms": 1574,
+          "status": "succeeded",
+          "error_code": null
+        }
+      ],
+      "review": "General answer labelled, without a borrowed citation."
+    },
+    {
+      "question": "did i mention anything about any beverage ?",
+      "status": "answered",
+      "citations": 1,
+      "retrieval": {
+        "strategy": "complete_collection",
+        "sources_reviewed": 16,
+        "memories_reviewed": 10,
+        "eligible_sources": 16,
+        "eligible_memories": 10,
+        "partial": false,
+        "query_expanded": false
+      },
+      "elapsed_ms": 5036,
+      "calls": [
+        {
+          "id": "3cb2331e-ae75-47d6-90f0-f3af2eb7a217",
+          "model": "gemini-3.5-flash-lite",
+          "input_tokens": 5260,
+          "output_tokens": 141,
+          "reserved_tokens": 21960,
+          "elapsed_ms": 3022,
+          "status": "succeeded",
+          "error_code": null
+        }
+      ],
+      "review": "Beverage paraphrase recovered, condition retained."
+    },
+    {
+      "question": "did i mention anything about any beverage ?",
+      "status": "answered",
+      "citations": 1,
+      "retrieval": {
+        "strategy": "complete_collection",
+        "sources_reviewed": 16,
+        "memories_reviewed": 10,
+        "eligible_sources": 16,
+        "eligible_memories": 10,
+        "partial": false,
+        "query_expanded": false
+      },
+      "elapsed_ms": 4063,
+      "calls": [
+        {
+          "id": "b99872f1-79cd-4184-a18f-6436223ce519",
+          "model": "gemini-3.5-flash-lite",
+          "input_tokens": 5260,
+          "output_tokens": 139,
+          "reserved_tokens": 21960,
+          "elapsed_ms": 1931,
+          "status": "succeeded",
+          "error_code": null
+        }
+      ],
+      "review": "Repeated beverage paraphrase recovered, condition retained."
+    }
+  ],
+  "refined_api_cases": [
+    {
+      "question": "What is today's weather in Bengaluru?",
+      "status": "unknown",
+      "citations": 0,
+      "retrieval": {
+        "strategy": "complete_collection",
+        "sources_reviewed": 16,
+        "memories_reviewed": 10,
+        "eligible_sources": 16,
+        "eligible_memories": 10,
+        "partial": false,
+        "query_expanded": false
+      },
+      "elapsed_ms": null,
+      "calls": [],
+      "review": "Application-generated missing-live-tool explanation; zero model calls."
+    },
+    {
+      "question": "what are all the things you have remembered so far?",
+      "status": "answered",
+      "citations": 13,
+      "retrieval": {
+        "strategy": "complete_collection",
+        "sources_reviewed": 16,
+        "memories_reviewed": 10,
+        "eligible_sources": 16,
+        "eligible_memories": 10,
+        "partial": false,
+        "query_expanded": false
+      },
+      "elapsed_ms": null,
+      "calls": [
+        {
+          "id": "f7a0b1d7-62ef-4429-83e1-e06d6a33f625",
+          "model": "gemini-3.5-flash-lite",
+          "input_tokens": 5323,
+          "output_tokens": 1519,
+          "reserved_tokens": 22241,
+          "elapsed_ms": 4660,
+          "status": "succeeded",
+          "error_code": null
+        }
+      ],
+      "review": "Budget conflict presented as UNRESOLVED with both values equally; one live retest only."
+    },
+    {
+      "question": "Explain semantic memory in two sentences.",
+      "status": "general",
+      "citations": 0,
+      "retrieval": {
+        "strategy": "complete_collection",
+        "sources_reviewed": 16,
+        "memories_reviewed": 10,
+        "eligible_sources": 16,
+        "eligible_memories": 10,
+        "partial": false,
+        "query_expanded": false
+      },
+      "elapsed_ms": null,
+      "calls": [
+        {
+          "id": "3e2ce95a-d507-4b23-8452-4cbaab195718",
+          "model": "gemini-3.5-flash-lite",
+          "input_tokens": 5319,
+          "output_tokens": 75,
+          "reserved_tokens": 22230,
+          "elapsed_ms": 1681,
+          "status": "succeeded",
+          "error_code": null
+        }
+      ],
+      "review": "Public concept of semantic memory allowed as labelled general knowledge."
+    }
+  ],
+  "browser_live_checks": [
+    {
+      "case": "Exact user date question",
+      "outcome": "Application clock returned Tuesday, 22 September 2026 (Asia/Calcutta), zero model calls."
+    },
+    {
+      "case": "Exact beverage question",
+      "outcome": "Cited tea when feeling good; reviewed all 16 sources and 10 active memories."
+    },
+    {
+      "case": "General photosynthesis explanation",
+      "outcome": "Visible general-knowledge label, no citations, explicit lack of web verification."
+    }
+  ],
+  "tests": {
+    "initial_full_backend": {
+      "passed": 276,
+      "seconds": 149.22
+    },
+    "browser": {
+      "passed": 28,
+      "seconds": 51.0818481
+    },
+    "final_refinement_targeted": {
+      "passed": 20,
+      "seconds": 7.03
+    },
+    "final_full_backend": {
+      "passed": 279,
+      "seconds": 145.93
+    },
+    "ruff_lint": "passed",
+    "ruff_format": "51 files passed",
+    "prettier": "passed",
+    "typescript_vite_build": "passed",
+    "final_compose_ready": "healthy"
+  },
+  "limitations": [
+    "The refined API inventory and an additional visible browser inventory both marked the amount conflict unresolved; these two samples are not evidence of reliable handling across all wording.",
+    "Exact citation validation does not certify semantic entailment; general model knowledge may be incorrect.",
+    "Large-collection query expansion has deterministic regression coverage but no new broad live retrieval benchmark.",
+    "No live web grounding, embeddings, calibrated confidence or cross-collection search was added.",
+    "Original raw provider answers remain local in ignored temporary diagnostics; this report retains reviewed summaries and call metrics."
+  ]
+}

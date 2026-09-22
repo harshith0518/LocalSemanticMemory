@@ -66,11 +66,35 @@ function Reply({ turn, workspace }: { turn: Turn; workspace: Workspace }) {
                   draft: "Draft · not sent",
                   unknown: "Not established by available evidence",
                   clarification: "Clarification needed",
+                  general: "General knowledge · not from your notes",
+                  clock: "From the application clock",
                 }[answer.status]
               }
             </span>
           </div>
+          {answer.notice && (
+            <p className="meta answer-notice">{answer.notice}</p>
+          )}
           <p className="reply-text">{answer.text}</p>
+          {answer.retrieval && answer.status !== "clock" && (
+            <p className="meta">
+              Reviewed {answer.retrieval.sources_reviewed}
+              {answer.retrieval.eligible_sources !== null
+                ? ` of ${answer.retrieval.eligible_sources}`
+                : ""}{" "}
+              notes
+              {" and "}
+              {answer.retrieval.memories_reviewed}
+              {answer.retrieval.eligible_memories !== null
+                ? ` of ${answer.retrieval.eligible_memories}`
+                : ""}{" "}
+              learned memories.
+              {answer.retrieval.partial ? " Partial collection review." : ""}
+              {answer.retrieval.query_expanded
+                ? " Also searched alternative wording."
+                : ""}
+            </p>
+          )}
           <details className="query-metrics">
             <summary>Query metrics and model calls</summary>
             <p>
@@ -210,8 +234,7 @@ export function Conversation({
   const [question, setQuestion] = useState("");
   const [note, setNote] = useState("");
   const [formatted, setFormatted] = useState("");
-  const [representation, setRepresentation] =
-    useState<Representation>("sources");
+  const [representation, setRepresentation] = useState<Representation>("auto");
   const [saved, setSaved] = useState(false);
   const [setup, setSetup] = useState<ModelSetup>();
   const [helpVisible, setHelpVisible] = useState(false);
@@ -242,7 +265,12 @@ export function Conversation({
       }
       setHelpVisible(false);
       setQuestion("");
-      await w.ask({ namespace: w.namespace, question, representation });
+      await w.ask({
+        namespace: w.namespace,
+        question,
+        representation,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      });
     } else {
       if (!note.trim()) return;
       const receipt = await w.run("Preserving your original note", () =>
@@ -457,16 +485,19 @@ export function Conversation({
               <details className="context-options">
                 <summary>
                   Context:{" "}
-                  {representation === "sources"
-                    ? "relevant notes"
-                    : representation === "sources_and_memories"
-                      ? "notes and memories"
-                      : "whole collection"}
+                  {representation === "auto"
+                    ? "automatic"
+                    : representation === "sources"
+                      ? "relevant notes"
+                      : representation === "sources_and_memories"
+                        ? "notes and memories"
+                        : "whole collection"}
                 </summary>
                 <p>
-                  Jarvis normally finds relevant original notes. These comparison
-                  options change the evidence sent to the answer model, not what
-                  gets saved.
+                  Automatic checks notes and learned memories, reviews complete
+                  small collections, and searches alternative wording for larger
+                  collections. General knowledge is labelled separately when
+                  your notes do not answer.
                 </p>
                 <label className="representation">
                   <BookOpen aria-hidden="true" />
@@ -479,9 +510,8 @@ export function Conversation({
                     }
                     disabled={!!w.busy}
                   >
-                    <option value="sources">
-                      Relevant notes (recommended)
-                    </option>
+                    <option value="auto">Automatic (recommended)</option>
+                    <option value="sources">Relevant notes only</option>
                     <option value="sources_and_memories">
                       Notes + saved memories
                     </option>

@@ -1,6 +1,7 @@
 export type Page =
   "conversation" | "sources" | "memories" | "usage" | "workflow";
-export type Representation = "sources" | "sources_and_memories" | "history";
+export type Representation =
+  "auto" | "sources" | "sources_and_memories" | "history";
 export type SourceSummary = {
   id: string;
   source_key: string;
@@ -98,6 +99,7 @@ export type AnswerRequest = {
   namespace: string;
   question: string;
   representation: Representation;
+  timezone?: string;
 };
 export type PrivateAnswer = {
   text: string;
@@ -109,7 +111,19 @@ export type PrivateAnswer = {
   memory_context: false;
 };
 export type Answer = {
-  status: "answered" | "draft" | "unknown" | "clarification";
+  status:
+    "answered" | "draft" | "unknown" | "clarification" | "general" | "clock";
+  basis?: string;
+  notice?: string | null;
+  retrieval?: {
+    strategy: string;
+    sources_reviewed: number;
+    memories_reviewed: number;
+    eligible_sources: number | null;
+    eligible_memories: number | null;
+    partial: boolean;
+    query_expanded: boolean;
+  };
   text: string;
   citations: Passage[];
   sources: Source[];

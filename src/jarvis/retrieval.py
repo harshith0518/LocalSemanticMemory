@@ -11,6 +11,7 @@ from sqlalchemy import func, literal_column, or_, select
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import aliased
 
+from jarvis.answer_policy import is_inventory_question
 from jarvis.contracts import (
     ClaimRevision,
     ClaimWrite,
@@ -82,6 +83,9 @@ class SearchPacket(Contract):
     has_more: bool = False
     budget_limited: bool = False
     search_version: str = SEARCH_VERSION
+    strategy: str = "lexical"
+    eligible_sources: int | None = None
+    eligible_memories: int | None = None
 
 
 def evidence_size(sources, memories):
@@ -108,6 +112,95 @@ def fuse_rankings(*rankings):
 
 
 class RetrievalOperations:
+    def _select_auto(self, session, context, query):
+        """Read a complete small collection, otherwise disclose bounded retrieval."""
+        policy = session.scalar(
+            select(Policy).where(Policy.owner_id == context.owner_id).with_for_update()
+        )
+        eligible = self._search_sources(context, query)
+        source_count = session.scalar(select(func.count()).select_from(eligible.subquery()))
+        current_query = query.model_copy(update={"history": False})
+        claims = self._search_claims(context, current_query, eligible)
+        memory_count = session.scalar(select(func.count()).select_from(claims.subquery()))
+        # Do not load arbitrarily large raw records while deciding whether everything fits.
+        raw_bytes = session.scalar(
+            select(
+                func.coalesce(
+                    func.sum(
+                        func.octet_length(Source.raw_text)
+                        + func.octet_length(func.coalesce(Source.formatted_text, ""))
+                    ),
+                    0,
+                )
+            ).where(Source.id.in_(eligible))
+        )
+        complete_candidate = (
+            source_count <= 50 and memory_count <= 80 and raw_bytes <= query.max_bytes
+        )
+        overview = is_inventory_question(query.query)
+        if complete_candidate or overview:
+            rows = session.scalars(
+                select(Source)
+                .where(Source.id.in_(eligible))
+                .order_by(Source.source_key, Source.id)
+                .limit(50)
+            ).all()
+            sources = []
+            for row in rows:
+                source = self._source_contract(row)
+                if evidence_size((*sources, source), ()) > query.max_bytes:
+                    break
+                sources.append(source)
+            selected_ids = {s.id for s in sources}
+            memories = []
+            for row in session.scalars(
+                claims.order_by(ClaimRecord.claim_id, ClaimRecord.revision).limit(80)
+            ):
+                claim = self._claim_contract(session, context, row)
+                if any(p.source_id not in selected_ids for p in claim.passages):
+                    continue
+                self._support(
+                    session,
+                    context,
+                    ClaimWrite(
+                        expected_policy_revision=policy.revision,
+                        content=claim.content,
+                        passages=claim.passages,
+                    ),
+                )
+                if evidence_size(sources, (*memories, claim)) > query.max_bytes:
+                    break
+                memories.append(claim)
+            complete = len(sources) == source_count and len(memories) == memory_count
+            if complete or overview:
+                packet = self._attach_controls(
+                    session,
+                    context,
+                    SearchPacket(
+                        request=query,
+                        policy_revision=policy.revision if policy else None,
+                        status="matched" if sources else "no_matches",
+                        sources=tuple(sources),
+                        memories=tuple(memories),
+                        evidence_bytes=evidence_size(sources, memories),
+                        has_more=not complete,
+                        strategy="complete_collection" if complete else "collection_overview",
+                        eligible_sources=source_count,
+                        eligible_memories=memory_count,
+                    ),
+                )
+                return packet
+        packet = self._select_search(session, context, query)
+        return packet.model_copy(
+            update={
+                "strategy": "ranked_sources_and_memories",
+                "eligible_sources": source_count,
+                "eligible_memories": memory_count,
+                "has_more": len(packet.sources) < source_count
+                or len(packet.memories) < memory_count,
+            }
+        )
+
     def _search_sources(self, context, query):
         newer = aliased(Source)
         statement = select(Source.id).where(

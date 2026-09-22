@@ -792,11 +792,11 @@ test("greeting explains capabilities locally and evidence choices are explained 
     })
     .waitFor();
   assert.deepEqual(calls, []);
-  await page.getByText("Context: relevant notes", { exact: true }).click();
+  await page.getByText("Context: automatic", { exact: true }).click();
   await page.getByLabel("Answer evidence").selectOption("sources_and_memories");
   assert.match(
     await page.locator(".context-options").innerText(),
-    /not what gets saved/,
+    /General knowledge is labelled separately/,
   );
   await privateMode(page);
   assert.equal(
@@ -807,6 +807,21 @@ test("greeting explains capabilities locally and evidence choices are explained 
       .count(),
     0,
   );
+});
+
+test("automatic date uses the clock and makes its provenance visible", async (t) => {
+  const page = await pageFor(t);
+  await page.getByLabel("Ask a question").fill("what is the todays date ?");
+  await page.getByLabel("Ask a question").press("Enter");
+  await page.getByText("From the application clock", { exact: true }).waitFor();
+  const answer = await page.locator(".reply").innerText();
+  assert.match(answer, /Today is/);
+  assert.match(answer, /no model call or saved note was needed/);
+  await page
+    .getByText("Query metrics and model calls", { exact: true })
+    .click();
+  assert.match(await page.locator(".query-metrics").innerText(), /0 recorded/);
+  assert.equal(await page.getByLabel("Ask a question").inputValue(), "");
 });
 
 test("540-note import, setup information and 30 preselected showcase questions use real APIs", async (t) => {

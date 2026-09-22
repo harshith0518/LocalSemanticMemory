@@ -1,5 +1,17 @@
 # Run and verify Hey Jarvis
 
+## Current walkthrough demo: Automatic context (22 September 2026)
+
+Use **http://127.0.0.1:18000/**, select the intended collection, and leave **Context: automatic** selected. This mode checks originals and active learned memories together. Small collections are fully reviewed within the evidence allowance; larger collections use a bounded lexical/memory search and one counted query rewrite. Every answer shows how many notes and memories were reviewed and whether coverage was partial. The unchanged API default is strict source retrieval; explicit API clients use `representation: auto` and may supply an IANA `timezone` such as `Asia/Kolkata`.
+
+Try `did i mention anything about any beverage ?`, `do you know any projects mentioned in the data memory ?`, and `what are all the things you have remembered so far?` in `my-notes`. Live checks recovered tea with its feeling-good condition, Atlas/Orion mentions and a cited inventory from all 16 notes/10 active memories. A project mention did not become a claim of completed work. The initial inventory favoured one conflicting budget amount; the refined instruction and subsequent live answers explicitly marked ₹15,000 versus ₹50,000 unresolved. These are bounded observations, not a claim that all model conflict handling is solved.
+
+`what is the todays date ?` returns the server's current calendar date in the browser timezone with no model call. `Explain photosynthesis in two simple sentences` and `Explain semantic memory in two sentences` returned **General knowledge · not from your notes**, with no borrowed source citation or learned output. Missing personal facts remain unknown. Obvious current weather/news/price questions return an explicit no-live-verification message, not a model guess. No live web-search tool is configured; public model knowledge is labelled unverified.
+
+Full test commands use `compose.test.yaml` only; stop its `web` service before resetting/running backend fixtures, then recreate the isolated browser server after backend tests. The normal application volume is preserved. Final backend acceptance passed **279 tests in 145.93 s**, and the browser suite passed **28/28 in 51.08 s**. Builds and Ruff/Prettier passed. All sampled live call metrics, including initial wording failures, are recorded in [the curated walkthrough review](eval/reports/regression-auto-context-review.json). The runtime remains Google `gemini-3.5-flash-lite` under the unchanged shared allowance and provider consent. Private remains direct, transient and without saved context.
+
+The dated sections below retain earlier implementation/evaluation evidence; their old provider choices and readiness claims are historical.
+
 S03-S10 local infrastructure, source import, memory contracts, Search, Ask/controls and usage inspection are implemented in the Windows checkout with Docker Linux containers. The browser is the primary workflow. Tonight's recheck passed **232 backend tests and 22 browser journeys**. **Live quality is not passed:** Nemotron's recorded outputs lose meaning; seven Kimi attempts have completed no answer. Unattended inference remains off. The tonight section below supersedes historical status/usage notes. The user confirmed the submission deadline as **Saturday, 12 September 2026, 23:30 IST**.
 
 ## Tonight readiness check

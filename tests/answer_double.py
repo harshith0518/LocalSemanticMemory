@@ -26,6 +26,15 @@ class FixtureResponder(NvidiaResponder):
                 1,
             )
         data = json.loads(body["messages"][1]["content"])
+        if "SOURCES" not in data:
+            return Completion(
+                json.dumps({"queries": ["drink beverage tea coffee"]}), self.model, 30, 10, 1
+            )
+        if not data["SOURCES"]:
+            result = {"status": "unknown", "text": "No supported personal fact.", "citations": []}
+            if self.proposal:
+                result = self.proposal(data, result)
+            return Completion(json.dumps(result), self.model, 100, 50, 1)
         source = data["SOURCES"][0]
         if data["USER_AMENDMENTS"]:
             latest = data["USER_AMENDMENTS"][-1]["source_id"]
