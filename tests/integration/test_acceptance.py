@@ -12,7 +12,7 @@ from memory_double import FixtureExtractor, content, operation
 from jarvis.api import create_app
 from jarvis.errors import ApplicationError
 from jarvis.extraction import PROMPT_VERSION
-from jarvis.providers import KIMI_MODEL, MODEL, REVIEWER_ACK, NvidiaExtractor, NvidiaResponder
+from jarvis.providers import KIMI_MODEL, MODEL, UNFAMILIAR_ACK, NvidiaExtractor, NvidiaResponder
 from jarvis.services import Service
 from jarvis.worker import process_one
 
@@ -45,7 +45,7 @@ def test_unknown_model_does_not_silently_fallback(monkeypatch):
 
 @pytest.mark.parametrize(
     "flag,ack,enabled",
-    [("true", "", False), ("false", REVIEWER_ACK, False), ("true", REVIEWER_ACK, True)],
+    [("true", "", False), ("false", UNFAMILIAR_ACK, False), ("true", UNFAMILIAR_ACK, True)],
 )
 def test_unfamiliar_requires_both_operator_consents(monkeypatch, flag, ack, enabled):
     monkeypatch.delenv("JARVIS_S07_SYNTHETIC_TRIAL_APPROVED", raising=False)
@@ -266,7 +266,7 @@ def test_free_provider_consent_and_no_unfamiliar_inheritance(monkeypatch, provid
     assert configured.unfamiliar_sources
     assert configured.private_direct
     monkeypatch.setenv("JARVIS_UNFAMILIAR_INFERENCE_APPROVED", "true")
-    monkeypatch.setenv("JARVIS_UNFAMILIAR_DATA_POLICY_ACK", REVIEWER_ACK)
+    monkeypatch.setenv("JARVIS_UNFAMILIAR_DATA_POLICY_ACK", UNFAMILIAR_ACK)
     assert not NvidiaExtractor.from_env().enabled
 
 
@@ -382,7 +382,8 @@ def test_collection_step_uses_backend_scope_and_private_gate(engine):
                     == 8
                 )
                 report = await client.get(
-                    "/processing/report?namespace=step-selected", headers={"X-Jarvis-Mode": "normal"}
+                    "/processing/report?namespace=step-selected",
+                    headers={"X-Jarvis-Mode": "normal"},
                 )
                 assert report.status_code == 200 and len(report.json()["calls"]) == 1
                 assert (
@@ -523,6 +524,6 @@ def test_final_approved_request_extension_keeps_token_and_budget_identity(monkey
     assert provider.max_requests == MAX_REQUESTS == 1500
     assert provider.max_total_tokens == MAX_TOTAL_TOKENS == 10000000
     assert provider.budget_key == BUDGET_KEY == "s07-synthetic-v1"
-    monkeypatch.setenv("JARVIS_MAX_REQUESTS", "1201")
+    monkeypatch.setenv("JARVIS_MAX_REQUESTS", "1501")
     with pytest.raises(ApplicationError):
         NvidiaExtractor()

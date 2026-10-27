@@ -13,9 +13,9 @@ from jarvis.extraction import ExtractionPacket, messages
 MODEL = "nvidia/nemotron-3.5-lightning-30b-a3b"
 ENDPOINT = "https://integrate.api.nvidia.com/v1/chat/completions"
 BUDGET_KEY = "s07-synthetic-v1"
-# Preserves the existing s07-synthetic-v1 ledger and opens only 100 additional
-# calls for the local demonstration after the original 1,100 cap was
-# consumed. Failed/unknown calls remain charged; this is not a budget reset.
+# Preserves the existing s07-synthetic-v1 ledger and extends it to 1,500 calls
+# for the local demonstration. Failed/unknown calls remain charged; this is not
+# a budget reset.
 MAX_REQUESTS = 1500
 MAX_TOTAL_TOKENS = 10_000_000
 MAX_OUTPUT_TOKENS = 4096
@@ -23,13 +23,13 @@ MAX_INPUT_BYTES = 60_000
 MAX_RESPONSE_BYTES = 262_144
 KIMI_MODEL = "moonshotai/kimi-k3"
 LAGUNA_MODEL = "poolside/laguna-xs-2.1"
-REVIEWER_ACK = "I_ACCEPT_NVIDIA_DATA_TERMS"
+UNFAMILIAR_ACK = "I_ACCEPT_NVIDIA_DATA_TERMS"
 
 
 def unfamiliar_approved():
     return (
         os.environ.get("JARVIS_UNFAMILIAR_INFERENCE_APPROVED") == "true"
-        and os.environ.get("JARVIS_UNFAMILIAR_DATA_POLICY_ACK") == REVIEWER_ACK
+        and os.environ.get("JARVIS_UNFAMILIAR_DATA_POLICY_ACK") == UNFAMILIAR_ACK
     )
 
 
@@ -380,7 +380,8 @@ class FreeChatProvider(NvidiaExtractor):
         _, key_name, models = cls.routes[provider]
         enabled = (
             os.environ.get("JARVIS_FREE_SYNTHETIC_TRIAL_APPROVED") == "true"
-            and os.environ.get("JARVIS_FREE_DATA_POLICY_ACK") == "I_ACCEPT_FREE_SYNTHETIC_DATA_TERMS"
+            and os.environ.get("JARVIS_FREE_DATA_POLICY_ACK")
+            == "I_ACCEPT_FREE_SYNTHETIC_DATA_TERMS"
             and not unfamiliar_approved()
         )
         return cls(

@@ -8,7 +8,7 @@ and per-turn usage/timing inspection.
 
 | Area | State |
 | --- | --- |
-| Backend contracts (369 tests, real PostgreSQL) | Passing |
+| Backend contracts (362 tests, real PostgreSQL) | Passing |
 | Browser journeys | 26 passed at the last complete run; the latest aggregate rerun stalled at one delayed Private-cancellation case after 18 journeys |
 | Live extraction on the 540-record synthetic corpus | Partial: 365 succeeded, 78 failed, 97 pending when the provider rate-limited |
 | Live 30-case showcase | Two runs retained (13 and 16 mechanical screens); semantic review still manual |

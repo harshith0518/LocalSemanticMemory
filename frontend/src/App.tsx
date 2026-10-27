@@ -99,7 +99,7 @@ function Normal({
         </Tooltip>
       </div>
       <div className="page-content" key={w.namespace}>
-        <nav className="guided-steps" aria-label="Submission walkthrough">
+        <nav className="guided-steps" aria-label="Guided walkthrough">
           {(
             [
               ["sources", "1. Import"],

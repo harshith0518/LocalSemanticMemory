@@ -1,5 +1,5 @@
 {
-  "description": "Illustrative checks for eight synthetic source records. This is a proposed evaluation format, not a completed evaluator or the full assignment corpus.",
+  "description": "Illustrative checks for eight synthetic source records. This is a proposed evaluation format, not a completed evaluator or the full evaluation corpus.",
   "ingest_into_memory": false,
   "corpus_file": "sample-dictations.jsonl",
   "cases": [

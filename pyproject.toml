@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "jarvis"
 version = "0.1.0"
-description = "Shared backend foundation for Hey Jarvis"
+description = "Local-first semantic memory with cited, source-backed recall"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "alembic>=1.16,<2",

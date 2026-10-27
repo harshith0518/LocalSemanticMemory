@@ -261,7 +261,7 @@ export function Workflow({ workspace: w }: { workspace: Workspace }) {
             ["comparison", "Provider comparison"],
             ["showcase_baseline", "30-case baseline"],
             ["showcase", "30-case retest"],
-            ["readiness", "Submission readiness"],
+            ["readiness", "Readiness check"],
           ].map(([id, name]) => (
             <Button
               key={id}

@@ -98,7 +98,9 @@ def upgrade():
             ["jarvis.model_budgets.key"],
         ),
         sa.ForeignKeyConstraint(
-            ["job_id", "owner_id"], ["jarvis.jobs.id", "jarvis.jobs.owner_id"], name="call_job_owner"
+            ["job_id", "owner_id"],
+            ["jarvis.jobs.id", "jarvis.jobs.owner_id"],
+            name="call_job_owner",
         ),
         sa.ForeignKeyConstraint(
             ["owner_id"],
@@ -120,7 +122,9 @@ def upgrade():
             nullable=False,
         ),
         sa.ForeignKeyConstraint(
-            ["job_id", "owner_id"], ["jarvis.jobs.id", "jarvis.jobs.owner_id"], name="receipt_job_owner"
+            ["job_id", "owner_id"],
+            ["jarvis.jobs.id", "jarvis.jobs.owner_id"],
+            name="receipt_job_owner",
         ),
         sa.PrimaryKeyConstraint("job_id"),
         schema="jarvis",

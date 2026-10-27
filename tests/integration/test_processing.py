@@ -252,7 +252,9 @@ def test_api_uses_shared_memory_operations(memory_service):
                 base_url="http://test",
             ) as client,
         ):
-            page = await client.get("/memories?namespace=memory", headers={"X-Jarvis-Mode": "normal"})
+            page = await client.get(
+                "/memories?namespace=memory", headers={"X-Jarvis-Mode": "normal"}
+            )
             assert page.json() == memory_service.list_memories(context, {"namespace": "memory"})
             for path in ("/memories?namespace=memory", "/processing?namespace=memory"):
                 response = await client.get(path, headers={"X-Jarvis-Mode": "private"})

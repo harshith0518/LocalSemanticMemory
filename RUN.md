@@ -282,7 +282,7 @@ to buy extra attempts.
 
 ## Verified state at this revision
 
-- Full isolated backend suite: **369 passed in 136.13 s**.
+- Full isolated backend suite: **362 passed in 159.01 s**.
 - Recovered full browser suite: **26 journeys passed in 48.49 s**.
 - Ruff lint/format, Prettier, TypeScript and the Vite production build passed.
 - A rebuilt API reported `ready` on schema `0006_turn_assessment`.

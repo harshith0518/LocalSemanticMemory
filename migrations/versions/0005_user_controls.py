@@ -113,7 +113,8 @@ def upgrade():
     )
     op.execute(
         "GRANT SELECT, INSERT, UPDATE, DELETE ON jarvis.control_receipts, "
-        "jarvis.source_exclusions, jarvis.passage_exclusions, jarvis.feedback_receipts TO jarvis_runtime"
+        "jarvis.source_exclusions, jarvis.passage_exclusions, "
+        "jarvis.feedback_receipts TO jarvis_runtime"
     )
 
 

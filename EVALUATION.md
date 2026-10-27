@@ -18,7 +18,7 @@ what it says. Raw artifacts are in `eval/reports/`.
 Run with `docker compose -f compose.test.yaml run --build --rm tests`. Real PostgreSQL, real
 transactions, separate connections where concurrency matters, deterministic model doubles.
 
-Latest full run: **369 passed in 136.13 s** (0 failed).
+Latest full run: **362 passed in 159.01 s** (0 failed).
 
 | Area | Representative checks |
 | --- | --- |

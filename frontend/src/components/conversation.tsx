@@ -663,10 +663,10 @@ export function Conversation({
         <p className="composer-footnote">
           Typed or pasted text stands in for a transcript. No microphone needed.
           <br />
-          Jarvis checks what is worth remembering. Questions and one-time requests
-          stay in this chat; useful personal or project facts are checked for
-          learning, repeats and updates. AI replies are not learned as evidence.
-          Private chat does not read or save workspace context.
+          Jarvis checks what is worth remembering. Questions and one-time
+          requests stay in this chat; useful personal or project facts are
+          checked for learning, repeats and updates. AI replies are not learned
+          as evidence. Private chat does not read or save workspace context.
         </p>
         <details className="setup-card">
           <summary>Model setup and 30 showcase questions</summary>
@@ -720,7 +720,7 @@ export function Conversation({
               </p>
               <p>
                 {setup.responder.unfamiliar_mode
-                  ? "Unfamiliar opt-in is enabled for Normal-mode notes and questions."
+                  ? "Unfamiliar-input opt-in is enabled for Normal-mode notes and questions."
                   : setup.responder.unfamiliar_questions &&
                       setup.responder.unfamiliar_sources
                     ? "Flexible demo questions and locally entered synthetic sources are enabled."

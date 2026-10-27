@@ -9,10 +9,9 @@ The interesting part is not that it remembers. It is that it stays honest about 
 what it learned, from which words, when a fact was superseded rather than deleted, what it forgot
 on purpose, and what it never saw at all.
 
-> **Naming:** the project is Jarvis. The Python package and the browser wordmark still use the
-> original working name `jarvis` (`src/jarvis`, `JARVIS_*` settings, `jarvis` CLI). Renaming those identifiers
-> is a mechanical refactor that has not been done yet, so this documentation uses Jarvis for the
-> project and `jarvis` only where it names a real path, command or setting.
+> **The name.** Jarvis is the memory you talk to: the assistant that remembers what you told it and
+> shows you where it learned it. The package, the CLI, the settings and the database schema all use
+> the same name, so there is nothing to reconcile.
 
 ## Why this exists
 
@@ -131,7 +130,7 @@ These are recorded results, including the bad ones. Full detail and limits live 
 
 | Check | Result | What it does *not* prove |
 | --- | --- | --- |
-| Isolated backend suite (real PostgreSQL) | 369 tests, 136.13 s | Model quality — providers are deterministic doubles. |
+| Isolated backend suite (real PostgreSQL) | 362 tests, 159.01 s | Model quality — providers are deterministic doubles. |
 | Browser journeys (Chromium, isolated DB) | 26 journeys, 48.49 s in the final full run | Cross-browser behaviour; only Chromium is exercised. |
 | Retrieval diagnostic, lexical vs lexical+claims | 45/45 answerable attempts returned all required evidence (coverage 1.0); p95 187 ms / 401 ms | Semantic answering — the claims are explicit deterministic fixtures, not live model output. |
 | 540-record synthetic corpus, live provider | 365 succeeded (328 extracted, 37 correctly produced no memory), 78 failed, 97 pending | A completed corpus run. It was rate-limited and is reported as partial. |

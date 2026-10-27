@@ -251,7 +251,8 @@ def test_test_database_identity_and_network_are_separate(engine):
             "jarvis_test_app",
         )
         assert (
-            connection.scalar(text("SELECT count(*) FROM pg_database WHERE datname = 'jarvis'")) == 0
+            connection.scalar(text("SELECT count(*) FROM pg_database WHERE datname = 'jarvis'"))
+            == 0
         )
     with pytest.raises(socket.gaierror):
         socket.getaddrinfo("db", 5432)
