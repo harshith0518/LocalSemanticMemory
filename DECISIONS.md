@@ -1,305 +1,196 @@
-# Decisions and hypotheses
+# Decisions
 
-## Separate retention from answering — 22 September 2026
+Each entry states the choice, the reason, and the tradeoff I accepted. Where a decision was later
+revised, the revision is recorded rather than silently replaced.
 
-The user's request for automatic, selective memory supersedes the keyword-based capture rules below. A structured semantic assessment now makes two independent decisions: whether the current input contains a useful personal/project assertion, and whether its answer needs saved context. Pure personal questions, public questions, greetings, hypotheticals and one-response formatting requests are transient. A message such as `I prefer tea. What is caffeine?` can contribute a preference while receiving a general answer with no database evidence. Explicit Save a note remains an intentional original-source capture.
+## Sources are canonical, memory is derived
 
-Selected assertions must be exact, unique current-input excerpts. Candidate messages preserve their original wording; extraction can cite only the selected assertion spans, checks existing claims for duplication/updates, and remains the authority for committing memory. Assistant output is never evidence. Selection can still be semantically wrong: schema validity and exact provenance are necessary checks, not proof of meaning. Failed selection stores no raw message, presents an explicit paused state and permits a bounded user retry. Metadata-only assessment receipts keep request hashes, decisions, leases and accounting; skipped questions do not enter Sources or learned memory.
+Originals live in `TEXT`, claim bodies in validated `JSONB`, and ownership/revision/evidence links as
+relational constraints. Indexes are rebuildable; the observation is not.
 
-The decision is shared by capture and answering rather than inferred again from pronouns or accidental lexical matches. General answers use no saved evidence. Contextual answers require evidence; mixed answers separate cited personal facts from uncited general explanation. Date answers come from the runtime clock; current external information needs a live verification tool, which this build does not have. Assessment adds a model call and latency; the metrics expose assessment, extraction and answer calls separately. Existing stored history is preserved.
+**Tradeoff:** claims can drift from the wording that produced them, so every claim carries explicit
+passage spans and every repair path is a new revision. Storage is larger than a "just embed the text"
+design and querying is more work.
 
-Research informed the design without adding a memory-framework dependency: [LangMem's memory formation and consolidation](https://langchain-ai.github.io/langmem/concepts/conceptual_guide/), [LangGraph's structured routing](https://docs.langchain.com/oss/python/langgraph/workflows-agents#routing), [Graphiti's provenance and temporal history](https://github.com/getzep/graphiti), and [Google's structured-output validation requirements](https://ai.google.dev/gemini-api/docs/structured-output#best-practices). Mem0 was reviewed, but its current ADD-only guidance does not replace this project's explicit correction/change/history contracts. Retention, updates, temporal recall and abstention need separate evaluation, consistent with [LongMemEval](https://github.com/xiaowu0162/LongMemEval).
+## Retention and answering are independent decisions
 
-## Public questions stay in the current chat — 22 September 2026
+An assessment returns two separate fields: whether to retain (`skip` / `candidate`) and how to answer
+(`general` / `contextual` / `mixed` / `live` / `clock` / `clarification`). Earlier versions inferred
+retention from pronouns and keywords; that conflated "this is about you" with "this states a fact".
 
-The user selected keeping pure general-knowledge questions only in the current chat, superseding the blanket preserve-every-message choice below for clearly routed public/date questions. Contextual and mixed messages retain selective learning; explicit Save a note still saves the entered original. Public routing is conservative: a local lexical match or ambiguous entity question keeps the contextual path. We did not add a claim of universal intent understanding. Existing stored questions are retained, while completed `no_memory` chat sources are excluded from Automatic evidence unless used as claim support. Personal/project questions use memory-first, bounded retrieval; only an explicit inventory asks to review a complete small collection. Public questions with no workspace match send no notes. One-response phrasing such as 'I just want to know the city' is not a durable preference or a reason to deny public knowledge.
+**Tradeoff:** one extra model call per turn and a new failure surface (assessment can fail while saving
+succeeds). Assessment failures are visible and retryable, and a failed assessment never blocks an
+answer from already-saved evidence.
 
-## Bounded recall and intentional local backup — 22 September 2026
+## Learned excerpts must come from selected assertions
 
-Automatic recall selects active learned claims before originals and attaches each selected claim's complete source provenance. It can add a bounded lexical original for unextracted detail. When a paraphrase has no word overlap, a small structured-diversity fallback can be provided, clearly marked as partial when it cannot cover the whole memory set; this prevents a small workspace from becoming an uncontrolled prompt dump. It is not dense semantic similarity. The installed local Qwen embedding model remains unused until its own persistent vector lifecycle and held-out evaluation exist.
+The extractor may cite only the exact excerpts the assessment selected from the current input, and the
+code derives offsets rather than accepting model-supplied ones. An observed live failure — the model
+guessing character offsets — is what forced this.
 
-Google remains the normal walkthrough route. Ollama is a manual, local-only backup: `qwen3:4b` is selected only by an explicit provider setting, through the Docker host gateway and a fixed dummy OpenAI-compatible key. Invalid hosts/models are rejected. We rejected automatic cloud/local fallback because the provider choice controls locality, reliability and demo behavior. A synthetic Docker-to-host compatibility probe returned a structured `qwen3:4b` completion with reported token usage; that single probe establishes connectivity and contract shape, not response quality.
+**Tradeoff:** an assertion the assessment missed cannot be recovered during extraction. That is the
+intended direction: under-learning is visible, over-learning is not.
 
-Answer citations use a meaningful source label and a short evidence excerpt. Immutable UUIDs and source keys remain trace references inside a closed technical disclosure, where they aid debugging without becoming the normal walkthrough/user vocabulary.
+## Conflict is preserved; correction is not a change in the world
 
-## Automatic conversational memory approved and implemented — 22 September 2026
+Two sources disagreeing on the same subject/property/scope produce a disputed state with both variants
+retained. `corrected` retracts a wrong interpretation; `superseded` records that reality changed. Both
+keep history.
 
-The user explicitly requested automatically saving Normal Ask messages and selectively remembering new information shared while discussing existing projects. This supersedes the earlier browser-only explicit-note capture choice for Normal Ask. Preserve every submitted original, including repeats and pure questions; create or revise semantic claims only from useful supported user assertions. Do not turn generated answers or general-knowledge responses into autobiographical evidence. Private stays transient and context-free.
+**Tradeoff:** "newest wins" is simpler and produces cleaner answers. It also destroys the ability to
+answer historical questions and to explain why a value changed. I chose explainability.
 
-Research: [Mem0's maintained memory prompts](https://github.com/mem0ai/mem0/blob/main/mem0/configs/prompts.py) compare extracted facts with existing memory and select add/update/delete/no-change. [LangMem's conceptual guide](https://github.com/langchain-ai/langmem/blob/main/docs/docs/concepts/conceptual_guide.md) describes immediate conversational memory formation, background formation, and managers that extract/consolidate/update memories. We adopt selective extraction followed by reconciliation, reusing Jarvis's source-linked revisions instead of installing another memory store or copying external code. Jarvis preserves conflicts and history instead of treating every contradiction as a deletion.
+## Forget is conservative and relational
 
-Choose active learning before the reply for this bounded single-user walkthrough demo: new user facts are available to the very next answer, status is inspectable, and failures are separated from source preservation. Tradeoff: usually one additional model call plus possible schema repair per turn, with visible token/latency cost. This is not a claim of robust identity resolution or perfect semantic deduplication. Selection is bounded, model meaning can still be wrong, and ambiguous follow-ups need clarification. Six recent user messages provide references without treating assistant text as evidence. Ordinary APIs/evaluators keep read-only Ask behavior.
+Forget excludes the claim family's supporting observations, dependent claims, known full-variant copies
+and literal supporting-passage reimports — whole observations, not spans.
 
-Live review found a guessed-offset/schema failure on an update. The failed job and all attempts remain recorded; no counters or retry limits were reset. Improved prompt examples remove stored offsets, preserve scope qualifiers correctly, and supply structural repair hints. See [the conversation review](eval/reports/regression-conversation-review.json) for initial failures, final checks and limitations.
+**Tradeoff:** forgetting one budget figure can also block an unrelated detail that shared the note.
+Unseen paraphrases are not detected either. I preferred an over-broad exclusion that can be explained
+over a fuzzy matcher whose misses are invisible. Original inspection stays available because
+overlapping evidence is not the private content itself.
 
-## Free-provider follow-up proposal - pending approval
+## One policy revision guards every write
 
-The user supplied Google free-tier and zero-dollar OpenRouter keys and requested an end-to-end metrics/requirements audit plus safe size reduction. Read-only authentication/model-catalog checks returned HTTP 200 for both: local variable names are `GOOGLE_API_KEY_FREE_TIER` and `OPEN_ROUTER_API_KEY`. No new-provider inference or source sharing has occurred. OpenRouter reports a free-tier key with limit/remaining/usage-daily all zero; its [documented free allowance](https://openrouter.ai/docs/faq) is 50 requests/day without the qualifying credit purchase, insufficient for the complete corpus alone. [Google's active quotas](https://ai.google.dev/gemini-api/docs/rate-limits) are project/model-specific, not established by successful model listing.
+Cargo, worker, control and answer paths all take the per-owner policy row lock, verify expected
+source/claim/policy revisions inside the transaction, and commit atomically. Workers hold a lease and
+fence themselves with a receipt. Answers are serialised at a release point that recomputes eligibility.
 
-Proposed scope awaiting explicit approval: at most twenty public-synthetic comparison calls across these providers within the existing combined 750-request / 10,000,000-accounted-token / $0-paid ceiling; integrate a candidate only after grounding, correction, uncertainty and latency checks pass. Reuse existing provider/configuration, evaluator, metrics-display and regression files; no automatic paid fallback, personal or Private inference on these new providers, or broad deadline refactor. [Google unpaid terms](https://ai.google.dev/gemini-api/terms) allow product-improvement use and human review; the earlier NVIDIA-only exception does not silently authorize that change. OpenRouter routes must be explicitly zero-priced and satisfy the selected data policy, not randomly choose an undisclosed fallback model.
+**Tradeoff:** throughput is bounded by one serialisation point per owner, and the code carries more
+revision plumbing than a single-user app seems to need. The alternative — pre-checks followed by
+unguarded writes — is exactly the race this design exists to prevent. Lifecycle races are tested with
+two real PostgreSQL connections and barriers, not with sleeps.
 
-The original project pages 4-7 were re-extracted for this audit: every result needs inspectable original input, created/retrieved/changed/rejected memory, provenance, behavior and decision reason, with retrieval/end-to-end latency, database growth, model usage and cost. Existing metrics expose transient stage times, source/claim/passage byte totals, per-model/role call counts, known tokens, unknown reservations and p50/p95 provider latency. Cost is currently explicitly unknown because billing/rates are not connected; do not relabel that as measured zero cost. Full-corpus execution, per-query metric completeness and the exact-commit clean review journey remain acceptance work. Reduce duplication only after those checks, without deleting failures, migrations, source evidence or useful tests merely to reduce line/file counts.
+## No vector search yet
 
-## Explicit Ultra diagnostic decision - 12 September evening
+pgvector is installed but no embedding is stored and no dense retrieval is claimed. Recall is lexical
+(GIN full-text with cover-density ranking) plus structured claim matching, with the shortest query path
+staying in the database.
 
-After the user approved a maximum-ten-call synthetic comparison, ran `eval/ultra_probe.py` against `nvidia/nemotron-3-ultra-550b-a55b` with the configured Ultra key. The evaluator alone substitutes the model; it reuses the real service, exact fixtures, prompts, Lightning's 4096-output/non-thinking/temperature-zero settings, 90-second transport, validation, source gates and persisted budget. Application provider selectors, keys and running containers are unchanged. There is no automatic fallback. The run's ceiling was the prior 34 calls plus ten, within the existing 750-request / 10,000,000-accounted-token / $0-paid authorization.
+**Why:** a vector index without an embedding lifecycle, backfill strategy and held-out dense evaluation
+would be decoration. The honest version is to say "lexical" and measure it.
 
-Observed: six provider completions, four provider failures and one validation rejection; one of two answers and four of seven attempted source jobs were accepted, producing five claims. The eighth note was not called at the cap. Successful completions took 63.853-86.920 seconds. Some preference/conditional details were stronger than the prior Lightning outputs, but the revised-date proposal was invalid, repairs failed and the latency/reliability evidence does not justify selecting Ultra for the bulk run. This is one diagnostic, not a repeated benchmark or a claim that Lightning's remaining semantic issues are solved. [Exact results, accounting and manual review](eval/reports/s11-ultra-review.json).
+**What would change it:** a versioned embedding model, a migration with backfill, revocation-aware
+re-indexing, and a frozen A/B against the lexical baseline. None of those exist, so the claim stays
+absent.
 
-Read-only inspection separately confirmed that the running application still has both inference flags disabled, its old Kimi responder configured and no extractor key forwarded. This explains the browser's disabled-service message; it does not invalidate the successful separately enabled Lightning and Ultra probes. Redeployment/activation is still pending and is not claimed by this checkpoint.
+## Memory-first retrieval instead of a context dump
 
-## React interface decision
+Automatic retrieval selects active learned claims first, attaches *just* their supporting originals,
+then adds a bounded lexical original for unextracted detail. Complete small-collection review is
+reserved for explicit inventory requests and capped at 50 sources / 80 memories / 24,000 bytes.
 
-The latest user instruction approves the React/component/build dependencies for a more expressive browser workspace. Use React 19.3 with TypeScript and Vite, shadcn/Radix primitives, Lucide and Motion. Node is a build dependency only; FastAPI remains the sole application server. PostgreSQL records, model behavior, live allowance and privacy semantics do not change.
+**Tradeoff:** a paraphrase with no lexical overlap can miss. The mitigation is an explicit
+structured-diversity fallback labelled as partial coverage — not a quiet claim of semantic similarity.
+Earlier versions serialised the entire small collection into the prompt; that scaled the wrong way and
+made the citation surface meaningless.
 
-The [official Hey Jarvis website](https://heyjarvis.ai/) supplies the forest/cream, serif and botanical direction. [21st's chat references](https://21st.dev/community/components/explore/ai-chat-design), especially [Kokonut's input with loading](https://21st.dev/@kokonutd/components/ai-input-with-loading), informed composer hierarchy; we did not copy its simulated wait or add fake thinking stages. Build on the [official shadcn Vite approach](https://ui.shadcn.com/docs/installation/vite) with locally bundled fonts. Use [Motion's reduced-motion support](https://motion.dev/docs/react-accessibility); only a real pending operation animates, and validated buffered answers reveal without claiming token streaming or hidden reasoning.
+## Validate in code, propose with models
 
-The design tells the source-to-memory story through four working screens and explicit controls. Typed/pasted text substitutes for ASR; there is no microphone. Ask is a current request; Save a note is a durable Normal import. Missing capture time stays unknown. Collection/page state is ephemeral; screen navigation within Normal retains the current work, while collection changes, Private, page exit/restoration and successful lifecycle controls clear the relevant content. The later walkthrough-demo decision adds a narrow context-free Private provider route without changing saved-store access.
+Models return typed proposals; Python checks schema, ownership, real spans, exclusions and allowed
+transitions. A valid quote is treated as a structurally valid reference, never as proof of entailment.
 
-Use a per-response nonce for Radix's generated scroll-lock styles and same-origin fonts. Preserve strict script policy, no-store responses, no analytics, no external assets and no browser persistence. This adds a frontend toolchain, not a second runtime service or client authorization layer. Package versions and licenses are recorded in frontend/package-lock.json and frontend/LICENSE-shadcn.md. Actual acceptance belongs in RUN.md.
+**Tradeoff:** the validator can be stricter than the model and reject good proposals (it does; repair
+attempts are recorded). Structural validity is still not meaning, so semantic review stays a separate,
+explicitly labelled step rather than something the schema appears to certify.
 
-## S09 decisions — 12 September 2026
+## Answers are buffered, not streamed
 
-The user approved dummy-data use under the NVIDIA trial terms and the S09 milestone. This is a **synthetic-only exception**, not a claim that NVIDIA provides no training or retention. The shared persisted `s07-synthetic-v1` allowance is 96 requests and 1,500,000 total input/output tokens including repairs, retries, failures and conservative unknown-usage reservations; $0 paid spend, no reset. Keys alone never authorize calls. Personal and Private inference stay blocked. Earlier proposed 32-call limits and pending-approval notes below are historical and superseded.
+Responses are serialised at a guarded release point after validation. There is no token streaming and
+no response cache in this version.
 
-Kimi K3 answers; Nemotron Lightning proposes memories. Ultra has no automatic fallback. The code buffers responses and validates exact evidence before release. An observed live extraction failure motivated `s07-v2-excerpts`: models supply unique exact excerpts, and code resolves code-point offsets. Invalid supplied offsets still fail. This removes unreliable character counting without relaxing ownership, revision or quote validation. It does not certify meaning. Provider errors retain fixed categories and accounted reservations; hidden reasoning is neither shown nor saved.
+**Tradeoff:** slower perceived latency. In exchange, revocation has a defined boundary, a superseded
+value cannot appear mid-stream, and a failed validation never reaches the browser as a partial answer.
+The UI states clearly that already-released bytes cannot be recalled; that is a limitation, not a
+guarantee.
 
-Correct and world change require a user statement plus a confirmed typed interpretation. Correct marks an interpretation wrong; world change preserves the old state as history. Mandatory amendment provenance travels with old evidence and known exact copies, including source-only answers. PostgreSQL policy revisions order amendments and fence workers, retrieval and buffered answers. Known corrected interpretations cannot be learned again from the same observation or exact copy; semantic paraphrases remain an evaluation limitation.
+## Postgres, no Redis, one worker
 
-Forget retains visible source history but excludes the selected claim family's support, dependent claims, exact source variants and literal supporting-passage reimports across the owner's collections. It conservatively blocks whole affected observations, which can remove unrelated details from future use. The preview discloses affected notes before confirmation. We choose this conservative relational exclusion over unverifiable fuzzy duplicate identity; unseen paraphrases are not detected. No embeddings/cache subsystem exists to invalidate in this version.
+One database holds policies, sources, passages, claims, jobs, budgets and call accounting. One worker
+process consumes leases. No Redis, no separate vector service, no queue broker, no orchestrator.
 
-Controls use idempotent receipts and the existing owner-row commit guard. No network call holds that guard. Feedback asks which layer failed; memory/world-change/style/operational diagnoses do not silently rewrite memory. Generation or retrieval diagnoses allow one persisted rerun, bounded by the same allowance and current evidence checks. General autonomous repair, procedural learning and semantic entailment certification remain outside scope.
+**Tradeoff:** less throughput headroom. At single-operator scale the operational simplicity is worth
+more, and adding infrastructure before observing a bottleneck would be speculation.
 
-The two [curated control observations](data/synthetic/control-observations.json) permit a public Atlas correction/change demo. Eligibility checks all original fields and the full confirmed content, not a browser-provided synthetic flag. Arbitrary control statements remain usable locally but are blocked from this live trial. [Commands and actual evidence](RUN.md#s09-controls-and-synthetic-ask)
+## The browser is the product; the CLI is a developer tool
 
+The React workspace is the ordinary-user surface. The CLI exists for diagnostics and evaluation and
+shares the same service layer.
 
-Updated 12 September 2026. This distinguishes agreed product behavior from an implementation recommendation. "Promising" is not a measured result or blanket approval to implement every feature.
+**Tradeoff:** two adapters to keep in sync. The alternative — a CLI-first tool with a demo UI — would
+misrepresent what the thing is for.
 
-## Agreed requirements
+## The client stores nothing
 
-- Hey Jarvis learns selective, useful, supported understanding from eligible user messages and imported dictations. History, derived memory and original Sources are distinct.
-- Preserve whose claim it is, scope, attribution, uncertainty, conditions, negation, time and units. Questions/quotes/hypotheticals are not unconditional user facts. A one-off edit is not a universal preference.
-- Raw and formatted dictation are one observation. Preserve material disagreement. Generated replies/drafts do not independently confirm facts or completed actions.
-- Dictation writes the intended text; semantic memory must not silently insert facts. Ask Jarvis interprets a request and may retrieve permitted history. Native integration and detailed conversation organization remain open.
-- Normal saves eligible history and learns/reuses permitted memory. Private uses only current input and explicitly supplied temporary context, with no saved personal reads or durable activity/content writes in any app-owned sink, including failures.
-- Private starts fresh, clears temporary context on exit/page close, and never backfills Normal. Its switch preference may persist; private content may not. There is no separate pause-learning switch in v1.
-- Correct distinguishes extraction mistakes from changes in the world; preserves original evidence and changes later use. Forget stops future use and relearning from supporting passages and known duplicates, including delayed work; source history may remain separately visible.
-- The v1 service policy prohibits model-training use of activity. Hosted inference is possible, but provider retention must be separately checked and disclosed.
-- Use supplied/replayed text; no ASR or production Jarvis integration is required. Historical instructions are source data, not execution authority.
-- The project requires an ordinary-user UI, actual backend/model behavior, approximately 500 development observations, import of unfamiliar unfamiliar data, source-inspectable evaluation, reproducible run/reset instructions and an exact release commit.
-- Delivery target: 12 September afternoon IST. Prefer Docker Compose; Azure is optional only after completing the local result.
-- The user replaced DeepSeek with **Kimi K3** as the S06 reasoning/response candidate. Compare smaller models for typed memory-operation proposals; the backend retains control of SQL, authorization and commits. Exact endpoint/model selection remains an experiment.
-- Ask before important implementation edits outside an already approved bounded scope. The user requested starting with Phase One preservation and then progressing through the delivery steps.
-- Maintain [todo.md](todo.md) with completed, ongoing and pending work. After every meaningful completed milestone, run relevant checks, update the tracker, commit and push to `dev`; this recurring workflow is authorized. Keep `main` as the default reviewed branch. The user reviews and merges, or explicitly instructs the assistant to merge and push. Implementation commits belong on `dev`; the user explicitly authorized the S05 merge/push into `main`.
-- Use the visual PDF and Markdown files in a fresh discussion chat to understand the design and resolve doubts; use Codex CLI for subsequent approved implementation. Keep one canonical checkout and record decisions before handing work to the coding session. Windows CLI authentication and Docker Linux access were checked in the [follow-up readiness check](RUN.md#dev-branch-readiness-check); the restricted CLI subprocess has separate access limits. The author subsequently reported Phase One complete in their possession and explicitly approved S03. Proceeding with that scope is authorized; repository preservation/mechanical checks of those finals remain pending.
+No cookies, no localStorage/sessionStorage, no IndexedDB, no service worker, no analytics, no
+third-party assets, no client cache. Saved reads happen only after an explicit action. Private state
+is memory-only and cleared on exit.
 
-## Proposed implementation choices
+**Tradeoff:** every navigation re-fetches, and a page reload loses the current conversation view. That
+is preferable to a "private" mode whose text is recoverable from browser storage.
 
-| Choice | Reason | How to reconsider |
-| --- | --- | --- |
-| Python/FastAPI + thin CLI sharing services | One language and one policy path for application/evaluation work. | Reconsider only for a concrete blocker, not familiarity with another framework alone. |
-| PostgreSQL + pgvector and full-text search | Transactions, typed state and exact dense retrieval in one DB. | SQLite remains technically possible, but do not add a second backend under the deadline. PostgreSQL with pgvector is explicitly approved for S03. |
-| Docker Desktop Linux containers with Ubuntu-24.04 integration; keep one Windows checkout for the initial image build | Existing engine and WSL integration passed readiness checks. Copy source into images and use named DB volumes, avoiding a source migration before bootstrap. | Consider a Linux-filesystem checkout if live bind mounts become useful; do not create two competing checkouts or reinstall the host. |
-| One DB-backed worker; no Redis | Durable work with fewer services. | Add infrastructure only after observed throughput/reliability need. |
-| Source-history baseline, then claims and hybrid retrieval | Lets evaluation isolate whether memory and search actually help. | Keep the simpler baseline if an addition has no demonstrated value. |
-| Bounded smaller model for extraction | Potentially reduce repeated interpretation cost. | Compare against stronger extraction with other settings fixed; retain better quality when repair cost erases savings. |
-| Buffer replies; no response cache/streaming initially | Smaller correction/revocation surface. | Add after lifecycle tests, with explicit dependency invalidation. |
-| Plain minimal UI | Meet the normal-user requirement without another large application framework. | Polish after the complete path is verified. |
+## Private is a code path, not a UI toggle
 
-## S03 implementation decisions and evidence
+Private gates run before request bodies are parsed. Service-layer checks are duplicated at the adapter
+boundary, so a new endpoint cannot accidentally inherit access. The optional direct-chat route opens no
+database session and stores nothing.
 
-The approved bootstrap uses synchronous SQLAlchemy/psycopg sessions in one shared service layer, with thin FastAPI/Typer adapters. Python 3.12, uv and PostgreSQL/pgvector images are pinned by digest; application, test and build dependencies are locked. One image includes developer checks, trading some image size for a single reproducible local environment. No production deployment is implied.
+**Tradeoff:** more duplicated guards and an awkward product edge — the direct-chat question still
+leaves the machine, so the mode is "private to my database", not "private to the network". The UI says
+exactly that instead of implying more.
 
-Use a standalone `compose.test.yaml` project instead of a test profile sharing application configuration: this keeps application credentials, networks and volumes out of test services. A fail-closed target guard protects migration/fixture cleanup. Runtime logins have DML only; separate migration logins own the schema. The administrator enables pgvector once during empty-volume initialization because extension installation needs elevated DB privileges. Alembic creates only the three approved logical records; no vector data/search is implemented.
+## Consent, cost and allowance are explicit and persisted
 
-`/health` / `jarvis health` are liveness; `/ready` / `jarvis ready` check DB/schema/extension readiness. The synthetic probe's fixed paired text, hash, source identity, unknown capture metadata, policy revision and pending job establish a small durable transaction without exposing a general importer before S04. Source revisions are separate records; equal text does not establish identity. Model/provider behavior and privacy/lifecycle meanings are unchanged.
+Hosted inference needs a default-off flag plus an exact data-policy acknowledgement, per surface. The
+shared ledger records requests and accounted tokens, counts failures and repairs, and survives
+restarts. Unknown usage reserves conservatively rather than counting as zero.
 
-Keep these choices based on 23 passing isolated PostgreSQL tests, repeated migration/no-drift checks, runtime privilege checks, real outage recovery and exact state after container replacement. The first lint/format issues and test-client deprecations were resolved; actual commands and limits are in [RUN.md](RUN.md). No comparison against SQLite, another architecture or live models was run.
+**Tradeoff:** bookkeeping code that has nothing to do with memory quality, and a demo can be blocked by
+its own ledger. It was: a configured key worked while the application refused to call, which is the
+correct behaviour and had to be explained rather than bypassed.
 
-## S04 implementation decisions and review
+## No automatic provider fallback
 
-The user explicitly approved typed observations/passages/claim revisions, ownership/version/exact-support validation, backend request identity, Normal/Private gates, guarded writes and an additive migration. Implemented within that scope, with no dependency changes, model calls, general importer, retrieval or UI.
+A provider failure is reported as an operational failure. There is no silent switch to another model.
 
-Keep Pydantic contracts with strict text/boolean/revision fields and explicit-precision time. Store owned claim revision metadata and evidence links relationally, with typed claim content in JSONB. This avoids prematurely flattening every subject/value/time alternative into a broad schema while preserving exact source links and inspectable payloads. A later query requirement can justify a reviewed indexing/schema change. Do not infer resolved entity IDs or semantic entailment from labels or valid passage IDs.
+**Tradeoff:** a single provider outage degrades the demo. A fallback would make results unattributable —
+you would not know which model produced an answer, or which terms applied to the data.
 
-Require request contexts for all new service operations; adapters resolve the local owner and accept only a validated mode. The old fixed synthetic probe remains compatible, and its CLI now passes mode explicitly. Private rejects personal-store operations before parsing or SQL. Pure input validation has no saved context or side effects. Disable persistent API/CLI container logs in addition to suppressing input/error logging; otherwise even a sanitized CLI receipt could leave durable Private activity. This sacrifices stored operational logs in the supported local setup; it does not certify third-party clients or future providers.
+## Readable citations, identifiers behind a disclosure
 
-Use the same policy-row lock for source writes and supported claim writes, with policy/source/claim revisions rechecked within the transaction. Read-only validation is advisory and cannot authorize a later unchecked write. Two real connections and barriers verify both lock orderings; concurrent claim appends cannot both consume the same expected revision. Source evidence reads are batched. Automatic reconciliation and Correct/Forget semantics remain outside S04.
+Answers cite a meaningful source label and a short excerpt; UUIDs and source keys live in a closed
+*Technical reference* section. The metrics panel says **sent to the answer model**, not "understood".
 
-Self-review against AGENTS/ARCHITECTURE/EVALUATION: this establishes evidence and policy boundaries before S05 ingestion; preserves paired observations, unknown times, attribution and uncertainty; keeps authorization in one service layer; and distinguishes contract tests from semantic/model evidence. Keep the current direction based on 75 passing checks, preserved S03 state and live adapter checks, not a claimed comparison with another architecture. Next review must address import namespace/idempotency and eligibility, then real extraction entailment and full lifecycle revocation. [Commands/results](RUN.md#actual-s04-results)
+**Tradeoff:** slightly less traceability on the main surface. The source inspector and the technical
+disclosure keep it available, and the wording keeps the measurement claim honest.
 
-## S05 implementation decisions and review
+## Contracts and semantics are reported separately
 
-The user approved the next diagnostic import/inspection step and explicitly requested merging the tested work into `main` and pushing. Retain the existing owner-scoped source key, reserving `import:<namespace>:<record_id>` for immutable imports. This avoids a second identity table or migration while giving each original observation stable, reversible identity. Content hashes alone would wrongly collapse separately authored observations; filename-based namespaces would make renamed reimports duplicate evidence. The caller must keep the collection namespace and original IDs stable.
+Deterministic doubles prove application contracts. Live runs prove only what the recorded calls
+actually returned. Screening assertions are lexical; semantic review is a human step with its own
+label. Failed runs, rate limits and abandoned comparisons are kept.
 
-Accept bounded UTF-8 JSONL matching the supplied fixture: `record_id`, `raw_transcript`, optional `formatted_text` and metadata. Store only the eligible imported-dictation kind; reject unknown top-level role/owner/schema fields. Keep raw/formatted discrepancies and missing metadata intact. Schema checks cannot determine whether a caller's purported dictation was actually authored by that person; imported instructions remain inert source text. Copied source/evaluator files are byte-identical to the parent originals and stored separately. API import accepts bytes; CLI stdin keeps input out of shell arguments.
+**Tradeoff:** the results table looks unimpressive compared with a curated highlight reel, and the docs
+are longer. The alternative is a showcase that cannot survive one follow-up question.
 
-Keep the existing owner policy lock and atomic source/job transaction. Batch source/job inserts use two flushes rather than separate per-record commits. Exact reimport returns original state and never requeues; changed content/metadata under the same identity fails the whole batch. A permissive upsert was rejected because it would silently revise source evidence outside a defined correction workflow. Full Correct/Forget and cross-namespace duplicate exclusions remain later work. Number comparison respects JSONB's numeric representation while distinguishing booleans; an explicit UTF-8 HTTP charset fixes the observed Windows PowerShell response decoding failure.
+## React and a component system
 
-Self-review against AGENTS/PLAN/ARCHITECTURE/EVALUATION: one service owns all import/list/inspect policy and writes; API/CLI have no SQL or model calls; Private gates precede input/store reads; original variants/unknown times are preserved; source identity does not claim corroboration, truth or entailment. Keep the approach based on the 111 passing isolated checks and actual application persistence/adapter evidence in [RUN.md](RUN.md#actual-s05-results). No alternate architecture or model comparison was run. Next: S06 source-history answers, with provider and budget approval before live calls.
+React 19 + TypeScript + Vite, shadcn/Radix primitives, Motion, locally bundled fonts. Node is a build
+dependency only; FastAPI remains the only runtime server.
 
-## Browser-first UI decision
+**Tradeoff:** a frontend toolchain and a build stage in the image. In exchange the workspace can show
+evidence, history and per-turn metrics without becoming a server-rendered form.
 
-The user explicitly requested moving the minimal frontend forward so ordinary users do not need CLI commands. Keep the tested backend and optional developer CLI; serve plain HTML/CSS/JavaScript directly from FastAPI. No framework, frontend server, Python dependency change or migration is needed. This makes real import/inspection usable immediately while S06's provider decision remains open. This is the early source-workspace part of S10, not completion of Ask/Correct/Forget.
+## Open questions I have not resolved
 
-The UI uses the same owner/policy-aware API. It fetches a current policy revision before import, preserves stable collection/record IDs, distinguishes commit success from refresh failure and shows exact paired text, unknown capture time and processing status. A fixed collection name is only a starting input; no data is loaded automatically and unfamiliar valid collections work. Sensitive text is rendered as text, with no browser persistence or third-party assets. Mode changes discard the current page context and reject late responses. A previously accepted Normal import can still finish; switching mode is neither a transaction rollback nor Forget.
-
-Alternatives: a separate SPA toolchain adds packaging/runtime surface without improving this bounded flow; removing the existing CLI would discard useful automation without helping browser users. Keep both adapters around the shared service. Validate the user journey with real Chromium against the isolated PostgreSQL backend, plus existing backend regressions and public-asset privacy checks. [Actual results and commands](RUN.md#browser-workflow)
-
-## S06 readiness decisions
-
-The user requested an audit against the visual guide, commit/push to `main`, and starting S06. The audited S05 commit is `a599414b431783661f54aff2c542a11ebeb0e78a`; both remote branches matched it before this documentation checkpoint. A fresh image rebuild passed all 111 isolated PostgreSQL tests (12.56 s), Ruff lint/format passed, and the application database has no migration drift. Retain the current shared-service/evidence/policy architecture; these results do not establish model quality or later lifecycle/UI behavior. [Detailed audit](RUN.md#s06-readiness-audit)
-
-**Updated model choice:** use `moonshotai/kimi-k3` as the first response candidate. Keep `nvidia/nemotron-3.5-lightning-30b-a3b` for S07 extraction experiments. `nvidia/nemotron-3-ultra-550b-a55b` is only an optional later comparison/backup candidate; a locally configured key does not approve automatic fallback or additional model comparisons. The reported 13 September DeepSeek free-access cutoff was not independently verified and is not recorded as provider fact.
-
-**Provider policy for personal inputs remains open:** NVIDIA trial terms permit activity/error logging and content use for model improvement. The user approved only the public synthetic exception above. No-training and retention compliance for personal data is not established by a free endpoint or an API key.
-
-The former 32-request proposal was superseded by the user-approved combined 96-request/1,500,000-token/$0 trial described above. The application flag remains off by default; explicit evaluator runs can enable it. Do not extend this to personal or Private input.
-
-The PDF remains the original planning snapshot. Its DeepSeek labels and pre-bootstrap status are superseded by this decision and the tracker; the evidence, policy, staged delivery and evaluation diagrams remain applicable. Do not rewrite the historical PDF simply to imply that every depicted capability is implemented.
-
-## Input-to-memory research review
-
-On 12 September the user requested confidence in the input/storage design before S07 implementation. Reviewed the current Markdown, parent brief/research notes and the visual guide, especially pages 4–7 and 17. These agree on selective learning, original evidence, revision history and one PostgreSQL store. The following external evidence supports testing that direction; it does not establish our models' accuracy or authorize new implementation.
-
-| Primary source | Finding and implication for this project |
-| --- | --- |
-| [LongMemEval, sections 5.2–5.3](https://arxiv.org/html/2410.10813v1) | Replacing source text with summaries/facts often reduced answer quality; adding extracted facts to original-text search keys helped in the tested settings. Preserve source access and test claims as an addition. Results varied by reader and task, so this does not prove that our proposed retrieval design is optimal. |
-| [Mem0, section 2.1](https://arxiv.org/html/2504.19413v1) | Separates extraction from memory updates. Borrow that separation, with backend validation and revision history. Its user/assistant input handling and model-selected deletion are not our eligibility or Forget contract. Its reported evaluation excludes adversarial questions; it cannot establish our abstention/privacy guarantees. |
-| [PostgreSQL JSON types](https://www.postgresql.org/docs/17/datatype-json.html) and [W3C provenance](https://www.w3.org/TR/prov-dm/) | JSONB supports structured content; provenance distinguishes sources, derivations and revisions. Our recommendation is exact source strings in TEXT, validated claim content in JSONB, and relational IDs, ownership, revisions and evidence links. JSONB preserves string values but not original JSON serialization, key order or duplicate keys; do not claim byte-identical import-file archival. |
-| [pgvector](https://github.com/pgvector/pgvector) | Exact and approximate vector search can share PostgreSQL with existing state. An embedding is a derived search aid, not authoritative memory or proof of meaning. Start with the planned lexical baseline, then test exact dense search; add ANN only for a measured need. |
-
-**Recommended design:** preserve eligible Normal source history; extract only reusable facts, scoped preferences and useful reported events; retain exact supporting passages and context-complete qualifiers; reconcile under the existing policy/revision guard. One-off response instructions, questions, quotes and hypothetical examples do not automatically become lasting personal facts. A real conditional plan may be useful but must stay conditional. Save permission and memory usefulness are separate decisions: a stored observation can yield zero claims. This is a refinement of the existing product invariants, not a new retention policy.
-
-Keep canonical source, passage and claim-revision records in PostgreSQL. Use explicit lifecycle/relationship history rather than overwriting a profile summary. Raw/formatted text remains one observation, and equal text is not an identity key. Model calls propose outside DB locks; the shared service rechecks ownership and revisions, then commits the whole accepted operation and its receipt. Source fallback must obey the same exclusions as claims, including later Forget controls. These controls are required engineering properties, not findings established by the cited model benchmarks.
-
-**Alternatives and confidence:** do not introduce a separate vector/graph database, summary-only memory, unbounded automatic extraction, or a model's confidence score as a truth probability without evidence that justifies them. The implemented schema already supports the core representation. Extraction usefulness, reconciliation quality and embedding benefit remain unmeasured here. LongMemEval also tests assistant-side information, whereas our memory eligibility is user-only; external scores cannot be imported as product results. Run the [controlled comparisons](EVALUATION.md#4-compare-mechanisms-without-confounding) and retain the simpler baseline if added memory does not help. S06 remains the answer baseline; S07 may share its proposed provider/accounting foundation but cannot establish an answer-quality improvement before that baseline exists.
-
-No live calls, application changes or new runtime tests were performed for this research checkpoint. S07 files/data effects and acceptance are now collected in [the pending proposal](PLAN.md#s07-bounded-proposal-after-research-review). Provider approval remains separate.
-
-## S07 implementation decisions and review
-
-The user approved the modified S07 scope after the research review on 12 September. Keep the source-plus-claims PostgreSQL representation and existing shared service. Split processing operations into a service mixin to keep API, CLI and worker adapters free of SQL without creating a second policy layer. Add only job lease/request fields, claim relationships, processing receipts and call/budget accounting. Existing sources and claim content are unchanged; the migration gives old jobs safe idle defaults. HTTPX moved from the development group to runtime with no package-version changes.
-
-Choose explicit browser queuing and one DB-backed worker rather than automatic import-time inference or another queue service. Lease fencing, atomic receipts and revalidated source/memory snapshots address replay and concurrent updates. Keep network calls outside locks. A model selects a proposal; code permits only the reviewed transitions and cannot establish identity or entailment merely from a matching name/passage. Preserve old interpretations and mark both competing values disputed. Context caps fail clearly until S08 can select evidence; they must not silently discard sources to make a model request fit.
-
-The fixed adapter uses JSON output, non-streaming responses, a bounded output allowance and an initial non-thinking extraction setting. These settings are implemented and transport-tested, **not confirmed against a live endpoint**. There is no Kimi/Ultra fallback. [NVIDIA's endpoint example](https://build.nvidia.com/nvidia/nemotron-3.5-lightning-30b-a3b) documents the model and chat interface; account access and actual schema behavior remain untested. [SQLAlchemy transaction guidance](https://docs.sqlalchemy.org/en/20/orm/session_basics.html) informed the session/commit boundary, not model quality.
-
-At the S07 contract checkpoint live calls were disabled and its proposed ceiling was 32 requests/500,000 tokens. S09 supersedes that proposal with the approved combined allowance above. Persist reservations under a budget-row lock and retain unknown usage across restarts; UTF-8 bytes plus output/overhead are a conservative reservation, not measured tokenizer usage.
-
-Self-review caught a UI issue: a memory value initially appeared without its uncertainty until opened. The list now displays evidence status, scope, modality, negation and conditions immediately. Evidence text stays visible; source IDs/offsets and relationship identifiers are expandable. Private clearing also covers memory/history DOM, pending responses and new controls. New tests exercise real PostgreSQL races, retry/restart, accounting and zero-access Private paths. [Results and remaining gates](RUN.md#s07-memory-processing). The earlier research supports this experiment; it supplies no application accuracy score.
-
-## S08 retrieval decisions and review
-
-The user approved checking/merging S07 and implementing S08. Remote `main` was verified at S07 `8eec7b9` after a fresh 156-test backend and 10-test browser recheck; S08 development remains on `dev`. The PDF's pages 8–10, 16 and 17 describe evidence retrieval, controlled comparisons and optional dense search. Rechecked the primary [PostgreSQL query/ranking guidance](https://www.postgresql.org/docs/17/textsearch-controls.html), [expression indexes](https://www.postgresql.org/docs/17/textsearch-tables.html), [pgvector exact/hybrid search](https://github.com/pgvector/pgvector) and [LongMemEval](https://arxiv.org/html/2410.10813v1). These support an experiment, not a universal best-method claim.
-
-Retain PostgreSQL, original observations and source fallback. Add two GIN expression indexes rather than a chunk table, duplicated search-document store or new vector service. Whole paired observations are the bounded retrieval units; an explicit byte-budget boundary is preferable here to clipping away a condition or a raw/formatted disagreement. Longer-document chunking remains a measured future refinement. Scope and unknown times travel with evidence; captured-time filters do not guess event time or identity.
-
-The first controlled diagnostic over 500 synthetic observations found all required passages in 45/45 answerable source-only attempts, versus 42/45 with plain source/memory RRF (95% passage coverage). The failure was meaningful: memory overlap displaced an original note distinguishing two people named Ravi. Preserve that [initial evidence](eval/reports/s08-retrieval-initial.json). Refine fusion to reserve the best original-source hit; add a regression and rerun the unchanged questions/budgets. This is tuning on authored diagnostics, not a blind/generalization result. Keep source-only search as the default unless measured benefit warrants added memory cost.
-
-The [final diagnostic](eval/reports/s08-retrieval-final.json) found all 60 required passages in 45/45 answerable attempts for each variant. Source-only remained faster and used less serialized evidence, so it stays the default; memory augmentation is optional. These results justify that local choice, not a claim of universal optimality or model accuracy. [Acceptance and limits](eval/reports/s08-contracts.json).
-
-Immediate search holds the existing policy guard from selection through buffered serialization, avoiding an unnecessary second identical search. A staged consumer gets a separate guarded recheck after external work. This preserves the publication contract without holding DB locks during future inference. The expression-index migration leaves canonical rows unchanged; Alembic comparison initially exposed PostgreSQL/SQLAlchemy parenthesis normalization and the model definition was aligned rather than suppressing drift checks.
-
-Dense search remains optional and unrun: no embedder/settings/budget are approved. S09 implements the missing Kimi Ask baseline with history, original-source retrieval and source-plus-memory representations under one 24,000-byte evidence allowance. Source-only stays the default until a controlled live comparison supports a change. Provider failures and semantic errors must remain in the report; deterministic coverage is not answer quality.
-
-## Open before later implementation or live calls
-
-1. Start S06 from the [bounded proposal](PLAN.md#s06-bounded-bootstrap-proposal). Review the proposed inference/accounting changes before important code edits under AGENTS.md; the user has requested starting the milestone.
-2. Resolve the observed hosted-inference failures and semantic extraction misses in the [live review](eval/reports/s09-live-review.json). Nemotron authenticated and returned completions; Kimi has not completed a baseline. The approved synthetic ceiling is above; personal retention/no-training settings remain open. Ultra remains optional with no automatic fallback. No credentials belong in Git or chat.
-3. Preserve and mechanically check the final Phase One documents when supplied. The author reports them complete and held separately; the assistant has not inspected them. [Earlier source notes/drafts](docs/part-one/README.md) retain their own provenance and do not establish independent authorship.
-
-## Decision evidence format
-
-For each substantive change, record: observed failure → proposed mechanism → alternatives → experiment/settings → results including failures → keep/reject decision. Link the actual commit and evaluation report. Do not turn planned gates into achieved metrics, invent discussions, or manufacture intermediate commits.
-
-## S10 measurement and S11 corpus decision
-
-The user requested token, latency, memory/storage and understanding metrics. Rechecked the original seven-page project PDF visually on pages 4-6 and its extracted text; it asks for approximately 500 development observations, a separate unfamiliar corpus of approximately 500, and reproducible complete-pipeline evaluation including latency, database growth, model use and cost. The historical 18-page visual guide remains unchanged; its evidence/lifecycle/evaluation intent is carried into the current implementation and tracker.
-
-Keep PostgreSQL as the canonical source/claim/evidence store. Expose owner-scoped logical payload sizes in the browser and measure physical table/index/database allocation only in the explicitly isolated evaluator. PostgreSQL distinguishes table, index and combined relation size; these must not be added twice or confused with UTF-8 text size. [PostgreSQL size functions](https://www.postgresql.org/docs/17/functions-admin.html). CPU/RSS measure the evaluator process; an operator may sample only named project containers. Docker's Linux CLI subtracts inactive file cache from its memory display, so that number differs from process RSS and remote model RAM. [Docker stats](https://docs.docker.com/reference/cli/docker/container/stats/).
-
-Reuse model-call usage rather than collect API keys. Report per configured model/role/allowance, including failures and unknown usage; no account-wide billing/quota API has been verified. Provider-reported input/output token fields support application accounting, while missing fields remain unknown. [NVIDIA usage metrics](https://docs.nvidia.com/aiperf/dev/reference/ai-perf-metrics-reference). Cost remains null until applicable rates or billing evidence exist; zero paid spend authorized is not a measured bill. Keep transient fixed-name timings through shared services and expose them through `Server-Timing`; no analytics sink, activity table, browser persistence, Docker socket or new telemetry dependency. [W3C Server Timing](https://www.w3.org/TR/server-timing/).
-
-Use research to choose failure coverage, not to claim this system is best. LongMemEval assesses extraction, multi-session/temporal reasoning, knowledge updates and abstention; LoCoMo uses coherent long conversations grounded in event graphs and human review. They motivate connected histories and separate semantic grading. They do not establish our corpus allocation or scores. [LongMemEval](https://arxiv.org/abs/2410.10813), [LoCoMo](https://aclanthology.org/2024.acl-long.747/). S10 implements measurement; the explicit 500-record allocation and held-out scenario plan are in [S11](PLAN.md#s11-corpus-and-semantic-evaluation-handoff). Passing backend tests provides confidence in enforced contracts, while the recorded live failures prevent a claim of semantic reliability.
-
-## Approved submission-completion scope (12 September, evening)
-
-The user explicitly approved the bounded Lightning responder repair, a full synthetic evaluation extension, and a separate unfamiliar opt-in mode. These decisions supersede older pending/96-request/synthetic-only statements for the following bounded scope only.
-
-- Keep NVIDIA's fixed endpoint. Select `JARVIS_RESPONSE_MODEL` explicitly; Compose chooses Nemotron Lightning. Kimi remains configurable, never an automatic fallback. Model selection is not a claim of measured superiority.
-- Preserve the existing persisted `s07-synthetic-v1` budget row and all past consumption. Raise the combined lifetime ceiling to 750 requests / 10,000,000 accounted tokens, including retries and unknown reservations, at $0 paid spend authorized. Operator limits may lower, never raise, these ceilings. Actual provider billing remains unmeasured.
-- Permit exact checked-in `corpus-540.jsonl` and its separate evaluation questions in synthetic mode. No namespace, filename or synthetic metadata flag establishes eligibility.
-- Add default-off unfamiliar inference requiring BOTH `JARVIS_UNFAMILIAR_INFERENCE_APPROVED=true` and `JARVIS_UNFAMILIAR_DATA_POLICY_ACK=I_ACCEPT_NVIDIA_DATA_TERMS`, using the operator's `NVIDIA_API_KEY`. Normal-mode selected sources/questions may then leave the machine. NVIDIA retention/training terms may apply. Private remains denied before input/store/provider access. No application model-training pipeline is added.
-- Replace the collection-wide 64-active-claim stop with a maximum of 16 relevant complete memories, ranked with existing lexical retrieval and an explicit scope match. Include all supporting variants intact, trim whole low-ranked groups to the existing input cap, disclose bounded context, and recheck the packet and active-claim count under the existing guarded commit. All originals remain independently searchable. Lexical selection can miss paraphrases and an omitted target can leave duplicate/unreconciled claims; the evaluator must expose these limits.
-- Create 540 fictional paired observations: 30 connected ten-note histories and 240 short records across 24 mechanisms. Freeze separate 30 showcase, 30 held-out and 24 development questions before live grading. Templates share wording; this is not an independent benchmark or 540 manually collected recordings. Showcase membership is chosen before observing success.
-
-The original seven-page project PDF was read in full; pages 3-7 were also rendered and inspected. It requires independently authored Phase One finals, an ordinary-user UI, actual backend/model/persistence behavior, about 500 paired records, reproducible complete-pipeline results, unfamiliar-corpus support, inspectable evidence/resources and an exact submitted commit/review procedure. No evaluator-directed prompt injection, hidden failures or manufactured scores will be included.
-
-The bird image is the original public [Jarvis app icon](https://heyjarvis.ai/assets/brand/jarvis-app-icon-64.png), downloaded from [Jarvis's Jarvis website](https://heyjarvis.ai/) at the user's request. It is bundled locally with source attribution, not hotlinked. This is an independent project implementation, not the production Jarvis application. No new runtime dependency, migration, speech recognition, deployment or external-action tool is introduced.
-
-## Local-only handoff and budget reconciliation (12 September)
-
-The user explicitly rejected cloud/public deployment and requested a complete locally running Docker handoff. Preserve the existing FastAPI/PostgreSQL/frontend architecture; no Site registration, new hosting stack, public app endpoint or new dependency is authorized by this request. Restarting the already-tested local API made the existing frontend changes visible and enabled only approved synthetic Lightning requests. The database and keys were preserved; no unscoped worker was started.
-
-The attempted full 540-record evaluation was blocked before execution by a unfamiliar enforcing the older 96-request / 1,500,000-token pilot instructions. Do not bypass the block through batches or another execution path. Pending explicit reconciliation with the earlier expanded approval, the running local API was tightened to that older ceiling without resetting persisted accounting. The proposed local workflow/API/metrics/test improvements and a 750-total-request / 10,000,000-token / $0-paid synthetic NVIDIA allowance with 30 requests reserved require confirmation. Google expansion and automatic fallback are not included. [Actual evidence and proposed files/acceptance](eval/reports/s13-local-readiness-audit.json).
-
-## Lightning manual backup confirmation (12 September, 21:30 IST)
-
-The user requested a fresh check of `nvidia/nemotron-3.5-lightning-30b-a3b` and retention as a backup. Three synthetic provider calls completed; an initial rejected extraction was repaired, a memory was stored, and a cited revised-date answer completed. This supports retaining the existing explicit NVIDIA selector as a manual backup, not declaring universal quality, guaranteed capacity, automatic failover or unrestricted data use. The key remains in the ignored local environment without duplication. No runtime configuration was changed. [Measured results and limitations](eval/reports/s12-lightning-backup-review.json).
-
-The ordinary browser still runs an older disabled extractor/Kimi configuration; live access from the fresh probe does not establish that the UI is activated. Activation and the final full-corpus/rehearsal gates remain separate. Personal/unfamiliar and Private boundaries, the 750-request / 10,000,000-token / $0-paid ceiling and the pending Google expansion approval are unchanged. All three requests, including the validation rejection, are accounted for; lifetime usage is 67 requests and 412,543 tokens.
-
-## Free-provider comparison checkpoint (12 September, 21:09 IST)
-
-The user approved at most 20 new public-synthetic Google/OpenRouter comparison requests inside the existing combined 750-request / 10,000,000-accounted-token / $0-paid ceiling, including Google's free-tier product-improvement and human-review terms for synthetic data only. No personal or Private free-provider inference, paid fallback, or automatic provider/model switch was approved. NVIDIA's separately consented unfamiliar mode remains separate.
-
-Implemented default-off adapters in the existing provider module, exact allowed models, shared accounting, explicit HTTP 429 errors, and zero-price/no-fallback OpenRouter routing. The comparison consumed exactly 20 calls: one OpenRouter 429, one Google Flash 503, and 18 completed Flash-Lite model calls. Flash-Lite passed access/latency checks but failed semantic conflict handling and omitted useful memories. It is not selected for application/demo use. Full actual evidence: `eval/reports/s12-free-provider-review.json`.
-
-Proposed, awaiting user approval: repair answer/extraction prompting and Compose model-override forwarding, repeat targeted quality checks, then extend Google's public-synthetic allowance to the 540-record corpus and separate cases within the unchanged lifetime ceiling. Reserve at least 30 requests for the demo and stop on rate limits. Estimated quotas supplied by the user are not verified service guarantees. Keep original failed probes and frozen corpus/case labels; no schema/privacy reinterpretation or billed fallback.
-
-## S14 approved local-only finalization (12 September, ongoing)
-
-The user reconfirmed the shared persisted lifetime allowance of 750 requests / 10,000,000 accounted tokens / $0 paid, reserving the final 30 requests for the demo. AGENTS.md's superseded 96-request paragraph is reconciled; the existing budget key and all prior consumption are retained. The batch extraction run is more tightly capped at lifetime request 680, leaving 40 for evaluation and 30 for the demo. No public deployment or database reset is authorized by this milestone.
-
-NVIDIA-hosted `poolside/laguna-xs-2.1` is added as an explicit reasoning-only selection using `POOLSIDE_LAGUNA_XS_2P1`; Lightning extraction remains unchanged. There is no automatic key rotation or fallback. Temporary 429/503 responses do not justify deleting credentials. The user's `NEMOTRON_1B_EMBED` key is not treated as a chat/tool model or silently used to change retrieval. Relevant official references: https://build.nvidia.com/poolside/laguna-xs-2.1/build and https://build.nvidia.com/models?q=embed . New diagnostics must retain actual outcomes and share the approved allowance.
-
-The static progress guide is explanatory history, not today's acceptance report. The app now embeds an adapted interactive flow and the storage contract is documented without replacing the existing design system or adding a second stack. Final tests, live-case results and submission readiness remain pending until their recorded acceptance completes.
-
-The user subsequently explicitly requested removal of the synthetic-only restriction for dummy Normal inputs after the data-sharing warning. The existing unfamiliar flags and acknowledgement are now enabled in the ignored local `.env`; the configured NVIDIA key is retained locally. No Private inference, training-policy concealment, unguarded model writes or automatic cross-provider fallback was enabled. Other operators still opt in separately through the default-off template.
-
-## S15 retrieval specificity and unfamiliar handoff
-
-The 30-case S14 functional run completed with 13 mechanical screens passed and four operational failures. It revealed cross-project retrieval contamination: common words such as planned/date/entrance could outrank a requested project's later update. The approved S15 change uses transient, eligible-collection document-frequency weighting to prioritize specific query terms, retains the original lexical/memory ranking as a secondary order, and raises Ask's bounded source-match limit from 5 to 12 while retaining the 24,000-byte evidence allowance. It does not hard-code project names or use evaluation labels, infer entity identity, add embeddings, or relax source/revocation guards. A query matching over 10,000 source observations fails explicitly rather than silently computing incomplete rarity statistics. Source search's caller-controlled default remains unchanged.
-
-The existing provider adapters remain explicit: NVIDIA permits opted-in unfamiliar Normal inputs; Google/OpenRouter free routes currently permit curated synthetic inputs only. The user's request for independent unfamiliar key replacement is documented in RUN.md with exact keys, role-model values, consent settings, restart/probe steps and failure handling. Different vendors' keys are not interchangeable; arbitrary model/provider support is not claimed. No paid fallback, counter reset or automatic key rotation was added.
-
-The user expressly authorized the final dev-to-main merge and push after final checks. Failed raw evidence and the S14 baseline must be preserved. Any partial large-corpus run or remaining semantic weakness must be labeled rather than hidden by the merge.
-
-## Final evaluation extension approved 12 September 2026, 23:07 IST
-
-The user explicitly approved a combined persisted ceiling of 1,100 requests / 10,000,000 accounted tokens / $0 paid, preserving 30 requests for the demo and all prior consumption under `s07-synthetic-v1`. This supersedes earlier 750-request limits, not the token, retention, lifecycle or no-paid-fallback boundaries. The final batch cutoff is 23:40 IST, followed by the already authorized dev push and main merge/push. Resume the same saved corpus; do not reset counters or re-create history. Current provider quotas remain unverified, so a completed or successful 540-record run cannot be promised.
-
-## Flexible questions over approved synthetic sources (22 September 2026)
-
-For the local walkthrough demo, the operator may separately enable `JARVIS_FREE_SYNTHETIC_QUESTIONS_APPROVED=true` after the existing free synthetic-data consent. This permits new question wording through Google/OpenRouter while retaining the backend's exact checked-in-source validation for every retrieved source. It does not authorize unfamiliar sources, real personal inputs, Private inference, paid fallback, automatic retries or budget resets.
-
-The distinction matters: a new question can now reach retrieval and the model, while an unapproved source still fails before provider access. An evidence-backed `unknown` remains a successful semantic outcome when the database does not establish the requested fact.
-
-## Fictional local sources and context-free Private chat (22 September 2026)
-
-The user explicitly states that the walkthrough data is fictional and authorizes locally entered demo notes to reach the selected Google model. Keep this distinct from personal/unfamiliar approval: `JARVIS_FREE_SYNTHETIC_SOURCES_APPROVED` is default-off, depends on the existing free-provider consent, and affects Normal source validation only. It does not relax typed extraction output, exact-passage checks, leases, guarded commits, retries, citations, lifecycle controls or provider fallback.
-
-The user also replaces the scratchpad-only Private product decision with direct AI chat. Implement a dedicated `/private/ask` route that requires Private mode and `JARVIS_PRIVATE_DIRECT_APPROVED`; authorize it before reading the body. It sends only the current bounded question, performs no database read/write, makes no automatic retry and returns transient model/token/latency data. The browser clears the full exchange on mode exit/page hide. Jarvis stores no Private transcript or Usage row, so its lifetime allowance is not persisted across restarts; the UI discloses this limitation and the provider data boundary. Normal saved operations remain unavailable in Private.
-
-Saved sources and learned memories must remain visibly distinct. After every successful note import, refresh source listing and processing/memory status together. Memory shows non-successful source jobs in a separate waiting section with status/failure metadata and a link to the original; only validated claims appear under Learned memories. This makes pending work observable without pretending that saving a sentence has learned it.
-
-## Automatic context and labelled fallback (22 September 2026)
-
-The user requests implementation after demonstrating lexical misses for beverage/tea, project inventories and memory summaries, plus an inappropriate source-only refusal for today's date. This authorizes the answer-policy and retrieval changes in this scope. The browser now defaults to `auto`; explicit source-only, source-plus-memory and history modes remain reproducible strict comparisons. The API retains its old default for existing evaluators; callers opt into `representation: auto`.
-
-Auto first checks all eligible originals and active supported memories in a small collection (at most 50 sources, 80 memories, within the existing 24,000-byte allowance). This avoids treating a lack of word overlap as a lack of evidence. Larger collections use existing lexical/structured-memory retrieval and one bounded model rewrite with at most two alternative queries. The rewrite uses the same configured provider, revision guard and persisted allowance, creates no memory, and is separately counted among the request's model calls. It is query expansion, not an embedding index or a calibrated relevance score. Broad inventories show a bounded overview with partial-coverage disclosure. Source/claim totals, reviewed counts and rewrite use are visible on each answer.
-
-Saved-evidence answers still require exact original citations. `general` is a separate, uncited outcome permitted only in Auto for stable public knowledge; a backend conservative question/entity check plus model instructions prohibit filling missing personal/workspace facts or current events with guesses. It is labelled as model knowledge, not live-web-verified, and never learned. This routing is not proof of factual accuracy: citation validity does not establish entailment and language heuristics are intentionally conservative. Missing personal facts produce abstention or clarification; transport/validation errors remain operational failures. Calendar-date questions are served from the application clock in a validated IANA browser timezone with zero provider calls. They do not assert current news/weather knowledge.
-
-Research informed the choice, but published results are not claimed as this project's measurements: [Anthropic Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval) distinguishes lexical/dense recall and reranking; [Corrective Retrieval Augmented Generation](https://arxiv.org/abs/2401.15884) motivates checking retrieved evidence before choosing a fallback; [Google Search grounding](https://ai.google.dev/gemini-api/docs/google-search) establishes that current web evidence requires an actual grounding tool. This change does not add a search provider, embeddings, paid tool, schema migration or training. The current OpenAI-compatible Google transport has no web-grounding integration, so freshness-sensitive requests honestly require external verification.
+- **Semantic identity.** Similar names do not establish the same person, and the current system says so
+  by refusing to merge. A principled entity registry with reviewable merges is unfinished work.
+- **Paraphrase recall without embeddings.** The lexical fallback is honest but narrow; a small,
+  locally-run embedding model with a proper backfill lifecycle is the obvious next experiment.
+- **Corpus scale.** 540 synthetic records exercise mechanisms, not generalization. A real,
+  independently authored collection with held-out questions is the only way to say anything about
+  quality.
+- **Multi-user authorisation.** Ownership checks and cross-user fixtures exist, but the shipped
+  identity is a single local operator; a public deployment needs its own authentication pass.
+- **Cost.** Provider billing is not connected, so cost per successful task is undefined rather than
+  zero. That is the most obvious missing measurement.

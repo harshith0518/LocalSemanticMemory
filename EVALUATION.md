@@ -1,184 +1,167 @@
-# Minimal evaluation plan for Hey Jarvis
+# Evaluation
 
-## Semantic retention and answering regression (22 September 2026)
+## What is measured, and what is not
 
-`test_turn_assessment.py` exercises exact/unique excerpt selection, independent retention/routes, request/owner/policy binding, concurrent leases, explicit bounded retries, over-budget output and Private zero access. Conversation/routing tests verify that pure personal questions retrieve without persistence; public, social, hypothetical and one-off input is transient; useful assertions can coexist with general questions; extraction rejects passages outside selected assertions; mixed answers separate cited facts from public explanation. Deterministic doubles provide scripted decisions and do not establish model selection accuracy.
+Three questions get confused in memory projects, so this repository keeps them apart:
 
-The browser checks assessment failure/retry/running states, receipt reuse, no premature answer request, typed Enter submission, readable phase/token/evidence tables, unknown failed-call usage and nested timing disclosure. `eval/semantic_turns.py` runs separately labelled synthetic HTTP journeys with independent expected decisions, original/active-memory deltas, preserved error categories and conservative allowance guards. Its text/count checks are screening assertions, not a semantic certificate. Review returned passages, conditions, duplicates and mixed output manually; retain provider outages and incomplete checks rather than grading unexecuted cases as correct.
+| Question | Answered by | Never inferred from |
+| --- | --- | --- |
+| Does the application enforce its own contracts? | Deterministic suites against a real PostgreSQL instance with model doubles | Live model output |
+| Did a real model behave acceptably on a recorded input? | Live runs retained as raw artifacts, including failures | Schema validity, token counts, citation presence |
+| Is the memory semantically right? | Manual review of retrieved passages, conditions and duplicates — labelled as such | Any automatic screen |
 
-Current verification: the full isolated PostgreSQL suite passed **369 tests in 136.13 seconds**. Ruff, frontend formatting, TypeScript and the Vite production build also passed. A rebuilt local API reported ready on schema `0006_turn_assessment`. The aggregate Chromium suite completed 18 journeys through the delayed Private-capture case, then stopped making progress at the delayed **Private cancels pending learning** case. It was stopped manually; the remaining browser cases are unverified in this checkpoint. This is evidence of an unfinished acceptance run, not a conclusion about whether the application or test harness is at fault. Resume instructions belong in [RUN.md](RUN.md#browser-acceptance-resume-point) and [todo.md](todo.md#resume-point-for-the-next-chat).
+Everything below is a recorded result. Where a run failed, was rate-limited or was stopped, that is
+what it says. Raw artifacts are in `eval/reports/`.
 
-The retained [live semantic-turn report](eval/reports/regression-semantic-turn-live.json) scheduled all 14 synthetic cases but is not a completed quality score: eight cases met every scripted screen, one answer failed operationally after its assessment succeeded, and the final five capture attempts were rate-limited. Manual semantic review is still marked pending in the artifact. Do not rerun it casually during walkthrough preparation because it consumes the shared provider allowance; use the deterministic suite while diagnosing the browser cancellation case.
+## Layer 1 — Deterministic contracts
 
-## Interview public-question routing regression
+Run with `docker compose -f compose.test.yaml run --build --rm tests`. Real PostgreSQL, real
+transactions, separate connections where concurrency matters, deterministic model doubles.
 
-`test_question_routing.py` checks the exact long-capital failure, short capital/planet/definition questions, zero public source/job/claim writes, an actual empty provider evidence payload, retained personal/mixed capture, completed no-memory source filtering, original evidence for unextracted workspace entities, and model-output failures reported as provider errors. The browser journey checks the unsaved receipt, absence of extraction requests and saved source link, empty provider context counts and an empty source list. These deterministic contracts supplement separately recorded live completions; they do not certify the grammar/lexical router for every phrasing or semantic extraction quality.
+Latest full run: **369 passed in 136.13 s** (0 failed).
 
-## Interview conversational learning regression
-
-`test_conversation.py` uses actual isolated PostgreSQL and explicit model doubles to check immutable message capture/retries, concurrent capture on separate connections, selective learning, repeat retention without extra claims, world-change history, bounded conversation/collection context, source-specific queue work, failure isolation, retry ceilings, ownership, Private rejection before parsing/store access, Forget/exact-repeat exclusion, invalid text and useful schema-repair feedback. Browser cases check visible receipts, repeat/update behavior, source counts, answer retry idempotency, mobile overflow and cancellation during both capture and learning. These contracts are not semantic-quality scores.
-
-Live synthetic cases and metrics are recorded in [regression-conversation-review.json](eval/reports/regression-conversation-review.json). Initial update failures are retained alongside subsequent fixes and successful checks. Evaluate questions separately from assertions even though the Normal UI now preserves both as original user messages. Evaluators continue using read-only `/ask`; they do not ingest their question/answer keys. Assistant output must not appear among saved source records. Semantic equivalence and reference resolution remain model-dependent and bounded.
-
-## Interview retrieval and answer-policy regression
-
-The 22 September user transcript provides regression questions, not new learned facts: beverage/tea paraphrases, broad project mentions, memory inventories and an inappropriate refusal to state today's date. Deterministic tests in `test_auto_answers.py` and `test_auto_retrieval_bounds.py` cover memory-first selection, exact supporting provenance, a bounded zero-overlap structured fallback, explicit inventory disclosure, excluded/foreign support isolation, source-only comparison behavior, no borrowed general citations, no personal/current-fact fallback, runtime timezone dates, missing live-web capability, fresh first-use accounting, stale revisions, planner outages and Private gates. Browser acceptance adds the visible clock provenance, zero model-call count and Enter submission. These are retrieval selection contracts; they do not call an embedding model or certify dense semantic similarity.
-
-Live evidence is kept separately in [regression-auto-context-review.json](eval/reports/regression-auto-context-review.json): initial and refined outcomes, selected model, provider call IDs/tokens/timings, reviewed counts and explicit weaknesses. The first inventory's preference for one conflicting amount and initial vague weather refusal remain recorded. Final repeated beverage answers preserved the condition, and final inventories displayed the amount conflict as unresolved. This is a small walkthrough regression sample; it does not establish a new full-corpus accuracy score, semantic-entailment certification, or measured improvement for the large-collection rewrite. General model knowledge is not verified web evidence, and retrieval ranks are not confidence percentages.
-
-## React workspace acceptance
-
-The React migration preserves the established backend gates and extends real Chromium journeys against isolated PostgreSQL. The browser suite covers typed/pasted exact Unicode/whitespace and raw/formatted pairing, stable-ID retries after committed-response loss, file import/reimport/errors/pagination, literal markup, search/date/uncertainty behavior, memory history, reviewed controls, citations/feedback, usage and failure states. It also checks Private cancellation for five delayed endpoint classes, no chained requests/backfill, scratchpad clearing on history restoration, stale-result clearing after Forget even if refresh fails, keyboard/dialog behavior and mobile overflow. Storage APIs, cookies, outside requests and CSP violations are instrumented.
-
-Design review uses screenshots of desktop/mobile home, sources, memories, answers, loading, usage and controls. These are synthetic fixtures, with an explicitly named deterministic extractor/responder in the isolated server. They establish UI/service behavior and accessibility checks within Chromium, not a cross-browser certification or live semantic score. Actual commands, outcomes and resolved failures are recorded in [RUN.md](RUN.md#react-workspace-refinement).
-
-## S09 contract checks and live evidence
-
-The current acceptance record is [RUN.md](RUN.md#s09-controls-and-synthetic-ask). Deterministic backend/browser tests establish contracts and lifecycle behavior, not model accuracy. Public trial calls are now explicitly approved up to 96 requests/1,500,000 tokens/$0 paid including repairs and unknown-usage reservations. Personal and Private model use remains blocked. Earlier pending-trial notes are superseded; historical results remain dated evidence.
-
-`python eval/live.py --stage smoke|extraction|answers` records actual configured/returned models, prompt versions, usage/latency, validated revisions/answers, provider failures and public completion text without hidden reasoning. Extraction uses independent collections per repeat. Answer comparisons freeze one collection and alternate history/source-only/source-plus-memory calls with Kimi K3 and the same 24,000 serialized UTF-8 evidence-byte allowance. This is a conservative byte budget, not an exact tokenizer-matched experiment. Do not drop failed calls, silently reset the allowance, or call incomplete repeats a completed comparison. Evaluator questions/labels never enter the source corpus.
-
-Review every live extraction for exact support **and meaning**: dates must distinguish planned/event/capture times, attribution must name the reporter, conditions/tentativeness stay explicit, and conflicting quantities remain unresolved. A successful exact quote alone cannot prove the extracted claim. Review every answer for supported task completion, missed evidence, uncertainty, temporal correctness and fabricated actions. The initial failed `s07-v1` attempts remain evidence for the excerpt-wire revision; do not overwrite them with later output.
-
-S09 acceptance includes Correct versus world change, explicit preview/commit and idempotency, amendment priority across exact reimports, no resurrection after Forget, stale preview/source/policy failures, ownership, durable feedback retry bounds, process/container restart and both real PostgreSQL lock orderings. Private instrumentation covers all new service/API/CLI paths, failed bodies, SQL/connection/file/log attempts and browser late-response clearing. Local success does not satisfy S11's unfamiliar-corpus and repeated semantic-quality gates.
-
-
-Prepared 11 September 2026. The product/model gates below remain proposed. S03–S05 now have 111 passing isolated bootstrap/evidence/policy/import checks, including real PostgreSQL races, instrumented Private failures and preserved state across container replacement; [RUN.md](RUN.md#actual-s05-results) and the [S05 evidence record](eval/reports/s05-infrastructure.json) record commands and limits. No live-model runs exist. Target: 12 September afternoon IST. Grounding: [DECISIONS.md](DECISIONS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and the supplied early notes project brief.
-
-## 1. Prove one complete journey first
-
-S05 copied and hash-verified the [eight synthetic observations](data/synthetic/sample-dictations.jsonl) and [separate cases](eval/fixtures/sample-evaluation-cases.json): current date, historical change/reason, personalized draft, hypothetical owner, reported action, conflicting amounts, missing metadata and unknown surname. Tests import only the JSONL and mechanically validate all 11 labeled excerpts against saved sources. These are structural checks, not answers to the evaluation questions or semantic/model grades. S04's deterministic proposal fixture also remains separate from source input. Never ingest answer keys.
-
-The project requires an ordinary-user interface connected to real persistence, retrieval, and model decisions. Frontend polish can wait; a tiny working surface cannot: import/status, Ask Jarvis, reply with Sources, Private, Correct, and Forget. Verify the same backend through both UI and evaluation; a prepared transcript or mock response does not satisfy the demonstration.
-
-The user brought the minimal source-workspace UI forward after S05. Browser import, listing and inspection now complement developer checks; CLI commands are not required in the unfamiliar's workflow. At that early UI checkpoint Ask/controls were later gates; S09 now connects them, with live-quality limitations above. `tests/browser/workspace.test.mjs` uses real Chromium and the isolated PostgreSQL-backed web service to test import/reimport, Unicode/exact pairs, malformed/conflicting/oversized files, 55-record pagination, unknown time, literal HTML-like source text, Private clearing, delayed responses, network failures and mobile keyboard/navigation behavior. Fresh test contexts instrument attempted browser-storage writes and reject external requests; the later Ask tests explicitly label their injected synthetic answer double and never count it as live quality. **Actual UI milestone evidence: 112 backend checks and 8 browser checks passed**, with application state preserved; [full results and limitations](eval/reports/ui-foundation.json).
-
-## 2. Deterministic contract tests
-
-These run without paid model calls. Inject controlled extraction proposals to exercise backend rules, including malicious or malformed proposals. They prove behavior under those inputs, not extraction quality.
-
-| Fixture group | Required invariant |
+| Area | Representative checks |
 | --- | --- |
-| Attribution and source spans | Reject nonexistent source IDs/spans, wrong tenant, and invalid schema; generated replies cannot independently corroborate claims. Semantic support still needs model-live review. |
-| Observation identity | Raw/formatted variants share one observation; exact reimport is idempotent; separately authored identical text remains distinguishable. |
-| Time and uncertainty | Preserve tentative/conditional status and unknown dates; distinguish correction from world change; late import cannot automatically overwrite current state. |
-| Learning eligibility | A question does not assert its answer; a one-request formatting instruction does not become a lasting preference. Keep useful conditional plans conditional, quote attribution intact, and zero-claim decisions distinguishable from failed extraction. Model selection of these outcomes also needs live grading. |
-| Private | Instrument every personal-store read and durable-write sink. No personal-memory reads, durable private content/activity, backfill, or Normal context carryover; test success, exception, timeout, reload, and mode exit. |
-| Forget | Excluded sources and known duplicates cannot feed recall, summaries, relearning, retries, or cached contexts; original history visibility is tested separately. |
-| Tool boundaries | Imported instructions never execute; draft does not become sent; failed retrieval is not labeled absent evidence; retry cannot duplicate an external effect. |
+| Capture and idempotency | Immutable observations, raw/formatted pairing, late-response retries, concurrent capture on two connections, cross-user rejection. |
+| Import | Bounded batches, exact retry, changed-field conflict, invalid UTF-8/NUL/naive timestamps, atomic rollback, capture-versus-import time. |
+| Assessment | Exact unique excerpts, independent retention/route fields, request/owner/policy binding, concurrent leases, bounded retries and repair, over-budget output, Private zero access. |
+| Extraction | Passage strictness (no invented offsets), allowed transitions, duplicate and support handling, world change versus correction, conflict retention. |
+| Retrieval | Ownership and revision filters, exclusion rechecks, byte budgets, no-clipping errors, partial coverage reporting, deterministic tie-breaking. |
+| Controls | Preview/apply, policy increments, dependent-state invalidation, replication across stored history and copies, receipts and replay, cross-user denial. |
+| Lifecycle concurrency | Two real connections with barriers: worker-then-control, control-then-release, Forget during publication, plus the reverse orderings. |
+| Failure handling | Provider errors as operational failures, unknown usage preserved as unknown, pending jobs resumable, retry bounds enforced. |
 
-For Private, compare database/browser-storage snapshots and inspect queue/log/cache/export paths with synthetic sentinels plus call instrumentation. Sentinel absence alone misses encoding or undiscovered sinks; inspect wiring too.
+**Limit:** these prove the plumbing, not the semantics. A model double cannot be wrong in the way a
+real model is wrong, which is precisely why the next layer exists.
 
-Use **two real database connections and explicit test barriers**, not timing sleeps: pause a worker after reading revision 7; commit Forget/correction at revision 8; resume the worker and require rejection or safe recomputation. Test the reverse order, stale cache reads, restart/retry, and revocation between retrieval and publication. A shared policy-row lock or equivalent atomic protocol must cover validation and commit. Exercise the selected database's actual isolation behavior. Already released bytes cannot be recalled.
+## Layer 2 — Browser journeys
 
-## 3. Live models and nondeterminism
+Run with the isolated `browser` profile against `http://127.0.0.1:8001/`; the suite refuses the
+application database and provider keys.
 
-S07 adds deterministic processing/reconciliation, provider transport and browser memory checks; [actual results](RUN.md#s07-memory-processing) and the [contract evidence record](eval/reports/s07-contracts.json) remain separate from live quality. The test server uses an explicitly named fixture extractor only after checking the isolated PostgreSQL target. Its expected proposals never enter source ingestion. The production server has no fixture-extractor setting. Transport doubles cover failure/usage contracts without authenticating a provider.
+- **26 journeys in 48.49 s** at the 12 September checkpoint.
+- The later aggregate rerun completed 18 journeys and then stalled at the delayed *Private cancels
+  pending learning* case. It was stopped manually; the remaining cases are unverified at that
+  checkpoint. This is recorded as an unfinished acceptance run, not as a passing or failing verdict.
 
-The new `jarvis evaluate-extraction --repeats 3` command is a **live-only**, synthetic-only pilot behind the provider gate. It creates separate collections, retains all call/job outcomes and source-linked revisions, and returns `status: ungraded` / `semantic_review: pending`. Review each repeat against the obligations before changing those labels in an evaluator report. Eight successful processing jobs do not equal eight semantically correct cases. That S07 implementation checkpoint preceded live use. S09 subsequently ran the recorded synthetic pilot and found semantic/provider failures; S07's live gate and S06/S08 answer comparisons remain incomplete.
+The journeys assert things a contract test cannot: that Import and Open do not read saved data on their
+own, that a search is not learned, that a citation expands to a real source, that a general answer is
+visibly separate from cited text, that correcting changes the displayed history, that Private writes
+nothing and that the page attempted no external request or browser-storage write.
 
-Provider availability, exact models and known usage are checked by real public trial calls. The user approved the synthetic-only exception, with the combined allowance above; personal no-training/retention compliance remains unresolved. A locally configured key is not a successful authentication or quality result.
+**Limit:** Chromium only. No cross-browser, mobile-emulation or accessibility-conformance suite.
 
-Use the [documented model shortlist](ARCHITECTURE.md#models-and-repair): Kimi K3 is the selected S06 response candidate and must remain fixed during later proposer comparisons; Nemotron Lightning and Qwen3-8B are extraction candidates, with stronger-model extraction as a separately scoped reference. Ultra is optional and must not silently replace Kimi on failed calls. Probe JSON/schema behavior and record tool support rather than assuming either from a model card. Include Hindi/Hinglish or other expected input languages. If only one provider is available, report the missing comparison and run the complete supported baseline.
+## Layer 3 — Live corpus run
 
-Run each original case three times from clean state. Reimport on repeated extraction runs; reuse a frozen index when measuring generation-only variability. Record sampling settings, model/prompt/schema versions and seeds where supported; temperature zero does not guarantee reproducibility.
+540 synthetic records imported as one namespace, 30 held-out questions kept out of the corpus.
 
-Grade semantic obligations rather than exact wording: all required facts present, no prohibited assertion, proper uncertainty, task completed, and citations supporting each factual claim. Check exact source references mechanically; review entailment separately. An LLM judge can flag cases but cannot certify its own extractor. Blind the unfamiliar to variant names, randomize output order, and retain failures. Report successes out of attempts, not the best response of three.
-
-## 4. Compare mechanisms without confounding
-
-Keep the response model, query set, eligible corpus, evidence budget, and grading fixed.
-
-1. **History baseline:** all eligible source history if measured tokens fit the model budget, including instructions and reply reserve. Otherwise report “does not fit”; do not silently truncate.
-2. **Retrieval ablation:** lexical-only versus lexical+dense union on identical source chunks. This isolates retrieval.
-3. **Representation ablation:** source passages alone versus sources plus derived claims in the selected retrieval setup. Keep the total evidence token budget fixed across both; do not give the combined variant an extra budget. Include a question about a source detail deliberately omitted from the selective claims, to test source fallback. A facts-only variant is optional diagnostic evidence, not a replacement for preserved sources.
-4. **Extractor ablation:** small versus stronger extraction on identical inputs, downstream retrieval/settings fixed, isolated databases. Do not simultaneously change the answer model or prompts beyond required provider formatting.
-
-Pilot these comparisons on the eight-record corpus plus a small varied challenge set. Carry only a baseline and the best justified candidate into the full run. Report any comparison skipped for time/cost; avoid claiming small-model superiority without that comparison.
-
-The [research review](DECISIONS.md#input-to-memory-research-review) motivates these experiments without supplying application scores. Grade extraction selection separately from faithfulness: whether the input deserved a memory, whether all required qualifiers survived, and whether each claim is supported. Include eligible information missed by extraction and unnecessary memories created from questions/instructions. S06's source-history answer baseline remains necessary to assess downstream S07 benefit. External benchmarks with assistant-derived memories do not override this project's user-only learning rule.
-
-## 5. Corpus, metrics, and proposed gates
-
-S08 now has an executable isolated retrieval diagnostic: `docker compose -f compose.test.yaml run --rm tests python eval/retrieval.py`. It imports the eight originals, seven additional synthetic records and 485 templated distractors through the real service, constructs explicitly deterministic claims separately, and runs 17 authored questions three times per representation. Labels/proposals remain outside source ingestion. Both variants use the same frozen corpus/claims, five primary matches and a 24,000-byte evidence budget. Two questions with no required evidence are recorded but are not scored as successful semantic abstentions. Fifteen answerable cases have 20 required passages per repeat.
-
-The initial RRF candidate lost a source needed to distinguish same-name people; its [report](eval/reports/s08-retrieval-initial.json) is retained. The revised method reserves the strongest original match and is rerun on the same cases. Report exact passage coverage and selected records separately from answer quality; UTF-8 byte budgets are not token measurements. Templated distractors and tuning questions do not close the planned blind approximately-500-record S11 evaluation. Optional dense retrieval, model-based answers and the S06 all-history answer comparison remain unrun.
-
-Actual final S08 result: 186 backend and 12 browser tests pass. Both retrieval variants recover 60/60 required passages across 45/45 answerable attempts; source-only is the faster, smaller default. The two unanswerable cases are not semantic-abstention grades. [Final diagnostic](eval/reports/s08-retrieval-final.json), [contract/restart evidence and limitations](eval/reports/s08-contracts.json).
-
-Prepare approximately 500 varied observations with raw/formatted pairs, including distributed facts, paraphrases, code-switching, distractors, revisions and ambiguity. Keep 16 tuning questions and at least 16 blind questions across distinct scenario families; these counts are proposed deadline compromises. Labels stay outside ingestion. Run the final two candidates on the same corpus; repeat blind questions three times. The unfamiliars' separate approximately 500 records remain unavailable—support their documented import, not a hardcoded Atlas schema.
-
-Measure supported task success, unsupported claims, extraction precision/recall, evidence-set coverage, appropriate abstention, p50/p95 retrieval/end-to-end latency, tokens, index lag, database growth, and total cost per successful task. Total spend includes ingestion, repair, and failed attempts; success rate divides by all attempts. Report sample counts and cold/warm conditions. Tiny samples provide weak tail-latency and generalization evidence.
-
-Proposed gates: all deterministic invariants pass; all eight core cases pass every live repeat; zero prohibited privacy/Forget behavior or unsupported high-impact writes; at least 90% blind task success, with no regression against the baseline. These are acceptance targets, not statistical guarantees. Abstaining on everything fails answerable tasks.
-
-## 6. Deadline stop rule
-
-Freeze optional mechanisms by 12 September 10:00 IST, a proposed buffer before afternoon delivery. Stop experiments at the spend ceiling or when the baseline already meets gates without measurable improvement. Prioritize invariant fixes and the complete review path over another framework.
-
-Reserve final hours for a clean install/import/reset/evaluate/UI run using documented commands, migrations, results, `.env.example`, README, RUN.md, and the exact release commit. Preserve failures and limitations. Phase One must remain the user's independently authored, previously preserved work; this evaluation plan cannot substitute for it.
-
-## S10 measurements and S11 scenario coverage
-
-The brief's approximately 500 records are source observations, not gold test questions. Follow the [S11 500-record allocation](PLAN.md#s11-corpus-and-semantic-evaluation-handoff); the existing 500-record lexical stress diagnostic does not satisfy the varied corpus. Keep connected histories intact and labels/actions out of ingestion. Use independent and dependent scenarios, old/new facts, unknown/uncertain times, conflicting variants, selective no-memory cases, same-name people, code-switching and lifecycle sequences. Research motivates these categories but supplies no product success probability.
-
-Inspect resource use and understanding separately:
-
-| Measurement | Source and interpretation |
+| Outcome | Count |
 | --- | --- |
-| Logical stored content | Owner-scoped source TEXT bytes, JSONB text-serialization bytes and passage TEXT bytes. Include revision counts; exclude physical/metadata/index overhead. |
-| Physical growth | Isolated evaluator before/after `pg_database_size`, per-table size, indexes and combined relation size. Record preexisting state. Combined size already includes table + indexes. |
-| RAM and CPU | Linux evaluator current RSS, cumulative process peak RSS and process CPU delta per operation. Optional named-container Docker samples are separate; neither measures NVIDIA GPU memory. |
-| Latency | Monotonic action/stage times, with failed attempts and sample counts. Inclusive stages must not be summed. Provider p50/p95 omits historical null durations and reports its actual sample count. |
-| Model use and cost | Actual known input/output tokens, unknown calls and conservative reservations by model/role/allowance. Double-provider constants are labeled. Billed/estimated cost stays null without billing/rates; cost per success is undefined without measured cost or successes. |
-| Understanding | Held-out obligation grading: selection precision/recall, supported claims, required qualifiers, multi-note evidence coverage, update reconciliation, appropriate abstention and end-task success. No score inferred from token use, memory count or citation-schema validity. |
+| Sources imported (read-only database audit) | 540 |
+| Jobs succeeded | 365 |
+| — of which extracted | 328 |
+| — of which produced **no memory** on purpose | 37 |
+| Jobs failed | 78 |
+| Still pending at cutoff | 97 |
+| Stop reason | `rate_limited` at attempt 175 |
+| Last batch | 233 requests in 993.5 s (≈4.3 s/request) |
 
-The new `python -m eval.efficiency --output <file>` runs only with validated isolated PostgreSQL settings and explicit doubles. Its 17-operation workflow covers eight real source imports/processing jobs, both retrieval representations and a cited contract answer. It is engineering measurement, not real-model accuracy or latency. `eval/live.py --stage answer-smoke --namespace <frozen-synthetic-collection> --repeats 1` checks only the first approved public question, under the existing allowance, before attempting the full matrix. See [actual S10 checks and limitations](RUN.md#s10-usage-and-performance). Do not erase earlier failures, report unknowns as zeros, or expand the live allowlist/budget implicitly.
+This is the most important number in the document, and it is not 540. The application was still
+importing sources and queuing learning when the provider cut it off; the run is reported as partial.
 
-## S11 acceptance corpus and complete-pipeline evaluator
+**Limit:** the corpus is synthetic and author-written. It exercises mechanisms — dates, negation,
+scoped preferences, duplicates, reimports, corrections — and says nothing about recall on real,
+messy dictation.
 
-`data/synthetic/corpus-540.jsonl` contains 540 entirely fictional observations, each with exact raw and formatted text and ordinary app/capture metadata where known. `eval/build_corpus.py` reproduces the corpus. Its manifest, provenance, category counts and source hash are in `eval/fixtures/corpus-manifest.json`; all 84 questions, original-evidence obligations and screening labels are in `eval/fixtures/corpus-cases.json`, never ingested. Thirty connected ten-note histories exercise changes, small clues, distributed arithmetic, conditions, preferences, provenance and disagreement. The remaining 240 short notes cover 24 different mechanisms. The shared templates limit claims about generalization.
+## Layer 4 — Live showcase
 
-Thirty showcase cases are selected in advance, not cherry-picked from successful outputs. Thirty held-out cases are withheld from prompt repair; the same author/template generator produced them, so they are not an independent blinded benchmark. Twenty-four development cases remain separately tagged. Freeze the question/source hashes in each actual run.
+Thirty authored cases answered twice against the same synthetic collection.
 
-Validation command: `docker compose run --rm --no-deps --entrypoint python cli eval/corpus.py --stage validate`.
+| Run | Mechanical screens | Operational failures | Provider requests | Known input / output tokens |
+| --- | --- | --- | --- | --- |
+| Baseline | 13 / 30 | 4 | 31 | 58,057 / 6,520 |
+| Retest | 16 / 30 | 3 | 30 | 97,494 / 7,158 |
 
-Complete live evaluation command after explicit provider setup: `docker compose run --rm --no-deps --entrypoint python cli eval/corpus.py --stage all --namespace corpus-evaluation --repeats 1 --case-limit 60 --representations both`.
+In the retest, 27 of 30 cases returned an answer (17 answered, 6 drafts, 4 explicit unknowns) and
+**26 of those 27 cited every required source**. The three remaining cases failed operationally.
 
-The evaluator imports through Service, requests real jobs, processes each through the real provider/proposal validation/guarded persistence path, asks the fixed questions through the same answer service, and emits JSONL. Events include source/job outcomes (including pre-call failure and unprocessed records), full memory history/provenance, actual answers/citations/errors, timings, storage allocation, known tokens versus unknown reservations, call settings and process CPU/RSS. Cost stays null without billing evidence; $0 is the authorized paid-spend limit, not a measured bill. Physical allocation includes retained database state and is labeled accordingly.
+A "mechanical screen" checks that the expected string or source appears at all — it is a screening
+assertion, not a grading of meaning. Retained real defects include arithmetic errors, an unsupported
+blocker label, response-status errors and one update-retrieval miss.
 
-`--stage extract` and `--stage answers` permit separate checkpoints. Reusing a namespace preserves successful processing; `--retry-failed` is explicit. `--max-jobs`, `--max-new-calls`, `--case-limit`, `--split`, `--representations` and `--repeats` make the work bound reproducible. Never erase the persisted lifetime budget to manufacture extra free attempts. Repeats require remaining allowance; unrun comparisons stay unrun.
+**Limit:** no frozen-state A/B comparison of mechanisms, and the semantic review step remains
+manually labelled rather than scored.
 
-Answer screens check expected status, required-source retrieval/citation and authored lexical anchors; conflict cases require both variant references. These are diagnostic screens, not a semantic judge. A failed screen may expose a product failure or an overly narrow lexical label; retain it and explain manual review without silently rewriting the frozen labels. For an `unknown` result inspect whether evidence is truly absent versus missed by retrieval. A structurally valid memory/citation is not necessarily entailed. Report success, abstention, incorrect interpretation and operational failure separately, including their denominators.
+## Layer 5 — Retrieval diagnostic
 
-The browser's 30-case picker exposes questions/categories only, not expected answers. Unfamiliar inference is not keyed to these questions: after explicit operator consent, unfamiliar sources and new Normal-mode questions use the same general pipeline. Private, control, reimport, restart and concurrency contracts continue to use isolated actual PostgreSQL and explicit model doubles; those results are not live-model quality evidence.
+Frozen 500-record authored corpus, 17 cases × 3 repeats, two representations (originals only;
+originals + claims), same questions:
 
-## Free-provider comparison evidence (12 September)
+| Representation | Answerable attempts | All required evidence found | p50 / p95 | Mean evidence bytes |
+| --- | --- | --- | --- | --- |
+| Sources only | 45 / 51 | 45 (passage coverage 1.0) | 125.6 / 186.6 ms | 2,369 |
+| Sources + memories | 45 / 51 | 45 (passage coverage 1.0) | 243.5 / 401.1 ms | 5,378 |
 
-`eval/reports/s12-free-provider-review.json` links the three raw JSONL probes and current browser evidence. All 248 isolated real-PostgreSQL tests passed in 181.73 seconds; all 24 browser journeys passed in 51.9588205 seconds. These are application-contract checks with deterministic doubles, not live semantic-quality scores. Ruff and TypeScript/Vite build passed.
+Zero live model calls: the claim proposals are explicit deterministic fixtures, so this measures
+retrieval and packing, not generation.
 
-The 20-call live allowance is exhausted: OpenRouter returned 429 on its first generation request; Google Flash returned 503 on its first; Google Flash-Lite completed 18 model calls. Flash-Lite released eight answers, but the amount-conflict answer was wrong. Seven of eight source jobs completed (six extraction decisions, one no-memory); the Orion job failed exact-passage validation twice. Its extraction also treated one conflicting amount as certain, skipped a useful episode, and omitted separate reason/next-step memories. Originals remain preserved. Three provider-completed calls were rejected by application validation; do not count provider completion as application or semantic success.
+**Limit:** the questions were written while the corpus was in view. High agreement here says the
+ranking is not broken, not that retrieval generalises.
 
-Flash-Lite model-stage latency was 895-1,933 ms, excluding the deliberately imposed 12.1-second request-start interval and application/retry overhead. The probes are single-run diagnostics with AI-assisted inspection, not independent benchmarks. Lifetime accounting is 64 requests and 405,031 tokens; actual provider billing is unknown, not a fabricated measured zero. The complete 540-record live run and final submitted-commit rehearsal remain pending.
+## Resource and storage measurements
 
-## S14/S15 final local evidence
+| Measure | Value | Scope |
+| --- | --- | --- |
+| Database size, before → after the final batch | 11.07 MB → 11.44 MB | Whole database, all owners |
+| `claim_revisions` relation | 376 KB → 541 KB | Whole relation |
+| Peak RSS, final batch | 105,836 KiB (≈103 MiB) | Evaluator process |
+| CPU time, final batch | 161.03 s | Evaluator process |
 
-Read `eval/reports/s15-semantic-review.json` together with the unmodified `s14-showcase-review.json` baseline and `s15-showcase-review.json` retest. Thirty cases were run in each; 13/30 and 16/30 are mechanical screen counts, not semantic accuracy. The final qualitative review explicitly marks false positives and substantive errors. The evolving-memory state means these runs are not a causal A/B comparison. The 30 held-out cases remain unassessed in this final run.
+Storage is reported as owner-scoped TEXT/JSONB/passage payload bytes in the UI, which is smaller and
+more meaningful per collection than relation size, and does not pretend to be allocated disk or RAM.
 
-`eval/corpus.py` supports bounded pacing, wall-clock and call timeouts, and a provider-failure stop. The Google continuation used gemini-3.5-flash-lite with 6.1-second start spacing and a 20-second call timeout, shared the persisted 750-request/10-million-token allowance, and was deliberately stopped to release the interactive demo worker. Its raw events retain all 540 source states and partial processing rather than claiming a complete corpus pass. Final counters and known limitations are maintained in todo.md and the final readiness report.
+Latency is reported per call from monotonic clocks. Server spans are inclusive and nested, so they must
+not be summed; the browser round-trip is measured separately. Provider billing is not connected, so
+actual cost is **unknown**, not zero.
 
-`eval/reports/s15-live-frontend-journey.jsonl` records an actual browser save and a live cited answer for a new synthetic Birch note, not a deterministic model double. The first learning attempt was blocked by the concurrent bulk worker lease; the follow-up learning artifact is separate. Test-double contracts, live provider results, subjective semantic review and unrun evaluations remain explicitly distinguishable.
+## Provider allowance accounting
 
-## Final cutoff evidence (S16, 12 September 2026)
+The shared persisted ledger records every request, retry, repair and unknown-usage reservation.
 
-The final brief crosswalk and limitations are in `eval/reports/s14-readiness-review.json`; its filename is retained for the existing fixed UI report route. This section records results, not a new status checklist.
+| At the final audit | Value |
+| --- | --- |
+| Requests consumed | 720 |
+| Accounted tokens | 5,857,878 |
+| Request ceiling / token ceiling | 1,500 / 10,000,000 |
+| Paid spend authorised | $0 |
 
-The corpus contains 540 saved originals. At the final exported summary (23:38:11 IST), 365 jobs succeeded: 328 extracted and 37 intentionally produced no memory. There were 78 failed and 97 pending jobs. The final recovery batch used 233 requests, ended on `rate_limited`, and preserved per-source state, model calls, validation failures, provenance and measured resource usage in `s16-google-recovery.jsonl`. A final read-only database audit independently counted all 540 originals and recorded lifetime usage of 720 requests / 5,857,878 accounted tokens. The approved cap is 1,100 requests / 10,000,000 tokens, with 30 requests reserved for the demo. Actual billing is unknown; paid spend authorized is $0. The approximately-500-record complete processing requirement remains incomplete.
+Unknown usage reserves conservatively instead of counting as free. Remaining allowance does not imply
+remaining provider quota: the run above stopped on a rate limit with allowance left.
 
-The final full backend suite passed 254 tests in 141.11 seconds (`s16-full-backend-recovered.txt`). The recovered browser suite passed 26 journeys in 48.4933656 seconds (`s16-browser-tests.txt`). The 78 focused checks are repeated/subset coverage, not 78 additional unique tests. Formatting and lint results, including the original formatting failure, are retained in `s16-style-checks.txt`.
+## Reproducing
 
-The 30 real showcase cases were run twice. The retest recorded 16 mechanical screens and 3 operational failures; 26 of the 27 returned answers retrieved and cited all required source IDs. These are not semantic accuracy measurements. Ingestion continued between runs, so they are not a controlled frozen-state A/B comparison. `s15-semantic-review.json` explicitly records arithmetic errors, unsupported blocker labels, status mistakes, a retrieval/update miss and substring-screen false positives. The 30 held-out cases were not run.
+```powershell
+# Deterministic contracts (resets the isolated test database)
+docker compose -f compose.test.yaml run --build --rm tests
 
-A new synthetic Birch note was saved in the real browser, learned after a bounded schema-repair retry, read back as a durable source-linked claim and used in a new live answer preserving both its exact shelf and the negated tin. Reports retain the initial extraction failure and the repaired proposal. This demonstrates the implemented path, not guaranteed success for every input.
+# Retrieval diagnostic
+docker compose -f compose.test.yaml run --rm tests python eval/retrieval.py
 
-Clean isolated Compose startup and persistence across a full service down/up were exercised with providers disabled, followed by a volume-label-checked reset of only the rehearsal project. A standalone search probe used the wrong expected status string (`matches` instead of `matched`); that failed assertion is retained, while the actual browser response contained the exact saved source. Docker engine EOF/500/502 interruptions and recovery are also retained. No Docker Desktop restart, main-database reset or provider-guard relaxation was performed to conceal failures.
+# Corpus validation (no provider calls)
+docker compose run --rm --no-deps --entrypoint python cli eval/corpus.py --stage validate
+```
+
+A live run additionally needs a provider key, the consent flags from
+[RUN.md](RUN.md#configuration) and available allowance. Re-running live evaluation spends the shared
+ledger and is not part of routine verification.
+
+## Retained limitations
+
+1. No complete 540-record successful processing run; the final batch was rate-limited.
+2. Semantic correctness is not certified by valid JSON, plausible wording or citations.
+3. The browser acceptance run is incomplete at the current checkpoint.
+4. The showcase is not a blind benchmark: the cases were authored alongside the mechanisms they
+   exercise, and only mechanical screens — not semantic grades — were scored automatically.
+5. Provider billing is unavailable, so cost per task is undefined.
+6. Only Chromium is exercised; no accessibility conformance claim is made.
+7. Retrieval is lexical and structured — there is no dense-retrieval baseline to compare against.

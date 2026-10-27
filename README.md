@@ -1,136 +1,181 @@
-# Hey Jarvis — semantic memory
+# Jarvis — local-first semantic memory
 
-Technical implementation plan for the Jarvis early notes project. User-confirmed submission deadline: **Saturday, 12 September 2026, 11:30 pm IST**. Primary delivery method: a local application and PostgreSQL database through Docker Compose; hosted model inference may require provider credentials and network access.
+Jarvis is a personal semantic memory that runs entirely on your machine. You paste in notes,
+dictations or exported journals; it decides what is worth remembering, keeps every memory tied to
+the exact passage it came from, and answers later questions with citations — or refuses when the
+evidence is not there.
 
-**Latest walkthrough workflow:** Normal Ask separately assesses what is worth remembering and what context an answer needs. Pure questions, greetings, hypotheticals and temporary instructions stay in the current chat. Useful personal/project assertions retain original sources and selected passages; extraction checks new facts, repeats and updates. General answers send no database evidence. For contextual answers, Automatic mode selects learned memories first, attaches only their supporting originals, and uses a bounded lexical original fallback; it does not send every note merely because the collection is small. An explicit inventory request is the deliberate full-small-collection exception. Assessment, learning and answering have separate outcomes and readable timing/token tables. Generated replies are not learned. The local demo defaults to Google `gemini-3.5-flash-lite` at **http://127.0.0.1:18000/**. See [RUN.md](RUN.md) for current checks and limitations; older dated checkpoints below are historical.
+The interesting part is not that it remembers. It is that it stays honest about *how* it remembers:
+what it learned, from which words, when a fact was superseded rather than deleted, what it forgot
+on purpose, and what it never saw at all.
 
-**Manual local backup:** setting `JARVIS_INFERENCE_PROVIDER=ollama` and `JARVIS_OLLAMA_ENABLED=true` before a Compose restart selects host-local `qwen3:4b` for assessment, extraction and answers. The normal setting remains Google. There is no automatic switch between providers. `qwen3-embedding:0.6b` is recorded as the installed future retrieval model, but this version has no persisted vector index or embedding calls; its Automatic retrieval is bounded structured/lexical evidence selection, not a claim of dense semantic search.
+> **Naming:** the project is Jarvis. The Python package and the browser wordmark still use the
+> original working name `jarvis` (`src/jarvis`, `JARVIS_*` settings, `jarvis` CLI). Renaming those identifiers
+> is a mechanical refactor that has not been done yet, so this documentation uses Jarvis for the
+> project and `jarvis` only where it names a real path, command or setting.
 
-**Current state: an integrated synthetic prototype.** The React browser supports typed/pasted notes, import, source inspection, Search, processing, Memories/history, Ask with citations, Correct, Record a change, Forget, feedback diagnosis, sample/corpus import, usage inspection and context-free Private chat. Automatic Ask reviews notes and learned memories, discloses partial retrieval, labels general model knowledge separately and answers calendar dates from the application clock. Missing personal facts and unverified current information are not filled with guesses. API, optional CLI, worker and evaluators share one backend. The approved lifetime ceiling is **1,100 requests / 10,000,000 accounted tokens / $0 paid authorization**, including retries and conservative unknown-usage reservations; prior usage is not reset. Locally entered fictional notes, flexible demo questions and Private direct chat each require a separate default-off operator switch after provider data-terms consent. Private direct sends only the current question to the selected provider: it never reads the database and Jarvis does not save its question or reply. A working transport or passing contract test does not establish model accuracy. Full live corpus evaluation remains open.
+## Why this exists
 
-The proposed demonstration imports a person's dictations, answers questions or prepares a contextual draft from supported history, and exposes Sources, Correct, Forget and Private. The React browser workspace is the primary review surface; further backend milestones must connect their user actions there.
+Retrieval-augmented chat over a pile of notes is easy to demo and hard to trust. The failure modes are
+predictable:
 
-## Read in this order
+- A model paraphrases a sentence into a "fact" and the original wording disappears.
+- Two notes disagree, and the newer one silently wins.
+- A question is answered from the model's general knowledge while looking like it came from your notes.
+- You delete something, and a background worker resurrects it through a copy.
+- A "private" mode still writes a log line.
+
+Jarvis is built around those failure modes rather than around the happy path. Every design decision
+below exists to make one of them structurally impossible, or to make it visible when it happens.
+
+## What it does
+
+| Capability | Behaviour |
+| --- | --- |
+| **Capture** | Ask, type or save a note, or import a JSONL collection. Raw and formatted variants of the same dictation stay *one* observation. |
+| **Selective learning** | A per-turn assessment decides, independently, whether to retain anything and whether the answer needs context. Questions, greetings, hypotheticals and one-off instructions stay in the chat and are not turned into memories. |
+| **Provenance** | Every memory is a revision with typed value, scope, attribution, modality and time, linked to exact code-point spans in the original text. |
+| **History** | A correction and a change in the world are different events. Both preserve the earlier state; only one is a retraction. |
+| **Retrieval** | Memory-first, memory-attached originals, then a bounded lexical fallback. No embeddings, no vector index — and the docs say so rather than implying semantic search. |
+| **Answers** | Cited answers from saved evidence, clearly labelled general knowledge, clock-derived dates, targeted clarification, or an honest abstention. A general answer is never learned. |
+| **Control** | Correct, record a world change, and Forget, each with an impact preview and an exact, revalidated commit. |
+| **Private** | A transient mode with no saved reads, no durable writes, no caches, no jobs, no browser storage and no backfill. |
+| **Measurement** | Per-turn call/token/timing cards, payload sizes, and a persisted provider ledger that survives restarts. |
+
+## How a message becomes a memory
+
+```mermaid
+flowchart LR
+  IN[Ask / note / import] --> A{Assess}
+  A -->|skip| CHAT[Current chat only]
+  A -->|candidate| SRC[(Source + exact passages)]
+  SRC --> EX{Extract & reconcile}
+  EX -->|add / support / supersede / correct / conflict| REV[(Claim revisions)]
+  EX -->|no memory / duplicate / needs clarification| REC[Reason recorded]
+  CHAT --> ANS{Answer}
+  REV --> ANS
+  ANS -->|cited| OUT1[Answer + sources]
+  ANS -->|general| OUT2[Labelled model knowledge]
+  ANS -->|absent| OUT3[Unknown or clarify]
+```
+
+Retention and answering are two separate decisions. That is what lets `I prefer tea. What is
+caffeine?` contribute a preference while still receiving a general answer with zero saved evidence
+in the prompt.
+
+## Design rules I held to
+
+1. **Sources are canonical; memory is derived.** Claims, indexes and passages are rebuildable;
+   the original observation is not. A claim may outlive its usefulness but never silently replaces
+   the words that produced it.
+2. **Models propose, code commits.** Schemas, ownership, real spans, exclusions and allowed
+   transitions are validated in Python. A structurally valid citation is treated as *structurally*
+   valid — never as proof of meaning.
+3. **State changes are guarded.** One per-owner policy revision orders every write. Leases fence
+   workers, receipts fence replays, and answers are serialised at a release point that rechecks
+   revocation. A worker that finished after Forget cannot publish.
+4. **Conflicts are preserved, not averaged.** Two sources disagreeing about the same property
+   produce a disputed state, not a newest-wins guess.
+5. **Say what was sent, not what was understood.** The UI reports counts of sources and memories
+   placed in the prompt, the payload size and the calls made. Never "the model understood 16 notes."
+6. **Every number in the docs came from a command.** Failures, rate limits and abandoned runs are
+   kept in `eval/reports/` instead of being rerun until they look good.
+7. **Consent is per-surface and default-off.** Sending text to a hosted model requires an explicit
+   flag *and* an acknowledgement of that provider's data terms. Private uses its own separately
+   gated route, or nothing at all.
+
+## Stack
+
+| Layer | Choice | Why |
+| --- | --- | --- |
+| Runtime | Docker Compose, Debian bookworm slim base, Python 3.12 | One reproducible Linux path; no host Python/Node needed to *use* it. |
+| API | FastAPI + Pydantic | Typed request/response contracts over one service layer. |
+| State | PostgreSQL 17 + pgvector, GIN full-text indexes | Transactions, ownership constraints and lexical search in one store. Vectors are installed but unused. |
+| Access | SQLAlchemy, psycopg, Alembic | Explicit transactions, separate migration and runtime logins. |
+| UI | React 19 + TypeScript, Vite, shadcn/Radix, Motion | Built in a pinned Node stage, served as static assets by FastAPI. No Node process at runtime. |
+| Checks | pytest against real PostgreSQL, Playwright/Chromium, Ruff, `uv` lockfile | Isolation and reproducibility before model quality. |
+
+## Quickstart
+
+Prerequisites: Git, Docker Engine in Linux mode, Compose v2, and network access on first build.
+
+```powershell
+git clone https://github.com/harshith0518/LocalSemanticMemory.git
+Set-Location LocalSemanticMemory
+Copy-Item .env.example .env      # then set the three database passwords
+docker compose build api
+docker compose up -d --wait --wait-timeout 120 api worker
+Invoke-RestMethod http://127.0.0.1:8000/ready
+```
+
+Open **http://127.0.0.1:8000/** and use **Sources → Try the sample** to import eight synthetic
+observations. Import, inspection, lexical search, the controls and the full test suite work with
+**no provider key at all**. Live extraction and generated answers require one, plus an explicit
+opt-in flag; the exact variables are in [RUN.md](RUN.md#configuration).
+
+## What to try
+
+1. Import the sample collection, then ask a question whose answer is spread across two notes.
+2. Inspect a memory and open its evidence — the exact spans are shown against the original text.
+3. Correct one memory, then record a world change on another, and compare their histories.
+4. Forget a memory and confirm the supporting note no longer feeds retrieval while remaining
+   inspectable as history.
+5. Ask something the notes do not support and watch it abstain instead of inventing.
+6. Ask a general-knowledge question and note that the answer is labelled, uncited and never learned.
+7. Switch to Private and confirm that nothing is saved, from either the UI or the database.
+
+## Evidence
+
+These are recorded results, including the bad ones. Full detail and limits live in
+[EVALUATION.md](EVALUATION.md); raw artifacts are in `eval/reports/`.
+
+| Check | Result | What it does *not* prove |
+| --- | --- | --- |
+| Isolated backend suite (real PostgreSQL) | 369 tests, 136.13 s | Model quality — providers are deterministic doubles. |
+| Browser journeys (Chromium, isolated DB) | 26 journeys, 48.49 s in the final full run | Cross-browser behaviour; only Chromium is exercised. |
+| Retrieval diagnostic, lexical vs lexical+claims | 45/45 answerable attempts returned all required evidence (coverage 1.0); p95 187 ms / 401 ms | Semantic answering — the claims are explicit deterministic fixtures, not live model output. |
+| 540-record synthetic corpus, live provider | 365 succeeded (328 extracted, 37 correctly produced no memory), 78 failed, 97 pending | A completed corpus run. It was rate-limited and is reported as partial. |
+| 30-question live showcase, run twice | 13/30 then 16/30 mechanical screens, 3 operational failures in the retest, 26/27 returned answers cited every required source | Semantic accuracy. Screens are lexical, and the runs were not frozen-state A/B. |
+
+The recurring theme: **mechanical checks pass long before semantics do.** The evaluation docs are
+written to keep those two claims separate.
+
+## Repository map
+
+| Path | Contents |
+| --- | --- |
+| `src/jarvis/services.py` | Composition root shared by the API, CLI, worker and evaluators. |
+| `src/jarvis/turn_assessment.py` | The retention/answer-route decision made before a turn is saved or answered. |
+| `src/jarvis/conversation.py`, `processing.py` | Capture, extraction, reconciliation and the guarded commit. |
+| `src/jarvis/retrieval.py`, `answers.py` | Bounded evidence selection, answer policy and validated release. |
+| `src/jarvis/controls.py` | Correct, world change, Forget, previews, exclusions and idempotency. |
+| `src/jarvis/config.py`, `providers.py` | Provider configuration, consent gates and the persisted allowance ledger. |
+| `src/jarvis/models.py`, `migrations/` | Schema and the six reviewed migrations. |
+| `frontend/src/` | React workspace: conversation, sources, memory, usage, workflow evidence. |
+| `tests/integration/` | Contracts against a real, isolated PostgreSQL instance. |
+| `tests/browser/` | Chromium journeys against an isolated test backend. |
+| `eval/` | Corpus builders, live evaluators, resource measurement and recorded reports. |
+| `docs/storage-contract.json` | Machine-readable storage and data-flow index shown in the UI. |
+
+## Documentation
 
 | Document | Purpose |
 | --- | --- |
-| [todo.md](todo.md) | Completed, ongoing and pending work; current blocker and the next action. |
-| [Interactive progress and walkthrough guide](docs/project-progress.html) | Local HTML snapshot: milestone status, the complete input-to-memory diagram, storage, worked examples, answer/control flows and walkthrough practice. |
-| [Visual memory guide](output/pdf/jarvis-memory-visual-guide.pdf) | 18 diagram pages with colors, shapes, labeled arrows, page/node IDs and clickable navigation. |
-| [Phase One source notes](docs/part-one/README.md) | Preserved user-supplied notes, earlier-chat provenance and mechanical word counts; finals are held by the author and reported complete, with repository inclusion/mechanical checks pending. |
-| [PLAN.md](PLAN.md) | Build order, time allocation, milestone gates and scope cuts. |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Shared services, evidence representation, learning, retrieval and repair. |
-| [EVALUATION.md](EVALUATION.md) | Cases, deterministic tests, real-model experiments and decision rules. |
-| [RUN.md](RUN.md) | Tested setup, import/inspection contract, policy commands, persistence and isolated checks. |
-| [DECISIONS.md](DECISIONS.md) | Agreed product constraints versus proposed implementation choices. |
-| [AGENTS.md](AGENTS.md) | Contribution rules, approval boundaries and truthful progress reporting. |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Data model, learning, retrieval, answer policy, privacy and measurement boundaries. |
+| [DECISIONS.md](DECISIONS.md) | The engineering choices and the tradeoffs accepted for each. |
+| [EVALUATION.md](EVALUATION.md) | Test layers, live runs, recorded results and what remains unmeasured. |
+| [RUN.md](RUN.md) | Configuration, browser workflow, developer commands, migrations and troubleshooting. |
+| [todo.md](todo.md) | Current status, known gaps and the next useful work. |
+| [AGENTS.md](AGENTS.md) | Working agreement for contributors and coding agents. |
 
-## Current implementation map
+## Deliberate non-goals
 
-| Start here | Responsibility |
-| --- | --- |
-| [src/jarvis/services.py](src/jarvis/services.py) | Composes the shared services used by the API, CLI, worker and evaluators. |
-| [src/jarvis/turn_assessment.py](src/jarvis/turn_assessment.py) | Separates "should this input become a memory candidate?" from "what context may answer it?" before a Normal Ask turn is saved or answered. |
-| [src/jarvis/conversation.py](src/jarvis/conversation.py) and [src/jarvis/processing.py](src/jarvis/processing.py) | Capture a candidate original, extract exact supported assertions and reconcile claims, repeats and revisions. |
-| [src/jarvis/retrieval.py](src/jarvis/retrieval.py) and [src/jarvis/answers.py](src/jarvis/answers.py) | Choose bounded evidence, produce cited/contextual or labelled general answers, and release only validated results. |
-| [src/jarvis/config.py](src/jarvis/config.py) and [src/jarvis/providers.py](src/jarvis/providers.py) | Configure Google as the normal route and the explicit host-local Ollama backup. |
-| [frontend/src/lib/use-workspace.ts](frontend/src/lib/use-workspace.ts) | Owns the browser workflow, request lifecycle and screen state. |
-| [frontend/src/components/conversation.tsx](frontend/src/components/conversation.tsx) and [frontend/src/components/request-metrics.tsx](frontend/src/components/request-metrics.tsx) | Render Normal/Private conversations, readable citations and the request-metrics cards/tables. |
-| [migrations/versions/0006_turn_assessment.py](migrations/versions/0006_turn_assessment.py) | Adds durable, request-bound turn-assessment receipts without changing old source/claim records. |
-| [tests/integration](tests/integration) and [tests/browser/workspace.test.mjs](tests/browser/workspace.test.mjs) | Hold the isolated PostgreSQL contracts and real-Chromium workflow checks. |
-
-### Resume in a fresh chat
-
-Start with this README, [todo.md](todo.md), [RUN.md](RUN.md) and the files in the table above. The current code/documentation milestone is complete: the full isolated PostgreSQL suite passed **369 tests in 136.13 seconds**; Ruff, frontend formatting, TypeScript and the Vite production build passed; the rebuilt application reports ready at `http://127.0.0.1:18000/ready` with schema `0006_turn_assessment`.
-
-One acceptance check remains deliberately open. The current aggregate Chromium run completed 18 journeys through **Private cancels pending capture**, then stopped making progress at **Private cancels pending learning**. It was stopped rather than recorded as a pass or failure. Resume by isolating that test under the browser-profile Compose service, determine whether the delay is application behavior or test-harness cleanup, then rerun the complete suite. [RUN.md](RUN.md#browser-acceptance-resume-point) and [todo.md](todo.md#resume-point-for-the-next-chat) contain the exact state and command. The Ollama probe verifies transport only; it is an intentional manual backup, not a completed quality benchmark. Dense/vector retrieval is an explicitly deferred feature, not an implemented dependency.
-
-## Starting a fresh implementation chat
-
-Use this implementation repository as the project folder. The user's updated workflow is a fresh discussion chat for understanding the PDF, resolving doubts and reviewing tradeoffs, followed by Codex CLI for approved implementation work. Application processes still run in the verified Docker Linux environment. The CLI's Windows-versus-WSL location, configuration, authentication and repository access must be checked before coding there; Docker readiness does not verify CLI setup. Keep one active checkout. The repository files carry the working context; each chat/session should read them rather than assume it has the previous conversation.
-
-Implementation continues on `dev`; the user controls subsequent merges into `main`. The current walkthrough-hardening implementation is the semantic turn assessment, memory-first bounded retrieval, readable metrics/source labels and explicit Ollama backup described at the top of this README. Start the next implementation chat from [todo.md](todo.md#resume-point-for-the-next-chat) and [RUN.md](RUN.md#browser-acceptance-resume-point), which distinguish verified work from the one unfinished browser acceptance check. The 18-page PDF remains a historical design snapshot. Final Phase One documents remain with the author and have not been mechanically checked here; the preserved AI-assisted drafts retain separate provenance.
-
-Suggested discussion-chat starting message:
-
-> Read the visual PDF and the repository's AGENTS.md, todo.md, README.md, DECISIONS.md, PLAN.md, ARCHITECTURE.md, EVALUATION.md and RUN.md. Help me understand the diagrams and compare alternatives using page/node IDs. Record agreed decisions in the Markdown files. Review the next bounded milestone in todo.md with me and prepare a clear instruction for Codex CLI once I approve it. Preserve documented open items and distinguish proposed behavior from verified results.
-
-Suggested CLI handoff, after scope approval:
-
-> Read AGENTS.md and the planning documents linked by README.md. Check the actual Git state, approved scope and CLI/Docker access. Implement only the approved milestone through shared services. Run relevant checks, update todo.md, commit, push and verify the remote result. Ask before material changes outside the approved scope. Do not treat an AI-assisted Phase One draft, environment probe or mock model as completed submission or product evidence.
-
-## Project progress and walkthrough guide
-
-Open [docs/project-progress.html](docs/project-progress.html) in a browser. It works as a local file without Docker, installation or model credentials. It includes a clickable 12-stage learning diagram, the actual PostgreSQL storage map, four source-based teaching examples, retrieval and lifecycle explanations, and 12 expandable walkthrough questions. The print action includes the examples and walkthrough answers.
-
-This is a dated reading view of [todo.md](todo.md), based on application commit `1756069`, not a live status monitor or a substitute for the application. It separates recorded contract acceptance from unresolved live quality, marks teaching examples as intended behavior, and links to the actual failure reports. The HTML is AI-assisted technical preparation, not an independently authored Phase One submission. [Static checks and limitations](RUN.md#html-progress-and-walkthrough-guide)
-
-## Using the visual guide
-
-The PDF is a visual companion: short labels inside shapes, a consistent role-color legend, named decision branches, and the same Atlas/Mira examples across pages. Use identifiers such as **09.D** (candidate union) or **14.H** (reply-release guard) when asking questions. Its page-map cards and MAP links navigate within the PDF; every page ends with three clickable reference cards and its supporting Markdown link. The [source register](docs/visual-guide-references.md) records exact brief locators, page-by-page references and evidence limits. Page 2 explicitly maps the project's broad term to our included facts, preferences and useful episodes; automatic procedural learning is deferred.
-
-The diagram snapshot is dated 11 September 2026, revised from visual-guide checkpoint `3eca8fb` to clarify the existing episodic scope and add verified references. Repository reference cards follow `dev`; page 18 records assistant commits to `dev` and user-controlled merges to `main`. It depicts requirements and proposed behavior, with explicit status tags. It does not change the application architecture, close S01, approve S03 or provide measured product results. Markdown and tested code remain the precise, evolving implementation record.
-
-The S06 readiness audit reviewed all 18 pages against the implemented boundaries. DeepSeek labels and pending implementation statuses in the PDF are historical. S09 now implements the controls/feedback path from pages 12–15 and connects Ask to the browser. PostgreSQL tests establish lifecycle and privacy contracts; actual live results and unresolved quality gates are recorded separately. [Current workflow and evidence](RUN.md#s09-controls-and-synthetic-ask)
-
-To regenerate the PDF with Python and ReportLab installed, run `python tools/build_visual_guide.py` from the repository root. It writes the PDF under `output/pdf/`, regenerates `docs/visual-guide-references.md` from `tools/visual_guide_sources.py`, and writes temporary layout metadata under `tmp/pdfs/`. Generation was checked with ReportLab 4.4.9 and the output rendered with Poppler for visual review. This script is documentation tooling, separate from the S03 backend.
-
-The following supporting resources remain in the **parent planning workspace**, outside this Git repository. These paths are relative to the current implementation checkout. They are not automatically present in a fresh clone or isolated worktree; use the original planning workspace to access them. The implementation decisions and acceptance gates are already consolidated in this repository.
-
-| Supporting material | Existing location |
-| --- | --- |
-| Project brief and extracted text | `../reference/Jarvis_Golden_Goose_Task_Final.pdf` and `.txt` |
-| Eight synthetic source observations | `../reference-examples/sample-dictations.jsonl` |
-| Separate evaluator questions/labels | `../reference-examples/sample-evaluation-cases.json` — never ingest as memory |
-| Deeper implementation research | `../research/implementation-strategy.md`, `implementation-evaluation.md`, `implementation-models.md` |
-| Educational memory blueprint | `../jarvis-memory-blueprint.html` |
-
-S05 copied and hash-verified the [eight observations](data/synthetic/sample-dictations.jsonl) and [separate evaluator labels](eval/fixtures/sample-evaluation-cases.json). Fresh clones include both; only the JSONL is source input. Use **Sources > Try the sample** in the browser to import them without selecting a local file. These eight observations do not satisfy the approximately 500-observation corpus requirement. The existing generated 500-record search stress set is also not the varied corpus; [S11 defines the connected/independent scenario allocation](PLAN.md#s11-corpus-and-semantic-evaluation-handoff). The course and research artifacts remain background references.
-
-## Proposed starting stack
-
-| Need | Technology | Why this is enough initially |
-| --- | --- | --- |
-| Consistent runtime | Ubuntu 24.04 / WSL2, Docker Compose, containerized Python 3.12 | A Linux execution path without changing host Python or requiring deployment. |
-| HTTP API and typed boundaries | FastAPI, Pydantic, HTTPX | Small API, validated request/model output contracts and a provider adapter. |
-| State and retrieval | PostgreSQL + pgvector; built-in full-text search | One database for sources, claims, revisions, jobs and searchable views. Exact vectors before ANN. |
-| DB access and schema changes | SQLAlchemy, psycopg, Alembic | Explicit transactions and reproducible migrations. |
-| Optional developer CLI | Typer calling the same application services | Diagnostics and automation through the same services; ordinary-user actions use the browser. |
-| Reproducible checks | pytest, HTTPX test client, Ruff, locked dependencies with uv | Cheap contract tests plus separately identified real-model evaluation. |
-| Ordinary-user surface | React 19.3 / TypeScript, shadcn/Radix, Motion and local fonts; built by Vite and served by FastAPI | Conversation, typed notes, Sources/Search, Memory/history/controls, Usage and Normal/Private. Docker builds the assets; no separate runtime frontend server. |
-
-The S03 backend versions are now resolved in `uv.lock` and image digests are pinned in Dockerfile/Compose; retrieval and Ask/control implementations are covered by the current acceptance record. Browser tests use an optional separately locked Playwright dependency; end users need neither Node nor Python installed. No Redis, separate vector service, graph cluster, autonomous memory framework or Kubernetes is required for the first implementation.
-
-## What must be demonstrated
-
-1. Original records become selective, source-supported memories; raw and formatted variants stay one observation.
-2. Information spread across dictations can support a useful answer or draft with citations.
-3. Changed facts, tentative statements and conflicting evidence produce different behavior.
-4. Correct changes later use; Forget prevents retrieval and relearning; Private neither reads saved personal data nor persists activity.
-5. A unfamiliar can import an unfamiliar corpus, inspect actual state, operate the UI and reproduce evaluation.
-
-Approximately 500 development observations and a separate unfamiliar corpus of approximately 500 are required. The checked-in [540-record corpus](data/synthetic/corpus-540.jsonl) is deterministic AI-assisted fiction, not independently recorded speech. Questions and expected evidence live separately under `eval/fixtures/` and are never imported as memory. The current Compose configuration explicitly selects **Nemotron Lightning** for responses and extraction; historical Kimi failures are retained, and Ultra is evaluation-only with no fallback. [Observed quality and operational limits](eval/reports/s11-ultra-review.json) are not a completed full-corpus score.
-
-## History, evidence and AI use
-
-Commit `596b034` replaced the earlier repository contents with a focused planning baseline. Prior commits remain reachable through normal Git history. After each meaningful milestone, run relevant checks, update [todo.md](todo.md), commit and push the completed work. Neither timestamps nor results should be manufactured to suggest progress.
-
-These technical documents were prepared with AI assistance, including explainer agents, source research and review. The project's **Phase One positioning and vision must be independently formed and written by the author and preserved before Part Two**. The author's supplied [source notes](docs/part-one/README.md) are preserved with provenance and counts; the author now reports the final documents complete and held separately. They have not been inspected or mechanically checked in this checkout. The author explicitly approved S03 proceeding on that basis. These technical documents do not fulfill Phase One. Do not generate replacement positioning or vision text.
-
-Azure is an optional final experiment after the local review path passes. It is not a dependency of submission. The architecture and evaluation are hypotheses to test, not claims of a best-performing memory system.
-
-### Latest provider diagnostic
-
-The [free-provider comparison](eval/reports/s12-free-provider-review.json) completed with 248 backend and 24 browser tests passing. Google Flash-Lite access works, but live conflict handling still fails; OpenRouter returned a rate limit. These results do not establish final acceptance readiness or a completed 540-record live evaluation. See [the single current tracker](todo.md) and [current runtime limitations](RUN.md#free-provider-comparison-and-current-blocker). Provider adapters are default-off; credentials and personal data are not included in the repository.
-
-## Automated unfamiliar and local submission
-
-Use **RUN.md / Automated unfamiliar: replace keys and continue independently** for exact NVIDIA, Google-free and OpenRouter-free configuration, a real probe, collection import/learning/Ask/inspection, failure handling and paced evaluation. Keys are provider-specific; credentials stay outside Git. The user-facing app runs locally at `http://localhost:8000`; no hosted deployment is required.
-
-**Workflow & evidence** embeds the 12-stage source-to-memory diagram and displays source/claim storage explanations and actual synthetic reports. The machine-readable map is `docs/storage-contract.json`. Use `todo.md` for current gates; the S14 live 30-case baseline had 13 mechanical passes and four operational failures and is not concealed. A configured provider, successful import or passing deterministic tests is not proof that every input was learned correctly. Independently authored Phase One work is a separate requirement; AI-assisted technical documentation does not replace it.
-
-## Final submission entry point
-
-Start locally with RUN.md; no cloud deployment or private API key is included. The unfamiliar supplies a supported key and explicitly enables the documented inference mode. The fixed Workflow & evidence page exposes the diagram, storage explanation, query metrics and retained evaluation reports.
-
-Read `eval/reports/s14-readiness-review.json` for the final cutoff evidence and limitations, and `eval/reports/s15-semantic-review.json` before interpreting the showcase scores. A mechanical screen is not an accuracy score. todo.md remains the single progress tracker. Independently authored Phase One text still requires the author's final confirmation.
+- **No speech recognition.** Text in, text out; capture-time is never invented from a note's wording.
+- **No vector search.** pgvector is installed, but there is no embedding lifecycle, backfill or
+  held-out dense evaluation yet, so retrieval is described as lexical and structured.
+- **No live web grounding.** Current-news, weather and price questions return an explicit
+  "cannot verify" answer instead of a guess.
+- **No multi-user deployment.** Authorization is backend-owned, but the shipped identity is a single
+  local operator and public deployment would need a separate authentication pass.
+- **No background daemon.** Learning happens on the request path or through an explicit action;
+  nothing runs while you are not looking.

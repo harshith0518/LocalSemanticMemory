@@ -12,7 +12,7 @@ page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:8000/
 Call log:
 [2m  - navigating to "http://localhost:8000/", waiting until "networkidle"[22m
 
-    at C:\Users\ASUS\Desktop\my_files\Competitions\Jarvis-Assignment\ProjectSemanticMemoryJarvis\tests\browser\[eval1]:5:13 {
+    at LocalSemanticMemory\tests\browser\[eval1]:5:13 {
   log: [
     '  - navigating to "http://localhost:8000/", waiting until "networkidle"'
   ],

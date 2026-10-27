@@ -82,10 +82,10 @@ def test_unfamiliar_accepts_unfamiliar_normal_input_but_private_still_denied(eng
     for action in [
         lambda: service.request_processing(private, options),
         lambda: service.prepare_answer(private, {"namespace": "unfamiliar", "question": "six"}),
-        lambda: service.inference_status(private),
     ]:
         with pytest.raises(ApplicationError, match="private_operation_denied"):
             action()
+    assert service.inference_status(private)["provider_contacted"] is False
 
 
 def test_corpus_pairs_hashes_and_evaluator_label_separation():
@@ -148,13 +148,71 @@ def test_configuration_endpoint_is_not_a_live_probe_and_never_returns_keys(engin
             response = await client.get("/inference", headers={"X-Jarvis-Mode": "normal"})
             assert response.status_code == 200 and response.json()["provider_contacted"] is False
             assert "_key" not in response.text and "synthetic-unfamiliar" not in response.text
-            for path in ("/inference", "/trial/corpus", "/trial/showcase"):
+            data = response.json()
+            assert "available_models" in data and isinstance(data["available_models"], list)
+            assert data["current_model"] == service.responder.model
+            for path in ("/trial/corpus", "/trial/showcase"):
                 assert (
                     await client.get(path, headers={"X-Jarvis-Mode": "private"})
                 ).status_code == 403
+            private_status = await client.get("/inference", headers={"X-Jarvis-Mode": "private"})
+            assert private_status.status_code == 200
+            assert private_status.json()["provider_contacted"] is False
+            # Model switching endpoint
+            switch = await client.post(
+                "/inference/model",
+                headers={"X-Jarvis-Mode": "normal"},
+                json={"model": service.responder.model},
+            )
+            assert switch.status_code == 200
+            private_switch = await client.post(
+                "/inference/model",
+                headers={"X-Jarvis-Mode": "private"},
+                json={"model": service.responder.model},
+            )
+            assert private_switch.status_code == 200
+            assert private_switch.json()["provider_contacted"] is False
+            bad_model = await client.post(
+                "/inference/model",
+                headers={"X-Jarvis-Mode": "normal"},
+                json={"model": "unapproved-model-xyz"},
+            )
+            assert bad_model.status_code in (400, 422)
 
     asyncio.run(run())
     assert service.extractor.calls == service.responder.calls == 0
+
+
+def test_google_model_switch_changes_both_roles_without_a_provider_call(engine):
+    from jarvis.providers import FreeChatProvider
+
+    extractor = FreeChatProvider(
+        provider="google",
+        role="extractor",
+        model="gemini-3.6-flash",
+        approved=True,
+        key="test-key",
+    )
+    responder = FreeChatProvider(
+        provider="google",
+        role="responder",
+        model="gemini-3.6-flash",
+        approved=True,
+        key="test-key",
+    )
+    service = Service(engine, extractor=extractor, responder=responder)
+
+    normal = service.identity.context("normal")
+    status = service.set_inference_model(normal, {"model": "gemini-3.7-flash"})
+    assert status["current_model"] == "gemini-3.7-flash"
+    assert extractor.model == responder.model == "gemini-3.7-flash"
+    assert status["provider_contacted"] is False
+
+    private = service.identity.context("private")
+    status = service.set_inference_model(private, {"model": "gemini-3.8-flash"})
+    assert status["current_model"] == "gemini-3.8-flash"
+    assert extractor.model == responder.model == "gemini-3.8-flash"
+    assert status["provider_contacted"] is False
 
 
 def test_unseen_corpus_can_complete_contract_path_without_fixture_matching(engine):
@@ -252,6 +310,7 @@ def test_free_transport_exact_route_accounting_and_rate_limit(monkeypatch, provi
     proposer = FreeChatProvider(
         provider=provider,
         role="responder",
+        model=model,
         approved=True,
         key="test-key",
         transport=httpx.MockTransport(transport),
@@ -458,12 +517,12 @@ def test_blank_free_model_overrides_use_supported_provider_defaults(monkeypatch)
 def test_final_approved_request_extension_keeps_token_and_budget_identity(monkeypatch):
     from jarvis.providers import BUDGET_KEY, MAX_REQUESTS, MAX_TOTAL_TOKENS
 
-    monkeypatch.setenv("JARVIS_MAX_REQUESTS", "1100")
+    monkeypatch.setenv("JARVIS_MAX_REQUESTS", "1500")
     monkeypatch.setenv("JARVIS_MAX_TOTAL_TOKENS", "10000000")
     provider = NvidiaExtractor()
-    assert provider.max_requests == MAX_REQUESTS == 1100
+    assert provider.max_requests == MAX_REQUESTS == 1500
     assert provider.max_total_tokens == MAX_TOTAL_TOKENS == 10000000
     assert provider.budget_key == BUDGET_KEY == "s07-synthetic-v1"
-    monkeypatch.setenv("JARVIS_MAX_REQUESTS", "1101")
+    monkeypatch.setenv("JARVIS_MAX_REQUESTS", "1201")
     with pytest.raises(ApplicationError):
         NvidiaExtractor()

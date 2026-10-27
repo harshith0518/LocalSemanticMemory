@@ -7,14 +7,16 @@ from time import monotonic
 
 import httpx
 
-from jarvis.config import OLLAMA_CHAT_MODEL, OllamaSettings
 from jarvis.errors import ApplicationError, ErrorCode
 from jarvis.extraction import ExtractionPacket, messages
 
 MODEL = "nvidia/nemotron-3.5-lightning-30b-a3b"
 ENDPOINT = "https://integrate.api.nvidia.com/v1/chat/completions"
 BUDGET_KEY = "s07-synthetic-v1"
-MAX_REQUESTS = 1100
+# Preserves the existing s07-synthetic-v1 ledger and opens only 100 additional
+# calls for the local demonstration after the original 1,100 cap was
+# consumed. Failed/unknown calls remain charged; this is not a budget reset.
+MAX_REQUESTS = 1500
 MAX_TOTAL_TOKENS = 10_000_000
 MAX_OUTPUT_TOKENS = 4096
 MAX_INPUT_BYTES = 60_000
@@ -82,8 +84,6 @@ class NvidiaExtractor:
     @classmethod
     def from_env(cls):
         provider = os.environ.get("JARVIS_INFERENCE_PROVIDER", "nvidia")
-        if provider == "ollama":
-            return OllamaProvider.from_env(role="extractor")
         if provider != "nvidia":
             return FreeChatProvider.from_env(role="extractor")
         unfamiliar = unfamiliar_approved()
@@ -280,8 +280,6 @@ class NvidiaResponder(NvidiaExtractor):
     @classmethod
     def from_env(cls):
         provider = os.environ.get("JARVIS_INFERENCE_PROVIDER", "nvidia")
-        if provider == "ollama":
-            return OllamaProvider.from_env(role="responder")
         if provider != "nvidia":
             return FreeChatProvider.from_env(role="responder")
         model = os.environ.get("JARVIS_RESPONSE_MODEL", KIMI_MODEL)
@@ -329,89 +327,6 @@ class NvidiaResponder(NvidiaExtractor):
         return body
 
 
-class OllamaProvider(NvidiaExtractor):
-    """Explicit local Qwen route. Its endpoint cannot be configured to a cloud host."""
-
-    provider_name = "ollama"
-    timeout_seconds = 180
-    _chat_models = (OLLAMA_CHAT_MODEL,)
-
-    def __init__(self, *, role, model=OLLAMA_CHAT_MODEL, endpoint=None, **kwargs):
-        if role not in {"extractor", "responder"} or model not in self._chat_models:
-            raise ApplicationError(ErrorCode.INVALID_INPUT)
-        if kwargs.get("unfamiliar") or kwargs.get("key", "") not in {"", "ollama"}:
-            raise ApplicationError(ErrorCode.INVALID_INPUT)
-        settings_endpoint = OllamaSettings.from_env().chat_endpoint
-        if endpoint is not None and endpoint != settings_endpoint:
-            raise ApplicationError(ErrorCode.INVALID_INPUT)
-        self.endpoint = settings_endpoint
-        self.model = model
-        self.role = role
-        super().__init__(**kwargs)
-
-    @classmethod
-    def from_env(cls, *, role):
-        try:
-            settings = OllamaSettings.from_env()
-        except ValueError:
-            raise ApplicationError(ErrorCode.INVALID_INPUT) from None
-        return cls(
-            role=role,
-            model=(settings.extractor_model if role == "extractor" else settings.responder_model),
-            endpoint=settings.chat_endpoint,
-            approved=settings.enabled,
-            key=settings.api_key,
-            unfamiliar_questions=settings.enabled,
-            unfamiliar_sources=settings.enabled,
-            private_direct=settings.enabled and settings.private_direct,
-        )
-
-    @staticmethod
-    def _schema_response_format(body, name):
-        try:
-            payload = json.loads(body["messages"][-1]["content"])
-            schema = payload["OUTPUT_SCHEMA"]
-        except (IndexError, KeyError, TypeError, ValueError):
-            raise ApplicationError(ErrorCode.PROVIDER_RESPONSE) from None
-        return {
-            "type": "json_schema",
-            "json_schema": {"name": name, "strict": True, "schema": schema},
-        }
-
-    @staticmethod
-    def _local_response(body, name):
-        body.pop("chat_template_kwargs", None)
-        body["reasoning_effort"] = "none"
-        body["response_format"] = OllamaProvider._schema_response_format(body, name)
-        return body
-
-    def prepare(self, packet, *, repair=False):
-        if self.role == "extractor":
-            body, reserved = super().prepare(packet, repair=repair)
-            name = "jarvis_extraction"
-        else:
-            reference = NvidiaResponder(model=MODEL, approved=self.enabled)
-            body, reserved = reference.prepare(packet, repair=repair)
-            body["model"] = self.model
-            name = "jarvis_answer"
-        body = self._local_response(body, name)
-        return body, max(
-            reserved,
-            len(json.dumps(body, ensure_ascii=False).encode("utf-8")) + body["max_tokens"] + 512,
-        )
-
-    def prepare_assessment(self, question: str, *, repair=False):
-        body, reserved = super().prepare_assessment(question, repair=repair)
-        body = self._local_response(body, "jarvis_turn")
-        return body, max(reserved, len(json.dumps(body, ensure_ascii=False).encode("utf-8")) + 1536)
-
-    def prepare_direct(self, question: str) -> dict:
-        body = super().prepare_direct(question)
-        body.pop("chat_template_kwargs", None)
-        body["reasoning_effort"] = "none"
-        return body
-
-
 class FreeChatProvider(NvidiaExtractor):
     """Explicit public-synthetic comparison routes; never unfamiliar/personal fallbacks."""
 
@@ -420,7 +335,19 @@ class FreeChatProvider(NvidiaExtractor):
         "google": (
             "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
             "GOOGLE_API_KEY_FREE_TIER",
-            ("gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash-lite"),
+            (
+                "gemini-3.6-flash",
+                "gemini-3.7-flash",
+                "gemini-3.8-flash",
+                "gemini-3.5-flash",
+                "gemini-3.5-flash-lite",
+                "gemini-flash-latest",
+                "gemini-flash-lite-latest",
+                "gemini-pro-latest",
+                "gemma-4-31b-it",
+                "gemma-4-26b-a4b-it",
+                "gemini-2.5-flash-lite",
+            ),
         ),
         "openrouter": (
             "https://openrouter.ai/api/v1/chat/completions",
@@ -438,6 +365,12 @@ class FreeChatProvider(NvidiaExtractor):
             raise ApplicationError(ErrorCode.INVALID_INPUT)
         self.provider_name, self.role = provider, role
         super().__init__(**kwargs)
+
+    def set_model(self, model: str):
+        _, _, models = self.routes[self.provider_name]
+        if model not in models:
+            raise ApplicationError(ErrorCode.INVALID_INPUT)
+        self.model = model
 
     @classmethod
     def from_env(cls, *, role):
@@ -474,7 +407,8 @@ class FreeChatProvider(NvidiaExtractor):
             body["model"] = self.model
         body.pop("chat_template_kwargs", None)
         if self.provider_name == "google":
-            body["reasoning_effort"] = "low"
+            if not self.model.startswith("gemma"):
+                body["reasoning_effort"] = "low"
             if self.role == "responder":
                 schema = json.loads(body["messages"][1]["content"])["OUTPUT_SCHEMA"]
                 body["response_format"] = {
@@ -498,7 +432,8 @@ class FreeChatProvider(NvidiaExtractor):
         body, reserved = super().prepare_assessment(question, repair=repair)
         body.pop("chat_template_kwargs", None)
         if self.provider_name == "google":
-            body["reasoning_effort"] = "low"
+            if not self.model.startswith("gemma"):
+                body["reasoning_effort"] = "low"
             schema = json.loads(body["messages"][1]["content"])["OUTPUT_SCHEMA"]
             body["response_format"] = {
                 "type": "json_schema",
@@ -518,7 +453,8 @@ class FreeChatProvider(NvidiaExtractor):
         body = super().prepare_direct(question)
         body.pop("chat_template_kwargs", None)
         if self.provider_name == "google":
-            body["reasoning_effort"] = "low"
+            if not self.model.startswith("gemma"):
+                body["reasoning_effort"] = "low"
         else:
             body["provider"] = {
                 "max_price": {"prompt": 0, "completion": 0, "request": 0},

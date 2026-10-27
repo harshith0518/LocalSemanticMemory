@@ -1,237 +1,25 @@
-# Run and verify Hey Jarvis
+# Run and verify
 
-## Interview hardening: metrics, bounded retrieval and local backup (22 September 2026)
+## Prerequisites
 
-The browser response inspector is now a collapsed **Request metrics** panel rather than a raw timing string. Its summary gives the round-trip time and recorded model-call count. The open panel has four overview cards (browser total, model calls split by assessment/learning/answer, known input tokens and known output tokens), an evidence row (sources, learned memories, citations, byte payload and context mode), a phase/timing table with plain-language descriptions, and a per-call result table with green success/red failure status. Nested server spans remain explicitly non-additive. Model/call identifiers and raw spans are in a closed technical-details section. The running page was inspected with a public question: it showed two calls, 0 evidence sources, 0 memories, 0 citations and a 0-byte payload, then separated its 1.06-second assessment from its 1.58-second answer call.
+- Git, Docker Engine in **Linux container mode**, Compose v2.
+- First build needs network access to Docker Hub, GHCR, PyPI and the npm registry.
+- Host Python, uv and Node are **not** required to run the application. Node is only needed if you
+  want to run the optional Playwright browser suite.
 
-Automatic contextual retrieval now selects active learned memories first and includes only their exact supporting originals. It can add a bounded lexical original for an unextracted detail. It no longer puts an entire small collection in the provider prompt; complete small-collection review is reserved for an explicit inventory. A no-word-overlap fallback is a bounded structured-diversity sample, not vector similarity. The `qwen3-embedding:0.6b` installation is documented but not called by this version.
+## Quickstart
 
-Google `gemini-3.5-flash-lite` remains the default demo route. The optional local backup is explicitly selected with `JARVIS_INFERENCE_PROVIDER=ollama` and `JARVIS_OLLAMA_ENABLED=true`, followed by a Compose restart. It uses only `http://host.docker.internal:11434/v1`, dummy value `ollama`, and `qwen3:4b`; invalid endpoints/models are rejected and there is no automatic fallback. A disposable Docker-to-host synthetic probe received HTTP 200, structured JSON, `finish_reason: stop` and provider token usage. It tested connectivity only, not answer quality. To return to Google, set `JARVIS_INFERENCE_PROVIDER=google` and `JARVIS_OLLAMA_ENABLED=false` before the restart.
-
-Focused contract checks passed: **84 PostgreSQL tests** covering answer policy, semantic turn assessment, bounded automatic retrieval and Ollama configuration/transport doubles. The complete isolated PostgreSQL suite then passed: **369 tests in 136.13 seconds**. Ruff lint/format, frontend Prettier/TypeScript and the production Vite build also passed. No Google request was made for these checks. The rebuilt API reported `ready` at `http://127.0.0.1:18000/ready` on schema `0006_turn_assessment`, and the request-metrics view was inspected in the local browser.
-
-The retained [live semantic-turn report](eval/reports/regression-semantic-turn-live.json) completed its 14-case schedule but is explicitly incomplete as a quality evaluation: eight cases met all scripted screens, one answer request failed operationally after a successful assessment, and the final five capture attempts were rate-limited. Its semantic review is still pending. Preserve it as failure evidence; do not spend more provider allowance on a casual rerun while the browser cancellation acceptance is unresolved.
-
-### Browser acceptance resume point
-
-The current aggregate Chromium run completed 18 journeys through **Private cancels pending capture**, then stopped making progress at **Private cancels pending learning**. The process was stopped; this checkpoint does not call that case passed or failed, and the remaining browser journeys are unverified. The earlier readable-source-label expectation was updated from the raw `dict_0008` key to the user-facing `dict 0008` label before this run.
-
-Resume against the isolated browser profile, not the retained demo database:
-
-```powershell
-docker compose -f compose.test.yaml --profile browser up -d --no-build --wait --wait-timeout 120 web
-Push-Location tests/browser
-node --test --test-concurrency=1 --test-name-pattern "Private cancels pending learning" workspace.test.mjs
-Pop-Location
-```
-
-Inspect the delayed request, cancellation and cleanup after that focused result. Then run the complete browser suite from the same isolated profile. Do not use a passing local Ollama transport probe, an old browser run or a partial aggregate run as a substitute for this acceptance evidence.
-
-## Public questions and selective context (22 September 2026)
-
-At **http://127.0.0.1:18000/**, clear public/date questions now stay only in the current chat. Public routing performs a local workspace-reference search, then sends no saved evidence when no match is found; there is no source, job or extraction call for that turn. Personal and mixed messages still preserve the original and learn selectively. Completed `no_memory` chat records no longer enter Automatic evidence unless they support a claim. Existing source history remains available. This supersedes the blanket preserve-every-message wording in earlier dated sections.
-
-The exact long question `what is the capital of USA ? I just want to know the city and in which state it is present` previously failed because request framing triggered the personal-pronoun policy. It now returns Washington, D.C. and explains the federal district with zero notes/memories sent, one answer call and a 2.450 s browser round trip. The planets question also remained unsaved (2.350 s). Personal beverage recall still returned tea with its feeling-good condition and a citation, using 16 eligible notes and 10 learned memories (6.848 s). A new fictional Willow prototype preference produced one scoped memory; repetition returned duplicate with no additional claim. These are eight live calls, separately recorded in [the routing review](eval/reports/question-routing-review.json).
-
-Verification passed **310 PostgreSQL tests in 105.17 s**, the scoped isolated reset, **33/33 Chromium journeys in 43.18 s**, TypeScript/production/Docker builds, Ruff and Prettier. The API is healthy with its database preserved. The UI now says what was sent to the model, and rejected model output is labelled as a provider-response failure. Conservative routing and model interpretation still have the limits listed in the review; a successful route does not certify every generated fact.
-
-## Readable data sizes (22 September 2026)
-
-Usage storage cards and each answer's evidence metrics now show decimal units: bytes below 1,000, then KB, MB and GB, rounded to at most two decimal places. Rounding at a unit boundary promotes the displayed unit; hover to inspect the exact byte count. These remain source/JSON/passage payload measurements. Verification: ten formatter examples covering zero, singular bytes, each unit threshold and rounding; TypeScript, Prettier, production and Docker builds passed. The replaced API is healthy and the live Usage page displays 119.5 KB originals, 169.54 KB structured memories and 30.69 KB passages. No new model call was needed. The first ad hoc check used an unavailable TypeScript compiler API; it was replaced by a passing native Node import of the actual formatter.
-
-## Current walkthrough demo: learning while chatting (22 September 2026)
-
-Open **http://127.0.0.1:18000/** in Normal mode. Ask Jarvis now saves each user message automatically, checks its assertions against existing memories, then answers from eligible originals and learned context. No separate Save note or Process sources click is required for ordinary Ask submissions. Each turn shows Message saved and its learning outcome, a link to the original, separate learning-call metrics and answer-call metrics. Repeats remain original sources without requiring another semantic memory. Save a note/import retains its separate manual-processing path.
-
-Demonstrate in a small synthetic collection: state a project's backend owner/database; repeat it; explicitly change its database; ask about the latest value; inspect Memory history. A pure question should report no lasting fact. An unsupported project detail should remain unknown, while stable public knowledge can use the clearly labelled fallback. Name the project again when context is ambiguous. The learner sees at most six earlier user messages from the same conversation and collection; it never learns the assistant's reply. Clearing conversation or reloading starts a new local conversation context but does not delete saved messages.
-
-Learning adds model latency. Failed learning preserves the original and does not prevent answering from it. Retry learning is explicit and bounded; an answer retry reuses the saved message and completed learning. A closed page or occupied lease can leave pending work visible in Memory, where Process sources resumes it. Private sends only the current input without capture, learned context or database writes. Full validation and live failures/successes are consolidated in [the conversation review](eval/reports/regression-conversation-review.json).
-
-Final checks: **295 backend tests passed in 182.62 s; 32/32 browser journeys passed in 63.69 s**. Application/test/evaluator Ruff checks, formatting, TypeScript and production build passed. The isolated browser fixture reset passed without touching demo data. The final live collection **`chat-20260922`** contains six saved user messages, two active memories and four claim revisions: Cedar's backend owner changed Mira → Ravi; its database changed PostgreSQL → SQLite. Repetition produced duplicate, and the unsupported launch question/general-knowledge request produced no_memory. All six final learning jobs succeeded with one extraction call each and one answer call per turn; measured round trips were 5.98–8.60 s. Initial failures remain in `chat-demo-20260922` and the report. Scope extraction is still imperfect: the prototype qualifier survived the original and answer but was omitted from the typed database-value text. This is a bounded demo, not a universal semantic-quality guarantee.
-
-## Current walkthrough demo: Automatic context (22 September 2026)
-
-Use **http://127.0.0.1:18000/**, select the intended collection, and leave **Context: automatic** selected. This mode checks originals and active learned memories together. Small collections are fully reviewed within the evidence allowance; larger collections use a bounded lexical/memory search and one counted query rewrite. Every answer shows how many notes and memories were reviewed and whether coverage was partial. The unchanged API default is strict source retrieval; explicit API clients use `representation: auto` and may supply an IANA `timezone` such as `Asia/Kolkata`.
-
-Try `did i mention anything about any beverage ?`, `do you know any projects mentioned in the data memory ?`, and `what are all the things you have remembered so far?` in `my-notes`. Live checks recovered tea with its feeling-good condition, Atlas/Orion mentions and a cited inventory from all 16 notes/10 active memories. A project mention did not become a claim of completed work. The initial inventory favoured one conflicting budget amount; the refined instruction and subsequent live answers explicitly marked ₹15,000 versus ₹50,000 unresolved. These are bounded observations, not a claim that all model conflict handling is solved.
-
-`what is the todays date ?` returns the server's current calendar date in the browser timezone with no answer-model call. Normal chat now separately saves/checks the message, so its learning call is shown independently. `Explain photosynthesis in two simple sentences` and `Explain semantic memory in two sentences` returned **General knowledge · not from your notes**, with no borrowed source citation or learned output. Missing personal facts remain unknown. Obvious current weather/news/price questions return an explicit no-live-verification message, not a model guess. No live web-search tool is configured; public model knowledge is labelled unverified.
-
-Full test commands use `compose.test.yaml` only; stop its `web` service before resetting/running backend fixtures, then recreate the isolated browser server after backend tests. The normal application volume is preserved. Final backend acceptance passed **279 tests in 145.93 s**, and the browser suite passed **28/28 in 51.08 s**. Builds and Ruff/Prettier passed. All sampled live call metrics, including initial wording failures, are recorded in [the curated walkthrough review](eval/reports/regression-auto-context-review.json). The runtime remains Google `gemini-3.5-flash-lite` under the unchanged shared allowance and provider consent. Private remains direct, transient and without saved context.
-
-The dated sections below retain earlier implementation/evaluation evidence; their old provider choices and readiness claims are historical.
-
-S03-S10 local infrastructure, source import, memory contracts, Search, Ask/controls and usage inspection are implemented in the Windows checkout with Docker Linux containers. The browser is the primary workflow. Tonight's recheck passed **232 backend tests and 22 browser journeys**. **Live quality is not passed:** Nemotron's recorded outputs lose meaning; seven Kimi attempts have completed no answer. Unattended inference remains off. The tonight section below supersedes historical status/usage notes. The user confirmed the submission deadline as **Saturday, 12 September 2026, 23:30 IST**.
-
-## Tonight readiness check
-
-The user requested restoring the whole project and assessing readiness before tonight's deadline. Baseline checkout: `7a6b03683575e86b5950a529538d1ac4513274a0` on clean dev. Docker Desktop Linux was stopped; after starting it under the host account, Docker 28.4.0 became available. Rebuilt the pinned image, retained the existing application volume and restored API/database readiness on `0005_user_controls`, pgvector 0.8.6. The application was opened at [http://127.0.0.1:8000/](http://127.0.0.1:8000/). Initial aggregate state: 33 source/job rows and three claim revisions; this was not a fresh complete-field persistence comparison.
-
-Actual checks: 232 isolated PostgreSQL tests passed in 127.65 s; 22 Chromium journeys passed in 42.603 s; Python lint/format passed for 45 files; frontend formatting, TypeScript and Vite production build passed (13.92 s Vite build); application migration drift returned no new operations and API/CLI readiness agreed. The full backend/browser suites preceded the evaluator-only fix below; application code did not change. Updated evaluator lint/format passed separately.
-
-```powershell
-docker compose build api
-$env:JARVIS_S07_SYNTHETIC_TRIAL_APPROVED = 'false'
-docker compose up -d --wait --wait-timeout 120 api
-docker compose -f compose.test.yaml stop web
-docker compose -f compose.test.yaml run --rm tests
-docker compose -f compose.test.yaml run --rm --no-deps tests ruff check --no-cache src migrations tests eval
-docker compose -f compose.test.yaml run --rm --no-deps tests ruff format --check --no-cache src migrations tests eval
-npm.cmd --prefix frontend run format:check
-npm.cmd --prefix frontend run build
-docker compose run --rm --no-deps migrate alembic check
-docker compose run --rm --no-deps cli ready
-docker compose -f compose.test.yaml --profile browser up -d --wait --wait-timeout 120 web
-npm.cmd --prefix tests/browser test
-```
-
-The first post-browser retrieval diagnostic failed during deterministic preparation. It reused the default synthetic owner while the browser worker was active; that owner also retained 30 source exclusions, four passage exclusions, three controls and policy revision 3. A collection namespace does not isolate owner-wide Forget or worker leases. `eval/retrieval.py` now uses a fresh backend-issued synthetic owner per run, matching `eval/efficiency.py`. It still refuses the application DB, uses the same fixtures/questions/budgets and changes no runtime authorization or exclusions. The report clarifies that global isolated-DB totals include other test owners and removes a stale pre-S09 limitation.
-
-Both corrected 500-record diagnostics found all required evidence in 45/45 answerable attempts per representation, with 100% exact required-passage coverage. The first ran with the browser worker stopped; the second ran with it active and the old owner's exclusions retained. Source-only stayed smaller and faster in these samples. The first had p50 125.577 ms versus 243.481 ms; the active-worker run had 136.582 ms versus 286.972 ms. These are authored retrieval diagnostics with deterministic claims and warm/shared test allocation, not the varied S11 corpus or a live semantic score. The source patch was mounted read-only into the existing image for those two runs, then packaged by rebuilding the image.
-
-```powershell
-docker compose -f compose.test.yaml run --rm --no-deps tests python eval/retrieval.py
-```
-
-Three new live requests were made within the existing synthetic-only allowance. The first repeated the unchanged Kimi answer smoke against the recorded eight-source collection and failed at 180.344 s model-stage time. The second used the identical service/settings/accounting path with an evaluator-only HTTPX transport observer; it recorded **ReadTimeout while waiting for response headers**, 180.187 s. It recorded exception class/status only, never request headers, keys, prompts or hidden reasoning. No HTTP 202 was observed. NVIDIA documents [202 status polling](https://docs.api.nvidia.com/nim/reference/moonshotai-kimi-k3-statuspolling), but that protocol path is not established as the cause or cure of these observed timeouts.
-
-```powershell
-docker compose run --rm --no-deps --entrypoint python -e JARVIS_S07_SYNTHETIC_TRIAL_APPROVED=true cli eval/live.py --stage answer-smoke --namespace live-279608e17b0b435fa46977d3bfe61f79 --repeats 1
-```
-
-The third request imported only the exact public `dict_0001` into a new diagnostic collection, explicitly processed one job through the normal service/worker, and disabled the responder in that one-off evaluator. Nemotron returned a structurally accepted claim in **14.546 s**, using 2,290 input and 322 output tokens. Manual semantic review: the planned date, Atlas scope and user attribution survived, but `time.event` was incorrectly set to the planned launch date without separate support. This is another semantic miss, not a passed extraction repeat. The new source/claim remains inspectable in `tonight-extractor-a8694e2fb1754074bd14f2eb48096bf3`; no personal input was used.
-
-Lifetime state after these probes: **22 requests; 27,850 known input + 2,266 known output tokens; 211,424 accounted tokens including unknown reservations**. Kimi has seven failures and no completed answer. The allowance remains 96 requests/1,500,000 tokens/$0 paid, with no reset, fallback or persistent live-enable change. The current synthetic allowlist and 64-active-claim/60,000-byte extraction context caps must be addressed in reviewed S11 work before claiming complete larger-corpus processing.
-
-[Readiness and semantic review](eval/reports/tonight-readiness.json), [raw Kimi smoke](eval/reports/tonight-live-smoke.jsonl), [transport probe](eval/reports/tonight-transport-probe.jsonl), [Nemotron probe](eval/reports/tonight-extractor-probe.jsonl), [retrieval rerun](eval/reports/tonight-retrieval.json), [active-worker rerun](eval/reports/tonight-retrieval-concurrent.json). Setup is complete; live-quality and acceptance gates remain open. The [next repair proposal](PLAN.md#tonight-bounded-repair-proposal) requires approval before changing model/provider behavior. No main merge, application-volume reset or final S12 clean-checkout rehearsal was performed.
-
-## S10 usage and performance
-
-Open [the local application](http://127.0.0.1:8000). Choose a collection and select **Sources > Try the sample**. This explicitly imports the eight original paired records through the same atomic service as file upload; retries preserve identity, and importing does not start model calls. Sources/Search need no provider. Processing, Ask, history and controls use the existing workflow below; live failures remain visible.
-
-Expand **Usage and performance**, then **Refresh usage**. The snapshot covers all the current owner's collections, including retained source/claim history, not just the open collection. It shows source/claim/passage payload bytes, revision/job counts and model attempts grouped by role/model/allowance. Known input/output tokens, unknown usage and conservative reservations are separate. New failed calls retain provider elapsed time; historical missing durations remain null. p50/p95 shows the number of timed attempts, including failures. Successful application checks are not semantic grades. Billed/estimated cost is unmeasured, and totals are not account-wide or per-key billing.
-
-Each Normal action also shows browser duration and fixed-name server stages via `Server-Timing`. These durations include nested work and must not be added as independent phases. Measurements have no new durable activity table or browser storage; switching collection/mode or navigating clears the display and ignores late results. Private forbids usage/source reads. RAM and physical allocation are measured separately in the evaluator report; the application has no Docker socket.
-
-Actual verification commands, from the project root in PowerShell (check native exit codes):
-
-```powershell
-docker compose -f compose.test.yaml stop web
-docker compose -f compose.test.yaml build tests
-docker compose -f compose.test.yaml run --rm tests
-docker compose -f compose.test.yaml run --rm --no-deps tests ruff check --no-cache src tests eval migrations
-docker compose -f compose.test.yaml run --rm --no-deps tests ruff format --no-cache --check src tests eval migrations
-docker compose -f compose.test.yaml run --rm --no-deps -v "${PWD}/eval/reports:/reports" tests python -m eval.efficiency --output /reports/s10-efficiency-final.json
-docker compose -f compose.test.yaml --profile browser up -d --wait --wait-timeout 120 web
-npm.cmd --prefix tests/browser test
-# Targeted display/wait regression, from tests/browser:
-# node --test --test-concurrency=1 --test-name-pattern=S10 workspace.test.mjs
-```
-
-Results: **232/232 backend tests in 134.08 s; 17/17 Chromium checks in 32.66 s; final S10 2/2 in 3.65 s**. Ruff lint and formatting pass for 45 Python files. The tests exercise owner isolation, actual Unicode UTF-8 bytes, read-only snapshots, API/CLI parity, Private zero store/write access, fixed failures, concurrent/nested timing isolation, failed usage reservations, atomic lifecycle behavior and browser storage/late-response guards. Desktop 1440x1100 and mobile 390x844 usage screenshots were visually inspected after correcting Windows-introduced separators. A targeted test initially read the source list before the post-import refresh completed; it now waits for rows. The initial formatter cache was unwritable; checks explicitly use `--no-cache`. These failures were resolved, not counted as successful runs. Final documentation/staging checks passed for 10 UTF-8 Markdown files, 178 local links/anchors, all S10 JSON/JSONL reports and staged whitespace; Phase One material is unchanged, and no local credentials/runtime artifacts are staged.
-
-The isolated evaluator performs 17 measured actions through the actual shared services using explicit model doubles: import eight records, queue, process eight sources, repeat each retrieval representation three times and produce a cited contract answer. [First measurement](eval/reports/s10-efficiency.json) and [final-source measurement](eval/reports/s10-efficiency-final.json) retain their implementation hashes and actual results. Each fresh owner has 1,277 source-text bytes, 4,760 claim-JSON bytes across 12 revisions, and 720 passage-text bytes. Final-run database allocation grew 32,768 bytes on a preexisting isolated DB; the earlier run grew 73,728 bytes. Do not treat allocation granularity or these fixture sizes as a compression ratio. Final evaluator RSS samples were 87,977,984-91,500,544 bytes; process CPU and cumulative peak RSS are in the report. OS resource counters are sampled separately and are not per-object allocation. Double-provider tokens/latency are fixture constants, not live provider measurements or semantic scores.
-
-One new live answer smoke ran against the existing public synthetic collection; no new extraction or full comparison was launched:
-
-```powershell
-docker compose run --rm --no-deps --entrypoint python -e JARVIS_S07_SYNTHETIC_TRIAL_APPROVED=true cli eval/live.py --stage answer-smoke --namespace live-279608e17b0b435fa46977d3bfe61f79 --repeats 1
-```
-
-The recorded namespace identifies this existing checkout's S09 collection; it is not present in a fresh clone until imported/processed. During implementation the updated evaluator was mounted read-only while its image rebuilt. The [raw public smoke record](eval/reports/s10-live-smoke.jsonl) retains `provider_failed`, 180,418.8 ms model stage, 147.7 ms context preparation and unknown usage. The failed call reserves 14,513 tokens. Lifetime usage is now **19 requests, 25,560 known input + 1,944 known output tokens, and 179,786 accounted tokens including unknown reservations**. Kimi has five attempts with no completed answer; this run establishes failure-path timing, not model quality. The existing 96-request / 1,500,000-token / $0-paid allowance remains unchanged, with no reset or Ultra fallback. `.env` is unchanged and unattended inference remains off.
-
-Application verification:
-
-```powershell
-docker compose build api
-docker compose run --rm migrate alembic check
-docker compose down # no --volumes
-docker compose up -d --wait --wait-timeout 120 api
-docker compose run --rm --no-deps cli ready
-Invoke-RestMethod http://127.0.0.1:8000/ready
-Invoke-RestMethod -Headers @{ 'X-Jarvis-Mode' = 'normal' } http://127.0.0.1:8000/usage
-docker stats jarvis-api-1 jarvis-db-1 --no-stream --format json
-```
-
-No new migration/dependency. Alembic detects no new operations; repeated startup migrations and API/CLI readiness agree on `0005_user_controls`, pgvector `0.8.6`. All fields in all 14 canonical application tables compare equal before/after replacement, including 33 sources/jobs, three claim/evidence records, six processing receipts, 19 calls and the budget. Before the controlled comparison, the application/test containers were observed stopped with exit 255; one snapshot failed to resolve `db`. Restoring only these project databases recovered state, and the subsequent controlled comparison passed. No application volume was reset.
-
-[Actual application counters and container sample](eval/reports/s10-runtime.json) show API 81.7 MiB and database 25.14 MiB at one post-start sample, including health checks/background activity. Docker's Linux memory value excludes inactive file cache; it is not process RSS, a per-request allocation or NVIDIA GPU memory. Cost remains null without billing/rates. [S10 acceptance record](eval/reports/s10-contracts.json) distinguishes passing local checks from open live gates.
-
-S10's measurement/UI implementation is complete; successful live demonstration remains open. Resolve provider stability and the recorded extraction meaning failures before claiming reliable semantic memory. **S11** owns the varied 500-observation corpus, connected/independent scenario split, held-out labels and repeated semantic/efficiency evaluation described in [PLAN.md](PLAN.md#s11-corpus-and-semantic-evaluation-handoff). The existing eight-record sample and 500-record templated lexical stress set are not that corpus. Expanded live use requires an explicit allowlist/budget review; a 96-call ceiling cannot process 500 records and repeated comparisons. S12 remains the final clean-checkout acceptance rehearsal.
-
-
-## S09 controls and synthetic Ask
-
-The user approved S09 and a synthetic-only exception to the NVIDIA training/retention restriction on 12 September. Personal and Private inference remain blocked. The live ceiling is **96 requests / 1,500,000 total tokens including failures and retries / $0 paid** under the existing persisted budget key. No budget reset or Ultra fallback was applied. A later proposed increase was not applied.
-
-Ordinary-user workflow:
-
-1. Open the application, import the bundled `data/synthetic/sample-dictations.jsonl`, then inspect Sources or Search. These actions need no model. **Memory > Process sources** requests bounded extraction when an approved worker is running; refresh and inspect failures as well as memories. Source preservation does not depend on extraction succeeding.
-2. In **Ask Jarvis**, **Try a sample question** cycles through the eight permitted public questions. **Evidence options** selects original-source search (default), sources plus memories, or all permitted history. The backend validates citations and rechecks current evidence before release. Ask needs Kimi availability; current live attempts failed. Questions, replies and generated drafts do not become memories or jobs. Drafts are never sent.
-3. On a memory, select **Correct** for an interpretation error or **Record a world change** for a real-world update. Supply your statement and replacement value; review the expandable scope, subject, attribution, uncertainty, units and time fields. Blank times stay unknown. Preview the exact affected notes, then confirm. Any edit invalidates the preview. History shows `corrected` versus `superseded` predecessors. Later evidence carries the amendment even if the original is reimported under another collection name.
-4. **Forget** previews all affected notes. Confirmation excludes the selected memory family's support, dependent claims and known copies/reimports from future retrieval and learning. Originals remain visible in Sources/history. Exclusion conservatively covers whole affected observations; unrelated details in those notes can become unavailable. New paraphrases are not detected. Forget is owner-wide, including copies in other collections; renaming a collection does not undo it.
-5. Below an answer, **Review feedback** asks which layer failed. Vague, memory, world-change, style and operational feedback gives targeted guidance without silently changing memory. Generation/retrieval diagnoses permit one persisted rerun. It can fail and consume allowance; repeated feedback cannot create an unlimited retry chain.
-6. Switch to **Private** to clear source, search, answer, control editor and feedback state. Saved reads/writes remain denied. The separately enabled direct-chat route sends only its current question to the hosted provider, with no database context or durable Jarvis record. Late responses and browser back navigation cannot restore old content. No private context is backfilled on returning to Normal.
-
-For the exact public control demo, use `The Atlas launch plan is 2026-09-23.` and then `The Atlas launch plan is 2026-09-25.` with the full canonical content in [control-observations.json](data/synthetic/control-observations.json). These are public user-confirmed statements, not model accuracy fixtures. Arbitrary local corrections are allowed, but their personal content cannot enter this hosted trial. The full raw statement and confirmed typed interpretation must match the allowlist.
-
-Actual commands run in this checkout (native command failures must be checked):
-
-```powershell
-docker compose -f compose.test.yaml --profile browser stop web
-docker compose -f compose.test.yaml run --rm --build tests
-docker compose -f compose.test.yaml run --rm tests python eval/retrieval.py
-docker compose -f compose.test.yaml --profile browser up -d --wait --wait-timeout 120 web
-npm.cmd --prefix tests/browser test
-```
-
-Tests are isolated from `jarvis_database`; do not reset their DB while browser checks run. The final suite passed **225 tests in 130.25 s** and **15 Chromium checks in 24.89 s**. The browser server uses explicit deterministic extraction/answer doubles with no provider keys. Desktop 1440×1100 and mobile 390×844 screenshots were visually checked; browser storage/external-request instrumentation passed. A fresh isolated database was created during this milestone; empty/repeated migrations and metadata drift pass. New tests cover exact excerpts, typed controls, cross-owner/stale previews, duplicate arrivals, reimports, both real PostgreSQL control/worker and control/reply lock orderings, feedback retry persistence, and all Private failure paths.
-
-The actual 500-record retrieval regression retained all required passages in **45/45 answerable attempts per representation**, three runs of 17 cases, with source-only remaining the default. This is authored diagnostic coverage with deterministic claims, not live answer quality or the project's unfamiliar-corpus evaluation. [Measured retrieval results](eval/reports/s09-retrieval.json)
-
-Application upgrade and persistence commands:
-
-```powershell
-docker compose run --rm migrate
-docker compose down # no --volumes: keep the application database
-docker compose up -d --wait --wait-timeout 120 api
-docker compose run --rm migrate alembic check
-docker compose run --rm --no-deps cli ready
-Invoke-RestMethod http://127.0.0.1:8000/ready
-```
-
-Before/after snapshots compared every canonical table field, not just counts. Migration `0005_user_controls` preserved the original 17 sources/jobs and four prior call records. After live attempts, replacement of the actual API/DB containers preserved all 33 sources/jobs, three claim/evidence records, six processing receipts, 18 call records and the budget. API/CLI readiness agrees on `0005_user_controls`, pgvector `0.8.6`; Alembic reports no drift. Isolated DB/web container replacement preserved all 14 tables, including three control receipts, one feedback receipt, 26 claims, four passage exclusions and 26 source exclusions. No application volume was reset.
-
-The explicitly approved live diagnostic used one-off flags (the ignored `.env` flag remains false):
-
-```powershell
-docker compose stop worker
-docker compose run --rm --no-deps -e JARVIS_S07_SYNTHETIC_TRIAL_APPROVED=true worker python eval/live.py --stage smoke --repeats 1
-docker compose run --rm --no-deps -e JARVIS_S07_SYNTHETIC_TRIAL_APPROVED=true worker python eval/live.py --stage extraction --namespace live-279608e17b0b435fa46977d3bfe61f79 --repeats 1
-```
-
-The namespace above identifies this recorded diagnostic; do not reuse it to pretend to run an independent repeat. New smoke runs create fresh namespaces. The evaluator supports `--stage answers --namespace <frozen-collection> --repeats 3` for a future approved comparison, but **that full matrix was not run** because the Kimi smoke baseline failed. Trials share the same lifetime allowance across collections and restarts. Explicit public JSON output was retained in evaluator reports; application logs contain neither prompts nor completions.
-
-Actual live result: **18 requests; 25,560 known input tokens + 1,944 known output tokens; 165,273 accounted tokens including full reservations for unknown usage.** Nemotron: six successful contract outcomes, three schema failures and five provider failures across initial and revised attempts. One full eight-source attempt produced three memories, three `no_memory` outcomes and two operational failures. Semantic review found missed information, capture/planned times placed into event time, and a new date added without superseding the old date. Kimi: four attempts, zero completed answers. Transport diagnostics observed ReadTimeout and ConnectError; the last attempt still failed after increasing the responder wait from 90 to 180 seconds. The extractor stays at 90 seconds; both use connect=10 seconds. The UI allows 390 seconds for an answer and its one possible schema repair. This is a bounded engineering choice after observed failures, not a latency guarantee from [NVIDIA's Kimi documentation](https://docs.api.nvidia.com/nim/reference/moonshotai-kimi-k3).
-
-[Raw public attempts](eval/reports/s09-live-attempts.json), [review of every diagnostic observation](eval/reports/s09-live-review.json), and [local acceptance record](eval/reports/s09-contracts.json) distinguish structural success, semantic failure and operational failure. No paid billing API was queried; the approved free-trial endpoint was used, with zero paid spend authorized. Unattended worker inference stays off; the application is ready for source/Search/control inspection, not a reliable live answer demo yet.
-
-Resolved review findings: JSONB control receipts needed copied result dictionaries to persist replacement IDs; amendment ordering now uses policy revisions; exact copies carry amendments; known corrected interpretations cannot be re-added from their prior observation; failed live offset/schema outputs motivated exact unique excerpts with backend offset resolution. An old migration regression incorrectly dropped new head tables while testing index removal; it now checks the actual index migration alone. Browser selectors were narrowed for the added control buttons and cards. One attempted selector edit failed Windows default-codepage decoding and did not change files; it was rerun explicitly as UTF-8. Final review also rejected overlapping excerpt matches and malformed source IDs as validation errors. After that small parser fix, 56 targeted answer/processing checks passed in 22.33 s; the preceding full suite was 225/225 and browser suite 15/15. Ruff lint/format passed for 42 Python files; 10 UTF-8 Markdown files and 167 local links/anchors passed, with unchanged Phase One material, valid JSON evidence, clean staged whitespace and no local credentials in the staged diff. Initial failures remain documented. No dependency upgrade, dense retrieval, arbitrary provider fallback or hidden model-quality claim was introduced.
-
-Next work is to stabilize the hosted response path and improve/re-evaluate extraction meaning before closing S06/S07/S08 live gates or expanding to S11's separate development/unfamiliar corpora. S09 implementation and local lifecycle acceptance are complete; S10 browser wiring is connected, while a successful live end-to-end demonstration remains open.
-
-## Start from a checkout
-
-Prerequisites: Git, Docker Engine in Linux mode, Compose v2, and initial network access to Docker Hub, GHCR, PyPI and the npm registry. Host Python/uv are unnecessary. Run these commands in PowerShell from the repository root on `dev`:
+From the repository root:
 
 ```powershell
 git status --short --branch
-docker version
 docker compose version
-if (!(Test-Path -LiteralPath .env)) { Copy-Item .env.example .env }
+Copy-Item .env.example .env
 ```
 
-Set the three local database passwords in `.env` before the first startup. Its example values are development placeholders, not shared credentials. The acceptance run generated separate random values locally. `.env` is ignored and excluded from the image context. Changing it later does not rotate passwords already stored in a volume. If port 8000 is occupied, set `JARVIS_API_PORT` before startup and use that port in the HTTP commands below.
+Set the three database passwords in `.env` before the first start. The example values are
+development placeholders, not shared credentials. `.env` is ignored by Git and excluded from the image
+build context. Changing it later does **not** rotate passwords already stored in the volume.
 
 ```powershell
 docker compose config --quiet
@@ -242,27 +30,201 @@ Invoke-RestMethod http://127.0.0.1:8000/health
 Invoke-RestMethod http://127.0.0.1:8000/ready
 ```
 
-Check `$LASTEXITCODE` after Docker/CLI commands; nonzero means failure. PowerShell does not automatically stop on native command failures. `/health` and `jarvis health` report process liveness without querying personal data or the database. `/ready` and `jarvis ready` call the same service to verify the DB connection, Alembic revision and pgvector extension. Expected readiness is `{"status":"ready","schema":"0005_user_controls","pgvector":"0.8.6"}`. Readiness failures return HTTP 503 / CLI exit 1 with a short category, without raw database errors or credentials.
+Check `$LASTEXITCODE` after Docker commands: PowerShell does not stop on native command failures.
 
-The API is published only on `127.0.0.1`; PostgreSQL has no published host port. The server owns the fixed local identity; no endpoint accepts an owner selector. S04 validation endpoints return a receipt without echoing input. S05 import writes eligible dictations only in Normal mode, and inspection returns owned saved evidence. JSON responses explicitly declare UTF-8 so Windows PowerShell 5 decodes multilingual text correctly. Application containers run as UID 10001. Source is copied into the image, so rebuild after code changes. uv and the build backend use the checked-in lock; development checks are included in the same image.
+- `/health` reports process liveness only. It queries no personal data and no database.
+- `/ready` verifies the database connection, the Alembic revision and the pgvector extension, and
+  returns a short failure category (HTTP 503) without raw errors or credentials.
+
+Expected readiness on this revision:
+
+```json
+{"status":"ready","schema":"0006_turn_assessment","pgvector":"0.8.6"}
+```
+
+The API publishes only on `127.0.0.1`; PostgreSQL has no host port. If 8000 is occupied, set
+`JARVIS_API_PORT` before starting and use that port in every command below.
 
 ## Browser workflow
 
-After the setup above, open **[http://127.0.0.1:8000/](http://127.0.0.1:8000/)** (use your configured port if different). Importing and inspecting sources require no CLI, Python, Node or API key. The browser is the primary ordinary-user surface; CLI/HTTP examples later in this file are optional developer diagnostics and historical acceptance commands. Initial Compose setup remains an operator step.
+Open **http://127.0.0.1:8000/**.
 
-1. Check **Workspace connected** in the footer. Leave **Normal** selected for saved work. Choose a stable **Collection name**, then **Open** when you want to read existing state. Screen navigation alone does not read personal data.
-2. **Conversation** welcomes you with "hey jarvis." Choose **Save a note** to type/paste a transcript and optionally add its formatted version. **Save note** preserves both exact strings as one observation. Capture time is unknown when absent. It does not automatically run extraction. A retry of unchanged input in the same page is idempotent, including after a lost response.
-3. **Sources > Try the sample** imports the eight bundled synthetic dictations; use **Add dictations > Import to collection** for a JSONL file. Inspect originals and capture metadata; **Load more sources** handles pagination. Use **Search saved evidence** and its optional memory/history/date filters without a model call.
-4. **Memory > Refresh memories** opens current processing and claim state. **Process sources** queues eligible observations when the provider gate is enabled; **Retry failed processing** is explicit. Select a memory to inspect its revision history and exact passages. **Correct**, **Record a world change** and **Forget** lead to **Review impact**, then explicit confirmation. Editing invalidates the preview. Forget blocks supporting notes/known copies from future use while retaining inspectable original history.
-5. **Conversation > Ask with context** inserts one approved sample question; **Ask** submits it using Original sources by default, with Sources + memories or All permitted history available. Answers are buffered and shown only after backend validation, with expandable citations and feedback diagnosis. Source validation does not prove interpretation accuracy. General personal/Private inference remains blocked, and the current live provider failures are documented below.
-6. **Usage > Refresh usage** shows source/memory/passage payload sizes, jobs, per-model token accounting and provider latency. Unknown usage remains unknown; reservations are not consumption or billing. Cost and semantic accuracy are unmeasured here. Current action timing is transient and nested stages must not be summed.
-7. Switch **Private** to clear Normal drafts, source/answer/search/usage state and pending browser requests. Ask the configured provider directly with **Submit** or Enter; Shift+Enter adds a line. This route reads no saved context and creates no source, memory or saved model-call row. Returning to Normal or leaving/restoring the page clears its text and replies and never backfills them. There is no microphone or voice permission.
+1. **Workspace connected** appears in the footer. Leave **Normal** selected for saved work, enter a
+   collection name, then **Open** to read existing state. Screen navigation alone never reads saved
+   data.
+2. **Conversation** — type a message and press Enter, or use **Save a note** to keep an exact
+   transcript (optionally with a formatted variant). A saved note does not automatically run
+   extraction; **Ask** performs assessment, selective learning and then the answer.
+3. **Sources** — **Try the sample** imports the eight bundled synthetic observations. **Import to
+   collection** accepts your own JSONL. Browse, paginate, and inspect the exact original text and
+   capture metadata.
+4. **Memory** — **Refresh memories**, **Process sources**, **Retry failed**, then open a memory to see
+   its revision history, uncertainty and exact supporting passages. **Correct**, **Record a world
+   change** and **Forget** each show an impact preview before an explicit confirmation.
+5. **Search** — lexical search over saved evidence with optional memory/history/date filters. It works
+   before processing and without a provider key, and no query or result is ever learned.
+6. **Usage** — source/memory/passage payload sizes, job counts, per-model token accounting and provider
+   latency. Unknown usage stays unknown; reservations are not consumption and not billing.
+7. **Private** — clears the Normal workspace and makes the configured model request directly, with no
+   saved context and no stored transcript. Leaving Private or unloading the page clears the exchange.
 
-The supported page keeps no local/session storage, cookies, IndexedDB, service worker or analytics and loads no third-party assets. Saved data loads only after an explicit Normal action. Mode changes abort pending requests and reject late responses; page hide/restoration clears context. A Normal import accepted before the switch may still commit. Cancellation cannot undo that write; safely reopen/reimport the same collection/file if the result was interrupted. Browser extensions, OS memory and explicit user screenshots are outside this application's storage guarantee.
+The client stores nothing: no cookies, no local/session storage, no IndexedDB, no service worker, no
+analytics and no third-party assets. A Normal import accepted just before switching to Private may
+still commit — cancellation cannot un-write it, and the UI says so.
 
-### Browser acceptance checks
+## Configuration
 
-Only developers need Node/npm for these optional checks. Docker builds the locked React assets; no Node process runs in the application container. Run the backend suite first to initialize/reset the isolated test database; do not run DB reset tests concurrently with browser tests.
+`.env.example` documents every variable. The ones that change behaviour:
+
+| Variable | Default | Effect |
+| --- | --- | --- |
+| `JARVIS_API_PORT` | `8000` | Published host port for the API. |
+| `JARVIS_POSTGRES_PASSWORD`, `JARVIS_MIGRATION_PASSWORD`, `JARVIS_APP_PASSWORD` | placeholders | Separate admin, migration and runtime logins. Set real values before first start. |
+| `JARVIS_INFERENCE_PROVIDER` | `google` | The configured route. There is no automatic fallback. |
+| `JARVIS_FREE_EXTRACTOR_MODEL`, `JARVIS_FREE_RESPONDER_MODEL` | `gemini-3.5-flash-lite` | Role defaults restored on restart. |
+| `JARVIS_FREE_SYNTHETIC_TRIAL_APPROVED` | `false` | Master opt-in for the hosted provider route. |
+| `JARVIS_FREE_DATA_POLICY_ACK` | empty | Must equal `I_ACCEPT_FREE_SYNTHETIC_DATA_TERMS`. |
+| `JARVIS_FREE_SYNTHETIC_SOURCES_APPROVED` | `false` | Allows notes you type locally to reach that provider. |
+| `JARVIS_FREE_SYNTHETIC_QUESTIONS_APPROVED` | `false` | Allows new question wording; retrieved sources are still validated. |
+| `JARVIS_PRIVATE_DIRECT_APPROVED` | `false` | Enables the context-free Private request. |
+| `JARVIS_MAX_REQUESTS`, `JARVIS_MAX_TOTAL_TOKENS` | `1500`, `10000000` | Ceiling of the persisted shared ledger. |
+
+### Turning on live inference
+
+Without any of the above, everything except hosted inference works: import, inspection, lexical
+search, controls, usage, the full backend suite and the browser journey checks.
+
+To enable hosted inference:
+
+1. Put a supported key in `.env` (`GOOGLE_API_KEY_FREE_TIER` for the Google route).
+2. Set `JARVIS_FREE_SYNTHETIC_TRIAL_APPROVED=true` **and** the exact `JARVIS_FREE_DATA_POLICY_ACK` value.
+3. Enable the specific surface you actually need — sources, questions or Private — each is separate.
+4. `docker compose up -d --wait api worker` to recreate the services.
+
+Read the provider's data terms first. The free Google route may use submitted content for product
+improvement and human review, so use non-sensitive data. The GitHub repository contains no keys, and
+neither a repository link nor a commit SHA supplies credentials.
+
+Verify configuration without spending a call:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:8000/inference -Headers @{'X-Jarvis-Mode'='normal'}
+```
+
+`provider_contacted: false` means the request only reported configuration.
+
+### Model selection in the browser
+
+The Normal and Private composers share one explicit model list. Choosing a model calls
+`POST /inference/model`, which updates both roles in the running process, performs **no** provider call
+and touches no workspace data. The next submitted prompt is the first request to use it; a restart
+returns to the environment defaults. The selector is not a health check — a provider can still reject
+a request for account, quota or endpoint reasons, and that is surfaced as an operational failure.
+
+## Developer CLI (optional)
+
+Every command goes through the same service layer and requires an explicit mode.
+
+```powershell
+docker compose run --rm --no-deps cli health
+docker compose run --rm --no-deps cli ready
+docker compose run --rm --no-deps cli sources list --namespace diagnostic-v1 --mode normal
+docker compose run --rm --no-deps --entrypoint sh cli -c 'jarvis sources import --namespace diagnostic-v1 --expected-policy-revision 0 --mode normal < data/synthetic/sample-dictations.jsonl'
+docker compose run --rm --no-deps cli sources inspect <source-id> --mode normal
+docker compose run --rm --no-deps cli memories --namespace diagnostic-v1 --mode normal
+docker compose run --rm --no-deps cli usage --mode normal
+```
+
+Search takes a JSON body on stdin, so the query never appears in a URL or shell history:
+
+```powershell
+'{"namespace":"diagnostic-v1","query":"spending limit"}' | docker compose run --rm -T --no-deps cli search --mode normal
+```
+
+Processing requires the provider consent flags. The long-running worker service is started by Compose;
+for a single bounded pass use `docker compose run --rm --no-deps cli worker --once`. A failed job keeps
+its fixed error category and can be retried explicitly.
+
+## Import contract
+
+One JSON object per line:
+
+```json
+{"record_id":"dict_0001","raw_transcript":"…","formatted_text":"…","metadata":{"captured_at":"2026-09-01T10:00:00+05:30"}}
+```
+
+- Required: `record_id`, `raw_transcript`. Optional/null: `formatted_text`, `metadata`.
+- Namespace and record ID are case-sensitive, 1–96 ASCII letters/digits/`.`/`_`/`-`. The source key is
+  `import:<namespace>:<record_id>`; filenames and text hashes are not identity.
+- `captured_at` must be a zoned ISO timestamp. Capture time is never inferred from import time or from
+  dates mentioned in the text.
+- Limits: 1 MiB UTF-8 per batch, 1,000 records, 65,536 characters per non-blank variant. Larger
+  collections are split into bounded batches sharing the same namespace; each batch is atomic.
+- Exact retries return the same source/job IDs. A changed field under an existing identity returns
+  `import_conflict` and the whole batch rolls back.
+- Rejected: unknown top-level fields, duplicate keys/record IDs, non-finite numbers, invalid UTF-8,
+  NUL, naive or numeric timestamps.
+
+## Migrations
+
+Compose waits for database health, runs the one-shot `migrate` service, then starts the API.
+
+```powershell
+docker compose run --rm migrate alembic upgrade head
+docker compose run --rm migrate alembic current
+docker compose run --rm migrate alembic check
+```
+
+The first startup creates the pgvector extension, the application schema and the two logins. The
+migration role owns the schema; the runtime role has DML on application tables and read-only access to
+the revision table, with no DDL, superuser or role-creation rights.
+
+## Persistence check
+
+`docker compose down` removes containers and the network but keeps the `jarvis_database` volume.
+`stop`/`start` also preserve state. Never add `--volumes` unless you intend to destroy saved data.
+
+```powershell
+$before = docker compose run --rm --no-deps cli probe write
+$apiBefore = docker compose ps -q api
+docker compose down
+docker compose up -d --wait --wait-timeout 120 api
+$after = docker compose run --rm --no-deps cli probe read
+if ($before -cne $after) { throw 'Persisted state changed' }
+if ($apiBefore -eq (docker compose ps -q api)) { throw 'API was not replaced' }
+'Persistence check passed'
+```
+
+## Tests
+
+The suite runs against a real, isolated PostgreSQL instance — never SQLite and never simulated
+persistence. `compose.test.yaml` is a standalone project (`jarvis-tests`) with its own network, volume and
+credentials, and it supplies no application credentials or provider keys. A fail-closed target guard
+rejects anything that looks like the application database before any migration or fixture cleanup.
+
+```powershell
+docker compose -f compose.test.yaml config --quiet
+docker compose -f compose.test.yaml run --build --rm tests
+```
+
+Lint and formatting:
+
+```powershell
+docker run --rm jarvis:local ruff check --no-cache src migrations tests
+docker run --rm jarvis:local ruff format --check --no-cache src migrations tests
+```
+
+Discard only the test database and prove a fresh start:
+
+```powershell
+docker compose -f compose.test.yaml down --volumes
+docker compose -f compose.test.yaml run --build --rm tests
+```
+
+### Browser journeys (optional, needs Node)
+
+Run the backend suite first: it resets the isolated test database, and the two must not run
+concurrently.
 
 ```powershell
 docker compose -f compose.test.yaml stop web
@@ -276,560 +238,53 @@ npm.cmd --prefix tests/browser test
 docker compose -f compose.test.yaml --profile browser stop web
 ```
 
-The browser suite deliberately targets only `http://127.0.0.1:8001/`, the isolated test backend. The Compose web profile receives only test runtime credentials, with no application credentials/volume or provider keys. Playwright is pinned to 1.62.1 in a separate lockfile; `node_modules` is excluded from Git and image context. Tests use fresh browser contexts and synthetic data, with no recordings/traces. Synthetic acceptance screenshots are written to ignored `.tmp/react-review/`. Source/model doubles are explicitly labeled, and those screenshots are not live-model evidence.
+The browser suite targets only `http://127.0.0.1:8001/`, the isolated backend. It uses synthetic data,
+deterministic model doubles and fresh browser contexts, and it instruments attempted browser-storage
+writes and external requests. Screenshots go to the ignored `.tmp/react-review/`.
 
-Actual results for this slice are recorded in [the UI evidence record](eval/reports/ui-foundation.json). A first browser run passed six of seven checks; the navigation test exposed a test-harness assumption that service workers exist on `about:blank`. The harness now instruments that API only where available. No application failure was concealed. Review also added bounded network timeouts and processing details, and excluded newly installed browser dependencies from the Docker build context. The original application source/job schema and provider configuration are unchanged.
-
-Final results on 11 September: **112 isolated PostgreSQL checks passed in 10.22 s, zero warnings; all 8 Chromium checks passed in 4.44 s**. Desktop (1440×1100) and mobile (390×844) screenshots were visually reviewed. Ruff lint and formatting passed for all 21 Python files; frontend formatting and `npm ci` passed. The final image contains neither `node_modules` nor `.env`. The documented application start replaced the API container successfully; `/` and `/ready` respond, all eight diagnostic source/job inspection objects match their pre-upgrade state, and the original S03 probe remains unchanged. No application volume was reset and no live model request was made.
-
-## S07 memory processing
-
-The approved pipeline preserves original sources and writes source-linked claim revisions through the shared service. The browser adds **Memory > Process sources**, **Refresh memories**, **Retry failed**, a Memories list and expandable evidence/history. No CLI is required for these user actions. Open a collection before processing; refresh to see completed/failed jobs and zero-memory or clarification outcomes. Conditions, uncertainty and scope are visible on each memory. **View original source** opens the existing source inspector. Switching Private clears sources, memories, history and pending UI responses. Previously accepted Normal imports/jobs may finish; Private input never enters them.
-
-**Unattended inference remains off in the delivered configuration after the S09 live failures.** Synthetic-only one-off evaluations used the approved flag and existing keys. Nemotron returned authenticated completions, some contract-valid but semantically incomplete; Kimi returned no completed answer. Imports, inspection, Search and local controls work without provider access. The isolated browser backend injects labeled deterministic providers and cannot start against the application database.
-
-The user approved the synthetic-only trial. An operator can set `JARVIS_S07_SYNTHETIC_TRIAL_APPROVED=true` in ignored `.env` and recreate API/worker services to enable it, accepting the documented current failures. Nemotron uses `NEMOTRON_30B_API_KEY` in the worker; Kimi uses `KIMI_K3_API_KEY` in API/CLI and the evaluator worker. DB/migration/test services receive no provider keys. Exact public source/question/control fields are checked in code. The shared persisted cap is 96 requests and 1,500,000 total tokens including repairs/retries and unknown-usage reservations, $0 paid; do not reset it. General personal inference needs a new provider/settings decision.
-
-Optional developer commands through the same service:
+A focused case:
 
 ```powershell
-docker compose run --rm --no-deps cli process --namespace diagnostic-v1 --expected-policy-revision 0 --mode normal
-docker compose run --rm --no-deps cli memories --namespace diagnostic-v1 --mode normal
-docker compose run --rm --no-deps worker jarvis worker --once
+Push-Location tests/browser
+node --test --test-concurrency=1 --test-name-pattern "Private cancels pending learning" workspace.test.mjs
+Pop-Location
 ```
 
-Use the current policy revision from source listing, not an assumed zero after controls change it. The first/third commands require the live gate; a failure returns a fixed category. Ordinary use is **Memory > Process sources** in the browser, with the long-running Compose worker. Failed jobs can be explicitly retried at most three lease attempts; stale/expired workers are fenced. There is at most one schema-repair call per attempt. Unknown provider usage retains its conservative token reservation. Empty/invalid model output, database failures and stale packets never silently become successful zero-memory decisions.
-
-The older extraction-only command below remains available. S09 actually used `python eval/live.py` for the diagnostic; the [live attempts](eval/reports/s09-live-attempts.json) and [semantic review](eval/reports/s09-live-review.json) retain every call. The full three-repeat extraction/answer matrix has not passed and was not continued after the smoke failures.
+## Evaluators
 
 ```powershell
-# Only after the S07 provider/allowance decision; keep unrelated workers idle for the pilot.
-docker compose stop worker
-docker compose run --rm --no-deps worker jarvis evaluate-extraction --repeats 3
-```
-
-It imports only the eight bundled synthetic observations into a distinct collection per repeat and processes only that collection. It emits JSON with all call outcomes, actual usage when known, saved revisions and exact support. It labels the result `ungraded` and semantic review `pending`; retain failures and review all repeats before reporting quality. No Kimi/Ultra comparison or source-history answer is produced. The existing application allowance persists across evaluator restarts and collections.
-
-Actual acceptance results on 12 September: **156 backend tests passed in 25.87 s with zero warnings; 10 Chromium checks passed in 12.08 s.** A clean test volume initialized successfully; empty/repeated migrations and metadata drift checks passed. All ten isolated application tables matched after container replacement, including 12 claim revisions, eight receipts and eight deterministic call records. The final application restart preserved all eight original source/job inspections and every original S03 probe field. Readiness reports `0003_memory_processing`, live inference is disabled, and the application has zero model-call records. Ruff lint/format passed for 31 Python files; final desktop/mobile and memory screenshots were visually reviewed.
-
-Resolved findings: an initial fixture-helper bracket typo prevented test collection; two older assertions expected the previous schema/service shape and now verify original fields plus safe new defaults. UI review moved uncertainty/conditions into the list, and validation review added typed duplicate checks, duplicate-JSON rejection and evaluator collection isolation. The real adapter's synthetic allowlist also passes with a simulated HTTP transport; no data was sent to NVIDIA. No runtime test failure remains; no live-model result or stronger-model comparison is claimed. Documentation checks passed for 10 UTF-8 Markdown files and 147 local links/anchors; staged whitespace/credential checks run before the `dev` commit.
-
-Migration `0003_memory_processing` adds `requested`, lease token/expiry, finish time and fixed error category to jobs; creates `processing_receipts`, `claim_relations`, `model_budgets` and `model_calls`; and grants only runtime DML. Existing source/claim content stays unchanged, and old jobs default to unrequested with null processing fields. No vector columns/indexes or dependency versions changed. Source/claim/policy snapshots and lease identity are rechecked before the atomic claim/evidence/relationship/receipt/job commit. Model calls hold no DB locks. Raw responses, prompts and reasoning are not saved in accounting.
-
-Actual checks and remaining limits are recorded in [the S07 evidence report](eval/reports/s07-contracts.json). Browser acceptance uses `tests/browser/server.py` with a synthetic fixture double under the isolated test-DB guard. Run the backend suite before browser checks because it resets only test state. The clean test-volume command, backend checks and browser commands are the same as the sections above/below. Private instrumentation now covers processing, worker, accounting, memory/history and report paths, including refusal before reading an HTTP body. Full Correct/Forget/exclusions and answer-quality comparisons are still later gates.
-
-## S08 evidence search
-
-Open the browser, import or open a collection, and use **Search saved evidence**. Try `spending limit`, `Ravi`, or `Orion`. Search works before processing and without provider keys. Results retain both original variants and link **Inspect original** to the source inspector. **Search options** enables related memories, historical memory revisions and capture-date filters in UTC; undated notes remain included by default. Original observations retain their historical wording. Private/page/collection changes clear the query, filters and results and discard late responses. No query or answer is learned, queued or persisted by search.
-
-Source-only is the default. Related memories are optional and show attribution, scope, uncertainty, conditions and time separately from lifecycle. A memory's supporting sources travel together. No matches means the search found no lexical match; it does not prove a fact is unknown. Failures are shown separately. Large records are kept whole, with an explicit evidence-limit result instead of silently clipped conditions. Default limits are five primary matches and 24,000 serialized evidence bytes; API requests permit at most 20/64,000. These are byte limits, not model-token counts.
-
-The optional developer command reads a JSON request from stdin; ordinary users need only the browser:
-
-```powershell
-'{"namespace":"diagnostic-v1","query":"spending limit"}' | docker compose run --rm -T --no-deps cli search --mode normal
-$s08Body = [System.Text.Encoding]::UTF8.GetBytes('{"namespace":"diagnostic-v1","query":"Ravi","representation":"sources_and_memories"}')
-Invoke-RestMethod http://127.0.0.1:8000/search -Method Post -ContentType 'application/json; charset=utf-8' -Headers @{'X-Jarvis-Mode'='normal'} -Body $s08Body
-```
-
-`representation` is `sources` or `sources_and_memories`; `history` defaults false. Optional `captured_from`/`captured_to` require explicit zoned timestamps; `include_undated` defaults true. Capture filters never substitute an event or import date. API queries use POST bodies, not URLs. The CLI's Normal output is explicit developer output; avoid saving private/personal terminal transcripts.
-
-Run regressions before the isolated evaluator/browser because the backend suite resets test state:
-
-```powershell
-docker compose -f compose.test.yaml --profile browser stop web
-docker compose -f compose.test.yaml run --build --rm tests
+# Retrieval diagnostic: lexical vs lexical+claims on a frozen authored corpus
 docker compose -f compose.test.yaml run --rm tests python eval/retrieval.py
-docker compose -f compose.test.yaml --profile browser up -d --wait web
-npm.cmd --prefix tests/browser test
+
+# Validate the 540-record synthetic corpus and its separate questions
+docker compose run --rm --no-deps --entrypoint python cli eval/corpus.py --stage validate
+
+# Live complete-pipeline run (consent + allowance required)
+docker compose run --rm --no-deps --entrypoint python cli eval/corpus.py --stage all --namespace corpus-evaluation --repeats 1 --case-limit 60 --representations both
 ```
 
-The evaluator refuses non-test database settings. It generates a unique collection of 500 synthetic observations (15 varied originals plus 485 templated distractors), uses explicit deterministic proposals, and evaluates 17 separate labeled questions three times per representation. It prints JSON; retain output only as labeled synthetic evaluation evidence. All failed/missing evidence selections remain visible. It does not authenticate NVIDIA, generate answers, measure model tokens or run dense search. The 500-record diagnostic is not the S11 blind corpus gate.
+`--stage extract` and `--stage answers` allow separate checkpoints; `--retry-failed` is explicit;
+`--max-jobs`, `--max-new-calls`, `--case-limit`, `--split`, `--representations` and `--repeats` bound
+the work. Reusing a namespace preserves successful processing. Nothing resets the persisted allowance
+to buy extra attempts.
 
-Migration `0004_lexical_retrieval` adds only the `sources_search_idx` and `claims_search_idx` GIN expression indexes. It leaves source/job/claim/policy/accounting rows unchanged and introduces no dependency or container. These indexes rebuild automatically from canonical data on creation and track committed changes transactionally. Search filters owned eligible latest sources and valid claims before candidate limits. An excluded claim's support blocks the whole affected original observation from fallback; complete passage/known-duplicate/reimport controls remain S09.
+## Troubleshooting
 
-The requested S07 merge was independently verified on remote `main` at `8eec7b9e0edc16c3e6b35cb152818c3776cd0c27` after 156 backend tests (26.17 s) and 10 browser tests (11.97 s) passed. S08 changes are made on `dev`.
-
-**Actual S08 acceptance on 12 September:** 186 backend tests passed in 47.14 s, zero warnings, after a fresh isolated volume initialization; all 12 final browser checks passed in 12.91 s. Empty/repeated migrations and drift checks pass. Ruff passed for 35 Python files; frontend formatting passed. Desktop search and expanded mobile filters/results were visually reviewed. Actual application HTTP/CLI search returned both conflicting spending-limit variants as one observation without a model call.
-
-Documentation checks passed for 10 UTF-8 Markdown files and 158 local links/anchors; Phase One notes/drafts remain unchanged. Staged whitespace and local-credential exclusion are checked before the `dev` commit. No `.env`, local audit probes, database snapshots or UI screenshots are committed.
-
-Every row in all ten application tables matched after migration and database/API/worker container replacement: nine original sources, nine jobs, one policy and zero model calls. A separate isolated DB-container replacement retained all rows, including 756 sources and 37 claim revisions accumulated by the evaluator/browser runs, and the exact indexed source-plus-memory search response. These are synthetic records; the 24 isolated call rows are deterministic doubles, not provider requests. Snapshot comparisons used ignored local audit probes; canonical row preservation and indexed/unindexed result equality also have reproducible regression tests. Application volumes were never reset; only `jarvis-tests_test-database` was reset for the clean test start.
-
-| Final diagnostic | Source-only default | Sources plus memories |
-| --- | --- | --- |
-| Required passages found | 60/60 | 60/60 |
-| Answerable attempts with all required evidence | 45/45 | 45/45 |
-| Mean serialized evidence bytes | 2,368.94 | 5,492.88 |
-| Local retrieval p50 / p95 | 60.75 / 114.36 ms | 98.05 / 207.90 ms |
-
-The [initial comparison](eval/reports/s08-retrieval-initial.json) retains the memory-fusion miss (42/45 complete evidence attempts, 95% passage coverage). The [final comparison](eval/reports/s08-retrieval-final.json) reserves the strongest original match and reruns unchanged cases/budgets. Keep source-only as the simpler default; these authored diagnostics do not establish universal optimality or model accuracy. Latencies are small local samples, potentially with warm indexes. [Full checks and limitations](eval/reports/s08-contracts.json). No test failure remains. S08's live answer-comparison gate remains open because S06 and the separately requested provider decision are incomplete.
-
-## Migrations and schema effects
-
-On an empty named volume, `docker/postgres/init-db.sh` creates the pgvector extension, the `jarvis` schema, a migration login and a separate runtime login. PostgreSQL's administrator handles the extension because it requires elevated database privileges. The migration role owns only the application schema; the runtime role has DML on application records and read-only access to Alembic's revision table, with no DDL, superuser, role-creation or database-creation privileges.
-
-Compose waits for DB health, runs the one-shot `migrate` service, then starts the API. To repeat/check migrations explicitly:
-
-```powershell
-docker compose run --rm migrate alembic upgrade head
-docker compose run --rm migrate alembic current
-docker compose run --rm migrate alembic check
-```
-
-Revision `0001_bootstrap` creates `jarvis.policies`, `jarvis.sources` and `jarvis.jobs`, plus Alembic's version table. Policies store the owner and nonnegative revision. Sources pair raw/formatted text, source identity/revision, SHA-256 and actual import time; supplied capture time/metadata remain nullable. The hash covers a UTF-8 JSON pair and does not define observation identity. Jobs have an owner-scoped idempotency key, pending status, attempts, and expected source/policy revisions. A composite foreign key requires the job to match its source's owner and revision. There are no embeddings, vector columns or search indexes yet.
-
-The synthetic service creates the source and pending job in one transaction under the owner's policy-row lock. It cannot process the job. S04 gates every implemented personal-store service operation. The early UI slice adds session clearing above; complete Correct/Forget remains later work. Future schema changes need a new reviewed migration; do not edit an applied migration to change its meaning.
-
-## Verify persistence
-
-The `probe` CLI accepts no personal input: it writes one fixed synthetic observation and returns all saved source/job fields. Repeated writes return that record without duplicating it. S05 import/inspection commands are documented separately below.
-
-```powershell
-$s03Before = docker compose run --rm --no-deps cli probe write
-if ($LASTEXITCODE -ne 0) { throw 'Probe write failed' }
-$s03Api = docker compose ps -q api
-$s03Db = docker compose ps -q db
-docker compose down
-if ($LASTEXITCODE -ne 0) { throw 'Compose stop failed' }
-docker compose up -d --wait --wait-timeout 120 api
-if ($LASTEXITCODE -ne 0) { throw 'Compose start failed' }
-$s03After = docker compose run --rm --no-deps cli probe read
-if ($LASTEXITCODE -ne 0) { throw 'Probe read failed' }
-if ($s03Before -cne $s03After) { throw 'Persisted state changed' }
-if ($s03Api -eq (docker compose ps -q api)) { throw 'API was not replaced' }
-if ($s03Db -eq (docker compose ps -q db)) { throw 'Database was not replaced' }
-'Persistence check passed'
-```
-
-Normal `docker compose down` removes containers/network and retains `jarvis_database`; the next `up` reuses it. `docker compose stop` / `docker compose start` also preserve state. Never add `--volumes` to the application shutdown command when retaining records. No reset of personal data is implemented in S03.
-
-## Isolated checks and scoped test reset
-
-Use the standalone test configuration exactly as shown; do not merge it with the application Compose file. It creates project `jarvis-tests`, a separate PostgreSQL service/network/volume, and synthetic test-only credentials. It supplies no application credentials or application-volume mount. The test guard checks the environment, hostname, port, database name and role before any migrations or fixture cleanup, and rejects normal application settings. Tests use PostgreSQL, not SQLite or simulated persistence.
-
-```powershell
-docker compose -f compose.test.yaml config --quiet
-docker compose -f compose.test.yaml run --build --rm tests
-docker run --rm jarvis:local ruff check --no-cache src migrations tests
-docker run --rm jarvis:local ruff format --check --no-cache src migrations tests
-```
-
-The suite rebuilds its image and migrates the test database. It deletes only test records between tests. It checks migration downgrade to an empty application schema, upgrade/repeat and metadata drift; real API/CLI service parity; stale-schema/unavailable-DB responses; pgvector; runtime privileges; atomic rollback; source identity; ownership/revision constraints; invalid states; target isolation; and simultaneous idempotent probe writes using separate connections and a barrier. Full lifecycle concurrency tests belong to later milestones.
-
-To discard only test state and then prove fresh test startup:
-
-```powershell
-docker compose -f compose.test.yaml down --volumes
-docker compose -f compose.test.yaml run --build --rm tests
-```
-
-The fixed test project owns only `jarvis-tests_test-database`. This reset does not touch `jarvis_database`. Keep the application and test project names distinct; do not override their names to collide. A host uv workflow is optional: from the repository root, use Python 3.12 and `uv sync --locked`. The supported DB verification path remains the isolated Compose command above.
-
-## S05 import and inspection
-
-The [browser workflow](#browser-workflow) is the primary user path. The contract and commands below remain for optional developer checks; users do not need to enter them.
-
-Only import records you intend to retain in Normal mode. The included [JSONL](data/synthetic/sample-dictations.jsonl) contains eight synthetic observations; [evaluation questions/labels](eval/fixtures/sample-evaluation-cases.json) are separate and must never be supplied as source input. Docker copies only these named curated files, not private imports or evaluator runs.
-
-Each JSONL line is an object with required `record_id` and `raw_transcript`, optional/null `formatted_text`, and optional/null `metadata` object. Namespace and record ID are case-sensitive, 1–96 ASCII letters/digits/`.`/`_`/`-`, starting with a letter or digit. Keep the namespace stable for the same original collection, and retain original record IDs across exports/retries; filenames/text hashes are not identity. A source key is `import:<namespace>:<record_id>`, owned by the backend's local user. No owner, source kind or revision selector is accepted inside records.
-
-Preserve text exactly, including whitespace, combining characters and raw/formatted disagreements. Optional metadata is retained; `{}` and null stay distinct. `metadata.captured_at`, when present/non-null, must be a zoned ISO timestamp such as `2026-09-01T10:00:00+05:30`. The typed capture time represents that instant; original metadata retains the supplied string. No capture/event time is inferred from import time or dates mentioned in text. Only exact supporting passages count as structurally valid references; offsets are zero-based, half-open Unicode code points.
-
-Limits: 1 MiB UTF-8 per batch, up to 1,000 records, up to 65,536 characters per nonblank text variant. Split larger collections into bounded batches using the **same namespace**; each batch is atomic. Optional UTF-8 BOM, CRLF and blank lines are accepted. Duplicate JSON keys/record IDs, unknown top-level fields, non-finite numbers, invalid UTF-8, NUL and naive/numeric capture timestamps are rejected. This importer accepts supplied dictations; it does not extract facts, execute embedded instructions or certify provenance/semantic truth.
-
-Inspect the current policy revision before import (zero for an untouched owner). A stale revision is rejected even for an exact retry. The CLI reads UTF-8 bytes from stdin; redirect inside the Linux container for the bundled fixture so legacy PowerShell piping cannot alter its encoding:
-
-```powershell
-docker compose run --rm --no-deps cli sources list --namespace diagnostic-v1 --mode normal
-docker compose run --rm --no-deps --entrypoint sh cli -c 'jarvis sources import --namespace diagnostic-v1 --expected-policy-revision 0 --mode normal < data/synthetic/sample-dictations.jsonl'
-$page = docker compose run --rm --no-deps cli sources list --namespace diagnostic-v1 --mode normal | ConvertFrom-Json
-$sourceId = $page.observations[0].id
-docker compose run --rm --no-deps cli sources inspect $sourceId --mode normal
-```
-
-For an unfamiliar host JSONL file, the API accepts its bytes without a bind mount or shell text conversion. This example uses the same synthetic fixture; replace only the filename/namespace and use the returned current policy revision for another collection:
-
-```powershell
-$headers = @{'X-Jarvis-Mode'='normal'}
-$bytes = [System.IO.File]::ReadAllBytes((Join-Path (Get-Location) 'data/synthetic/sample-dictations.jsonl'))
-Invoke-RestMethod 'http://127.0.0.1:8000/sources/import?namespace=diagnostic-v1&expected_policy_revision=0' -Method Post -Headers $headers -ContentType 'application/x-ndjson; charset=utf-8' -Body $bytes
-$page = Invoke-RestMethod 'http://127.0.0.1:8000/sources?namespace=diagnostic-v1&limit=50' -Headers $headers
-$sourceId = $page.observations[0].id
-Invoke-RestMethod "http://127.0.0.1:8000/sources/$sourceId" -Headers $headers
-```
-
-Listing returns summaries, current policy revision and `next_after`; use it as CLI `--after` or API `after` for the next page. Limit defaults to 50 and cannot exceed 100. Inspection returns the complete observation, latest revision and ingestion job state. A pending job means saved but **not processed**. API/CLI requests require explicit mode; an owner header never overrides backend identity.
-
-The first import reports `created: 8, unchanged: 0`; exact retries report `created: 0, unchanged: 8` with the same source/job IDs, timestamps, revisions, attempts and status. JSON object order/numeric notation does not change metadata meaning; booleans remain distinct from numbers. Changed text or metadata under the same identity returns HTTP 409 / CLI exit 1 with `import_conflict`; the entire batch is rolled back. Reimport never silently updates a source or requeues a failed job. Corrected exports need a later explicit revision/control workflow; do not work around a conflict by renaming an existing observation.
-
-Private import/list/inspect return `private_operation_denied` (HTTP 403 / CLI exit 1) before reading import bodies/stdin or accessing the personal store. Missing/invalid mode and input return bounded errors without content/tracebacks. The API sets `Cache-Control: no-store`; API/CLI container logging remains disabled. The early UI slice adds browser context clearing above; complete conversation/control behavior and provider retention remain later work.
-
-To repeat the complete source/job persistence comparison for the listed diagnostic page (the separate S03 probe comparison is above):
-
-```powershell
-$savedSources = @{}
-foreach ($item in $page.observations) {
-    $savedSources[$item.id] = docker compose run --rm --no-deps cli sources inspect $item.id --mode normal
-    if ($LASTEXITCODE -ne 0) { throw 'Source inspection failed' }
-}
-$apiBefore = docker compose ps -q api
-$dbBefore = docker compose ps -q db
-docker compose down
-if ($LASTEXITCODE -ne 0) { throw 'Container removal failed' }
-docker compose up -d --wait --wait-timeout 120 api
-if ($LASTEXITCODE -ne 0) { throw 'Container replacement failed' }
-if ($apiBefore -eq (docker compose ps -q api) -or $dbBefore -eq (docker compose ps -q db)) { throw 'Containers were not replaced' }
-foreach ($item in $page.observations) {
-    $after = docker compose run --rm --no-deps cli sources inspect $item.id --mode normal
-    if ($LASTEXITCODE -ne 0 -or $savedSources[$item.id] -cne $after) { throw 'Source/job state changed' }
-}
-'Source/job persistence passed'
-```
-
-### Actual S05 results
-
-The final isolated run passed **111 tests with zero warnings**, including all S03/S04 checks. The suite imports all eight observations, verifies every raw/formatted pair and the 11 evaluator excerpts, and keeps questions/labels out of stored sources. It checks Unicode and missing metadata, distinct equal-text identities, complete-state reimport stability, malformed/oversized input before DB access, metadata conflicts, owner isolation, pagination, late job-failure rollback, policy revisions, concurrent idempotent imports and the policy lock using separate PostgreSQL connections/barriers. Private adapters refuse even a body/stdin stream that would throw if read; DB/SQL/file-write instrumentation stays at zero and durable snapshots remain identical.
-
-The actual application run used the startup/migration commands above, CLI import/list/inspect, API byte import and source inspection, then `docker compose down` and `docker compose up -d --wait --wait-timeout 120 api`. All eight complete source/job inspections and the original S03 probe were compared before/after replacing both API and DB containers. Exact reimport remains unchanged after restart. The `jarvis_database` volume is retained; no S03/S04 schema/data migration was needed. Alembic upgrade/check and Ruff lint/format pass.
-
-The first Windows application comparison exposed a real encoding issue: PowerShell 5 decoded a JSON response without a charset as single-byte text, corrupting the displayed rupee symbol while the stored text and UTF-8 client were correct. Explicit UTF-8 JSON response headers fixed it; the documented PowerShell commands were rerun. Self-review also fixed numeric-notation reimport comparisons and selected the original ingestion job explicitly. An initial unused-import lint finding was removed. No failed check remains hidden behind the final result. [Reproducible evidence record](eval/reports/s05-infrastructure.json)
-
-Scope limits: eight synthetic observations, no measured live-model/semantic answer quality, no extraction worker, embeddings/retrieval, UI, automatic source correction or complete Correct/Forget/no-resurrection behavior. A repeated import under a **different** namespace is a different declared collection; cross-import duplicate/exclusion controls remain S09. The next milestone is S06 source-history answering through Kimi K3 after bounded approval and provider/settings/budget readiness.
-
-## S04 contracts and policy checks
-
-`contracts.py` defines strict source input, stored observations, exact passages and claim revisions. API and CLI resolve the fixed local owner through the same `LocalIdentity`; an input body cannot select the owner. Mode is explicit for contract validation: HTTP uses `X-Jarvis-Mode: normal|private`, and CLI uses `--mode normal|private`. Missing/invalid mode fails closed. Inputs are limited to 1 MiB at the adapters; text fields have tighter limits. CLI reads JSON from stdin, keeping content out of command arguments.
-
-The observation validation command checks only the supplied current input and never saves it in either mode. Claim validation reads saved evidence in Normal; Private rejects it before parsing or opening a DB session. Neither validation receipt authorizes a later commit: the shared internal write service revalidates under the policy-row lock. There is no general importer or claim-write HTTP/CLI endpoint in this milestone.
-
-Run the supplied synthetic observation through both adapters from PowerShell:
-
-```powershell
-docker compose run --rm --no-deps --entrypoint sh cli -c 'jarvis contracts observation --mode private < tests/fixtures/s04-observation.json'
-$s04Body = [System.Text.Encoding]::UTF8.GetBytes((Get-Content -Raw -Encoding utf8 tests/fixtures/s04-observation.json))
-Invoke-RestMethod -Uri http://127.0.0.1:8000/contracts/observations/validate -Method Post -ContentType 'application/json; charset=utf-8' -Headers @{'X-Jarvis-Mode'='private'} -Body $s04Body
-docker compose run --rm --no-deps cli probe read --mode private
-```
-
-The first two commands return `{"status":"valid","stored":false}`. The last command intentionally exits **1** with `private_operation_denied`; it does not read the saved probe. Normal claim validation uses `POST /contracts/claims/validate` or `jarvis contracts claim --mode normal` with `ClaimWrite` JSON containing real, owned source references. The integration tests create the synthetic source through the internal service and verify API/CLI parity; the proposal fixture is not imported as a source.
-
-All saved personal reads and writes require a Normal backend context. Private validation retains no request/session state, opens no DB session and creates no jobs, traces, retries or files. Expected errors use fixed codes; unexpected exceptions are consumed at the API/CLI boundary without input, traceback or request logging. HTTP responses use `Cache-Control: no-store`. The supported Compose API and CLI services use logging driver `none`, so even a CLI result is not saved as a container activity log. This intentionally removes persistent operational logs for these two services; migration diagnostics still appear on their command output. Host shell history, explicit caller redirection, browser behavior and future provider retention are outside this backend test boundary; this milestone uses synthetic input only and makes no browser/provider claims.
-
-Migration `0002_evidence_contracts` adds source `kind` with `unknown` for existing records, and creates `passages`, `claim_revisions`, and `claim_evidence`. It does not rewrite existing source text, hashes, timestamps, IDs, jobs or policy revisions. Unknown/generated provenance is ineligible for claim support. New synthetic probes have explicit synthetic provenance; old probes stay unknown rather than being silently reclassified.
-
-Passage offsets are zero-based, half-open **Python Unicode code-point** offsets into the named raw/formatted variant: `text[start:end]` must equal `exact_text`. No byte offsets, Unicode normalization, whitespace repair or fuzzy matching. Raw/formatted passages reference the same observation revision. New supported writes require the latest revision of every referenced observation. Historical source/claim revision reads remain explicit owned inspection, not a current-memory retrieval policy.
-
-Claim content preserves subject label, attribution, typed value/units, scope, negation, modality, conditions and evidence status separately from lifecycle. Unknown times are null. Calendar dates require `YYYY-MM-DD`; instants require an explicit timezone-aware timestamp. Event time, valid-from/to and record/import time are distinct. Conditional/hypothetical/question proposals cannot be promoted to `reported`; conditions cannot be dropped. Resolved entity IDs are rejected until a backend registry exists, so similar labels do not imply shared identity. These checks enforce structure; they cannot certify that the passage semantically entails the proposal.
-
-Source writes atomically save one observation revision and its pending job. Claim writes atomically save a claim revision, exact passages and owned evidence links. Both use the same owner policy-row lock and check expected revisions within the transaction. Source checks batch their reads; no network/model work runs under the lock. Claim appends preserve prior revisions without automatically labeling them as Correct, Forget or world-change events. Initial claim creation has no replay receipt yet; a future worker must add replay protection before enabling automatic retries. Full lifecycle transitions and importer retry/idempotency rules are later milestones.
-
-### Actual S04 results
-
-| Check | Observed result on 11 September 2026 |
+| Symptom | Cause and action |
 | --- | --- |
-| S03 regression | All original 23 checks pass, with expected head/table assertions updated for the additive migration. |
-| Complete isolated suite | **75 passed, zero warnings** using `docker compose -f compose.test.yaml run --build --rm tests`. |
-| Evidence contracts | Wrong owner/version/variant/excerpt/offset, invalid scope/time/uncertainty, fabricated entity IDs and unknown provenance rejected; explicit unknowns, paired variants, quantity units and negation preserved. |
-| Atomicity | Stale validation receipts fail at commit; a late evidence conflict rolls back the entire claim. Real separate PostgreSQL connections/barriers verify both policy-lock orderings and competing claim revisions. |
-| Private paths | SQL/connection and file-write interceptors report zero attempts; all personal tables/jobs match before/after snapshots. Success, malformed/oversized/schema-invalid input, timeout/unexpected exceptions, saved-operation denial and no backfill pass. No warning/error records or input-bearing output observed. |
-| Existing volume upgrade | Every original S03 source/job field is identical after migration; added provenance is `unknown`. Final API/DB container replacement preserves the migrated record. |
-| Live adapters | Private HTTP/CLI validation succeeds; saved-probe access is denied; HTTP no-store and actual API logging driver `none` verified. |
-| Hygiene | Ruff lint/format pass for all 18 application/migration/test Python files; repeated migrations and `alembic check` report no drift. Ten UTF-8 Markdown files and 102 local links/anchors pass. No dependency/image upgrades. |
-
-The initial expanded suite passed 71 checks; review added file-write instrumentation and Normal adapter parity, then tightened timestamp/entity validation and batched source reads. All 75 final checks pass. Early lint line-length findings were fixed. No S04 test failures remain. This is deterministic contract evidence, not extraction accuracy or live-model evaluation.
-
-## Actual S03 results
-
-All five approved acceptance gates passed on 11 September 2026:
-
-| Check | Observed result |
-| --- | --- |
-| Locked Linux build and first startup | Passed from a new `jarvis_database` volume; DB healthy, migration exited 0, API healthy. |
-| Empty/repeated migrations | Upgrade from an empty application schema, repeat upgrade and `alembic check` passed. Runtime DDL and revision-table mutation were denied. |
-| API/CLI shared services | HTTP and CLI readiness agreed on `0001_bootstrap` and pgvector `0.8.6`; synthetic CLI write/read matched the shared service. |
-| Restart and volume persistence | Complete synthetic source/job JSON remained identical after replacing both API and DB containers. Container IDs changed; named volume remained. |
-| Actual database outage/recovery | Stopped only Jarvis's DB. HTTP returned 503, CLI exited 1 with `database_unavailable`, and liveness remained 200. Combined HTTP/CLI/liveness probe took 10.15 s including CLI container startup; recovery returned ready. This is not a general latency benchmark. |
-| Isolated PostgreSQL tests | 23 passed, zero warnings in the final code run. Fresh test-volume startup and scoped reset passed without changing the application probe. |
-| Code hygiene | Ruff lint and formatting passed for all 11 application/migration/test Python files. Ten UTF-8 Markdown files and 98 local links/anchors passed; staged whitespace and local-credential exclusion checks passed. |
-
-Resolved during implementation: the initial lint run found long lines; the first formatter check needed `--no-cache` for the non-root image. The first tests passed with deprecation warnings; the final path uses HTTPX's ASGI transport with explicit lifespan handling and Alembic's explicit path separator. No test failures remain. No extraction, retrieval, live-model quality, Private/Correct/Forget or UI result is claimed.
-
-Observed runtime: Python **3.12.14**, uv **0.12.13**, PostgreSQL **17.11**, pgvector **0.8.6**. Python, uv and PostgreSQL image digests are pinned in Dockerfile/Compose. `uv.lock` contains exact package versions/hashes, including the build backend: FastAPI 0.141.1, SQLAlchemy 2.0.52, psycopg 3.3.5, Alembic 1.19.2, Typer 0.27.2, pytest 9.1.1, HTTPX 0.28.1 and Ruff 0.16.7. Resolve upgrades deliberately, rebuild, and rerun the relevant gates.
-
-## Environment recommendation
-
-Keep the existing Windows checkout and Docker Desktop Linux engine. Ubuntu-24.04 WSL integration is available; no second checkout or Docker daemon is required. The host's Python 3.14 is independent of the container's Python 3.12. Docker client/server 28.4.0 and Compose 2.39.2-desktop.1 were verified. S02's earlier disposable Alpine volume probe was environment evidence; S03 above establishes actual application/database behavior. [Docker WSL guidance](https://docs.docker.com/desktop/features/wsl/best-practices/)
-
-### Implementation-chat recheck
-
-The first implementation-chat audit on 11 September found the Linux engine stopped and some tools absent from its PATH. That historical observation was superseded by the successful host checks and S03 runs. If Docker is stopped in a later session, start Docker Desktop and confirm `docker version` shows a Linux server before proceeding.
-
-### Dev-branch readiness check
-
-The requested read-only coding CLI session completed in the earlier readiness milestone. The Windows CLI at `C:/Users/ASUS/AppData/Roaming/npm/codex.cmd` reported version 0.153.4 and successful ChatGPT authentication via `login status`; credential files were not opened. Its restricted nested sandbox could read the checkout but denied CLI-status/Docker-context probes. The parent session verified those under the normal Windows account using approved execution outside that sandbox. Docker operations still need the appropriate execution context; no global sandbox relaxation or Git configuration change is required.
-
-Assistant implementation commits/pushes use `dev`; `main` stays the reviewed default branch. The user controls merging and explicitly authorized merging/pushing the completed S05 work. Use `git log -1 --oneline` and compare `git rev-parse dev` / `git rev-parse main` with `git ls-remote origin refs/heads/dev refs/heads/main` to verify the published tips.
-
-## S06 readiness audit
-
-Actual audit on 11 September 2026, before S06 implementation. Audited application commit: `a599414b431783661f54aff2c542a11ebeb0e78a` (completed S05). The existing checkout was clean on `dev`; a fetch and remote-tip check showed both `origin/dev` and `origin/main` at that exact commit. The user explicitly authorized this audit checkpoint's publication to `main`; subsequent implementation stays on `dev`.
-
-Read AGENTS, tracker and all seven planning/run documents; extracted the full text of the 18-page [visual guide](output/pdf/jarvis-memory-visual-guide.pdf), rendered every page with PyMuPDF, reviewed all three contact sheets and inspected the evaluation page at full size. Read-only PDF inspection leaves the original snapshot unchanged.
-
-| Guide reference | Implementation/evidence and remaining boundary |
-| --- | --- |
-| 03.B–03.F, 03.H–03.K | Shared API/CLI services, PostgreSQL, ordered migration startup and isolated test DB are implemented. UI, workers and model adapters remain later work. |
-| 04.A–04.H, page 5 | Paired variants, exact owned/versioned passages, typed scope/uncertainty/time and unknown metadata are preserved. These checks do not establish semantic entailment. |
-| 06.A–06.E, 06.G, 06.I; 07.G | Import/policy validation, atomic source/job writes and idempotent reimport are implemented. Live extraction, reconciliation and searchable derived views are pending. |
-| Page 12; 14.A–14.G and 14.I | Existing Private routes gate input/store access and durable activity. Real PostgreSQL barriers check guarded writes. Provider privacy and buffered reply publication are not yet implemented. |
-| Pages 8–11; 16.B and 16.D | Source-history answers, real model calls and the all-history baseline are S06 work; retrieval improvements are S08. PDF DeepSeek labels on pages 9–11 and 16 are superseded by Kimi K3. |
-| Pages 13 and 15–18 | Complete Correct/Forget/repair, UI, expanded corpus and repeated live evaluation remain later gates. Page 18's pending bootstrap status and implementation-pending footers are historical, not current status. |
-
-Fresh commands/results against the audited source:
-
-```powershell
-docker compose -f compose.test.yaml run --build --rm tests
-docker run --rm jarvis:local ruff check --no-cache src migrations tests
-docker run --rm jarvis:local ruff format --check --no-cache src migrations tests
-docker compose run --rm migrate alembic check
-git ls-remote origin refs/heads/dev refs/heads/main
-```
-
-Results: **111 tests passed in 12.56 s, zero warnings**; lint passed; all 20 Python files passed formatting; application migration check returned `No new upgrade operations detected.` Docker server is Linux 28.4.0, application API/database are healthy, and migration exited successfully. The isolated suite rechecks empty/repeated migrations and existing S03–S05 contracts. Earlier actual container replacement/persistence evidence remains in the S03–S05 sections; it was not repeated or relabeled as a new persistence experiment in this documentation-only audit.
-
-Local configuration inspection reported `KIMI_K3_API_KEY`, `NEMOTRON_30B_API_KEY` and `NEMOTRON_550B_API_KEY` present with NVIDIA key prefixes, and no malformed environment projects. Only names/presence were emitted; no key values were displayed, staged or sent to a provider. This is not credential authentication or evidence of account quota. The API/CLI currently do not consume these keys. Live inference remains blocked by the provider-terms/budget decision in [DECISIONS.md](DECISIONS.md#s06-readiness-decisions); no S06 live result is claimed.
-
-Review conclusion: continue with the existing architecture and [bounded S06 proposal](PLAN.md#s06-bounded-bootstrap-proposal). The no-training conflict is a real open gate, not an infrastructure failure. Phase One final files are still held separately by the author and have not been mechanically verified here. Full product acceptance remains S12.
-
-## Input-to-memory research checkpoint
-
-On 12 September 2026, reviewed the current Markdown, parent planning/brief and relevant pages of the existing visual PDF against primary research and PostgreSQL/pgvector documentation. Updated DECISIONS, ARCHITECTURE, EVALUATION, PLAN and todo with the rationale and pending S07 proposal. No application, dependency, migration, PDF or provider configuration changed; no model calls or new runtime tests ran. The last completed runtime evidence remains 112 backend and 8 browser checks in the UI milestone.
-
-Actual documentation checks from the existing checkout:
-
-```powershell
-python .tmp/s03_check_docs.py
-git diff --check
-```
-
-The existing local audit helper passed: 10 UTF-8 Markdown files, 141 local links/anchors, unchanged Phase One notes/drafts, and no local credentials/runtime artifacts staged. Whitespace checks passed. The helper is an ignored local audit tool, not a fresh-checkout runtime dependency. Review the staged Markdown diff, rerun the staged checks and commit/push this documentation checkpoint to `dev`; verify the remote hash. S07 and live-provider approval remain open.
-
-## Later review contract
-
-Complete the missing S06 source-history answer baseline through Kimi K3 after the provider decision, connecting Ask to the browser. S07 processing and S08 evidence search already use the shared backend; full S09 controls remain next. Keep CLI commands optional. Provider access, retention/no-training settings and a spend ceiling must be explicit before live inference. Final submission still requires the complete clean-checkout import/UI/live-evaluation/reset walkthrough and exact tested release commit; local contract/retrieval checks do not close that product gate.
-
-Implementation references: [uv Docker integration](https://docs.astral.sh/uv/guides/integration/docker/), [pgvector installation](https://github.com/pgvector/pgvector#docker), [Compose startup ordering](https://docs.docker.com/compose/how-tos/startup-order/), [FastAPI containers](https://fastapi.tiangolo.com/deployment/docker/).
-
-
-## React workspace refinement
-
-The approved React redesign replaces the legacy plain client. Its source is `frontend/`; `src/jarvis/web/` is ignored build output. The Docker build runs locked npm installation, TypeScript checking and Vite in a pinned Node 24 stage, then includes generated assets and font notices in the Python wheel. End users need Docker only. FastAPI remains the sole runtime server; existing databases, provider selection, allowance and migration head are unchanged.
-
-Frontend-only developer checks from the repository root (Node 24, npm; Windows uses `npm.cmd`):
-
-```powershell
-npm.cmd ci --prefix frontend --no-fund
-npm.cmd --prefix frontend run format:check
-npm.cmd --prefix frontend run build
-```
-
-The supported integrated preview is the Compose application, not a second development server. Rebuild after frontend edits:
-
-```powershell
-docker compose build api
-docker compose up -d --wait --wait-timeout 120 api
-Invoke-RestMethod http://127.0.0.1:8000/ready
-```
-
-For deterministic browser verification, follow [Browser acceptance checks](#browser-acceptance-checks). Do not run database-reset tests while the isolated browser backend is serving. The full application regression suite and the browser suite use separate test credentials/volume from the application; no live provider call is needed to validate this interface. Hosted inference failures from S09/S10 remain open.
-
-
-Actual results on 12 September 2026:
-
-| Check | Result |
-| --- | --- |
-| Existing backend regression | 232 passed in 129.23 s, isolated PostgreSQL. |
-| Final shell/nonce policy check | 1 passed in 1.49 s after the additional per-response nonce/font assertions. |
-| Full Chromium suite | 22/22 passed in 37.71 s; no page errors, CSP violations, external requests, browser storage writes or cookies. Includes real PostgreSQL and deterministic providers. |
-| Locked frontend install | `npm.cmd ci --no-fund`: 96 packages audited, zero reported vulnerabilities. |
-| Formatting/build | `npm.cmd run format:check`, TypeScript and Vite production builds pass. Ruff lint and formatting pass for 45 Python files. |
-| Bundle | JS 471.66 kB, CSS 42.08 kB; Vite gzip estimates 151.17/10.03 kB. These are build statistics, not a measured HTTP latency/compression benchmark. |
-| Actual application restart | `docker compose down` without volumes, then `docker compose up -d --wait --wait-timeout 120 api` succeeded. All fields in all 14 application tables match the ignored before/after snapshots. |
-| Database/runtime | Alembic check reports no new upgrade operations. API/CLI ready on `0005_user_controls`, pgvector 0.8.6. Application image contains no Node executable, node_modules or .env file. |
-| Deployed browser | Actual port 8000 shell, local assets/font notices, zero personal startup reads and a 320-pixel viewport pass. Desktop/mobile synthetic screenshots were visually reviewed. |
-| Live models | Zero new calls. Existing 19 requests/179,786 accounted tokens and provider/extraction failures are unchanged. |
-
-Exact additional Python verification commands:
-
-```powershell
-docker compose -f compose.test.yaml run --rm tests ruff check --no-cache src migrations tests eval
-docker compose -f compose.test.yaml run --rm tests ruff format --check --no-cache src migrations tests eval
-docker compose -f compose.test.yaml run --rm tests pytest -q -p no:cacheprovider tests/integration/test_web.py
-```
-
-Stop the isolated web service before any database test. Initial frontend checks found the TypeScript 7 removal of `baseUrl` and missing Vite CSS declarations; both were fixed. An initial 517.83-kB JS bundle was reduced with Motion's smaller feature set. Two browser attempts failed only a case-sensitive assertion against CSS-uppercase history text (20/21, then 21/22); the actual assertion was corrected and the final full suite passed. Review added clearing for already-Private history restoration and revoked content after a successful control whose refresh fails; those failure paths pass. A package formatting check was corrected. Ruff initially attempted to create a cache in the unprivileged image; `--no-cache` is the supported check, and the API handler's formatting was fixed. These resolved checks are not hidden live-model successes.
-
-[Machine-readable acceptance](eval/reports/react-workspace.json). The connected in-app browser was unavailable after its documented recovery check, so visual/interactive validation used the existing Playwright Chromium setup. No provider setting, key, budget, schema or Phase One original changed. This is a tested React interface, not a successful live-model demonstration or completion of S11/S12.
-
-Final documentation/staging review passed for 11 UTF-8 Markdown files and 180 local links/anchors. Phase One notes/drafts are unchanged; no local credentials or runtime artifacts are staged. Frontend/test formatting and staged whitespace checks pass.
-
-Final visual refinement brings selected memory history into view with keyboard focus and resets screen navigation scroll. After that change, the two affected memory/history/mobile-control journeys passed in 15.89 s, in addition to the preceding 22/22 full browser run. TypeScript/Vite and formatting passed again; the final local application image was recreated.
-
-## HTML progress and walkthrough guide
-
-On 12 September, the user requested a simple HTML progress view and a complete input-to-semantic-memory explanation for walkthrough preparation. Open [docs/project-progress.html](docs/project-progress.html) directly in a browser. No local server, Docker startup, installation, application data access or model call is required. It is a dated snapshot of todo.md at application baseline `1756069ba8c7f155060492dc008aaeea735af537`, with evidence links; todo.md remains the single maintained status checklist.
-
-The guide covers 12 milestones, a clickable 12-stage learning diagram, actual table names, four exact-source teaching examples, retrieval and answer release, Correct/world change/Forget/Private, remaining work and 12 expandable walkthrough questions. Intended example interpretations are explicitly separate from actual failed live results. Stored embeddings, reliable Kimi answers, the varied 500-record corpus and final acceptance acceptance are not claimed. The older PDF and independently authored Phase One originals are unchanged.
-
-Actual targeted checks used Python's standard HTMLParser and filesystem/Markdown-anchor resolution, plus the extracted inline script passed to `node --check`: UTF-8 decoding, balanced HTML/SVG tags, 33 unique IDs, all 81 static/dynamic local links and anchors, sequential diagram stages, milestone categories, four example selectors and 12 questions passed. The page has zero remote assets; a static scan found no network or browser-persistence APIs in its script. `git diff --check` passed before the documentation update. [Machine-readable results and HTML hash](eval/reports/project-progress-guide.json)
-
-These are static documentation checks. Browser visual/interaction/print testing, application regressions, Compose/container replacement, database operations and live model evaluation were not run for this change. The guide cites the earlier 232 backend/22 browser results and recorded provider failures rather than relabeling them as new results. Documentation and staged whitespace checks accompany the dev commit/push; no application deployment or main merge is part of this scope.
-
-## Evening evaluation preparation and LLM check
-
-This section supersedes the earlier current-status/model/allowance descriptions, without replacing historical failures. On 12 September, the approved implementation checkpoint passed **244 PostgreSQL tests in 129.87 s**, TypeScript/Vite, Ruff and migration-drift checks. The browser suite initially passed 23/24: the new setup assertion also matched a hidden Sources panel. After the explicitly approved Conversation-only locator fix, the full suite passed **24/24 in 41.7098508 s**, without changing the assertion's requirement or application behavior. The twelve submission regressions separately passed in 4.63 s. Browser providers are deterministic doubles, not live NVIDIA. [Acceptance details and resolved failures](eval/reports/s11-implementation.json).
-
-The full synthetic corpus contains 540 paired records and 84 separate cases: 30 showcases selected before live outcomes, 30 held-out and 24 development questions. The source hash is `6d3e35c314d55873247ffa86766320c187b1f81e822dd865a36f2dfae852c4e9`; the cases hash is `2ae99b0e2de8e6997dea32f82adb8cd2b62e1d20dbe7ae94bff6f2e6eb9bd2aa`. Counts, pairing, question separation and frozen hashes passed. This is reproducible AI-assisted fiction with a same-author/template holdout, not independently collected recordings or a blind benchmark. The **full 540-record live run has not yet happened**.
-
-### Actual model results and why the browser was disabled
-
-- Lightning completed three cited answers; the first latest-date response took 3.297 s. Two fulfilled their reviewed obligations, while the personalized draft missed the requested three bullets. Extraction still has date-reconciliation, conditional-schema and structured-detail weaknesses. [Smoke](eval/reports/s11-lightning-answer-smoke.jsonl), [repair checkpoint](eval/reports/s11-repair-checkpoint.jsonl).
-- Ultra's explicitly approved ten-call comparison returned six completions, including one rejected proposal; four calls failed at the provider. One answer and four source jobs succeeded, storing five claims. The spending-conflict note was not assessed at the cap. Successful completions took 63.853-86.920 s. Do not select Ultra for the bulk run from these results. [Raw evidence](eval/reports/s11-ultra-probe.jsonl), [manual review](eval/reports/s11-ultra-review.json).
-- Lifetime accounting is now **44 requests / 334,052 accounted tokens**. The Ultra increment is 19,801 known tokens plus 61,910 retained unknown-usage reservations. No allowance or prior evidence was reset. Paid authorization remains $0; account billing was not independently queried.
-- Read-only inspection of the actual running API found both inference flags false, the responder still Kimi and the extractor key absent. That old container was not redeployed by the probes. Its disabled-inference banner is an application configuration state, not proof that the separately tested keys cannot reach NVIDIA.
-
-### Operator setup for the prepared configuration
-
-Keep keys in the local untracked `.env`, never in a submitted report. For the approved public synthetic path, set `JARVIS_S07_SYNTHETIC_TRIAL_APPROVED=true` and supply `NEMOTRON_30B_API_KEY`. `JARVIS_RESPONSE_MODEL=nvidia/nemotron-3.5-lightning-30b-a3b` is explicit in the current Compose configuration; there is no automatic Kimi/Ultra fallback. Set lower `JARVIS_MAX_REQUESTS` and `JARVIS_MAX_TOTAL_TOKENS` if desired, within the hard 750 / 10,000,000 lifetime ceilings. These are cumulative ceilings, not fresh allowances after restart.
-
-Rebuild/recreate API and worker only when ready to enable the approved processing path. A worker may consume previously requested eligible jobs in a retained database, so inspect pending work first; do not reset the application database or budget to obtain more allowance.
-
-```powershell
-docker compose up -d --build --wait --wait-timeout 120 api worker
-```
-
-For an unfamiliar unfamiliar corpus, leave unfamiliar inference off unless the operator explicitly accepts NVIDIA's data-sharing/retention/training terms. To opt in, supply their own `NVIDIA_API_KEY`, set **both** `JARVIS_UNFAMILIAR_INFERENCE_APPROVED=true` and `JARVIS_UNFAMILIAR_DATA_POLICY_ACK=I_ACCEPT_NVIDIA_DATA_TERMS`, choose cumulative spend/token limits, then recreate the services. For the local fictional Google/OpenRouter demo, use the independent default-off source, question and Private-direct switches documented below. Private never reads saved memory or creates durable private state. These exceptions do not authorize personal input. The Conversation setup panel displays model/key-presence/configuration status without making a live call or revealing the key.
-
-Ordinary users use Sources to import, request processing and inspect progress; Conversation offers 30 showcase questions and collapsed, explained evidence choices. The local greeting is explicitly interface help, not an LLM answer. The bird icon is the official asset from `https://heyjarvis.ai/assets/brand/jarvis-app-icon-64.png`, served locally under the existing CSP.
-
-`eval/corpus.py --stage validate` checks the frozen corpus without live calls. Its explicit `extract`, `answers` and `all` stages use the real shared pipeline, retain failures, cap new requests, keep questions out of memory and report known tokens separately from unknown reservations. `eval/ultra_probe.py --approved-ultra-comparison --max-new-calls 10` is an evaluation-only diagnostic requiring explicit approval and `NEMOTRON_550B_API_KEY`; bind-mount the repository's `eval` directory at `/app/eval:ro` when invoking it in the existing image. It is not an application selector or an automatically repeated fallback.
-
-Still required: full live corpus/representation evaluation, semantic failure repair, deployed live UI demonstration, final clean Compose/import/process/UI/restart/scoped-reset rehearsal, independently authored Phase One finals and the exact tested release commit. The earlier test reset left the browser-profile container running when `down` omitted that profile; do not label it a clean final rehearsal. For the final isolated reset, explicitly include `--profile browser` and target only the intended test project/volume.
-
-## Local-only readiness and handoff checkpoint
-
-The user's handoff is **local Docker only**, not a hosted Site or cloud deployment. The previously stale API container has been replaced with the already-tested current image; the API and retained PostgreSQL database are healthy at `http://localhost:8000`. No cloud Site was created, no public application endpoint was provisioned, and no database reset occurred. Both extraction and answers are configured for the existing Lightning key in synthetic-only mode. Inference itself still uses the explicitly approved external NVIDIA API.
-
-[The local audit](eval/reports/s13-local-readiness-audit.json) maps the previously inspected early notes requirements to actual evidence and unfinished work. Desktop and 390px mobile screenshots show the new bird asset, collapsed evidence choices, configuration view and showcase controls; mobile document width was 390px. The screenshots also reveal a visible skip-link/style issue. A fresh browser Ask preflight failed to resolve the evidence control's accessible label before any model call; do not report it as a passed live UI journey.
-
-The proposed large-corpus command was rejected before starting because the budget unfamiliar enforced the older 96-request / 1,500,000-token pilot instructions. The earlier expanded approval is recorded in the conversation, but reconciliation is awaiting explicit confirmation rather than bypassing the block. The locally running API was conservatively recapped to **96 total requests / 1,500,000 accounted tokens**. This did not reset counters or increase data permissions. The last observed lifetime usage, before these no-model-call checks, was 67 requests / 412,543 tokens.
-
-Current model/approval/limit choices were passed as local process environment overrides when recreating the API, **not yet persisted into the ignored local `.env`**. A fresh Compose recreation with different environment settings can therefore change enablement again. The pending local finalization scope includes making those non-secret settings reproducible while preserving all keys and database credentials. No unscoped worker was started against retained pending probe jobs.
-
-The remaining local-only scope is a guided Import -> Learn -> Ask -> Inspect -> Metrics experience, collection-scoped processing, guarded per-query usage/evidence/outcome views and curated evaluation reports, followed by the full permitted evaluation and exact-commit clean Compose/import/UI/persistence/scoped-reset rehearsal. This requires bounded implementation approval. Keep the existing architecture, dependencies, schema and privacy/lifecycle contract. The current local restart and successful older smoke do not establish final acceptance readiness or resolve the Phase One independent-writing issue.
-
-## Lightning manual backup checkpoint
-
-A fresh user-requested smoke on 12 September at approximately 21:30 IST confirmed access to `nvidia/nemotron-3.5-lightning-30b-a3b` through the real guarded pipeline. Three requests completed at the provider: the initial extraction failed validation, its one existing repair committed a source-backed memory, and retrieval plus Ask correctly cited the revised 21 September launch date. Answer latency was 2,995 ms at the model and 3,364 ms end to end; the full smoke took 20,333 ms. The first extraction attempt, all timings and accounting remain in [the raw report](eval/reports/s12-lightning-backup-smoke.jsonl) and [the review](eval/reports/s12-lightning-backup-review.json). This is not a full-corpus or general semantic-quality pass. The other seven sample sources were imported for retrieval but not requested for processing.
-
-Retain Lightning as an explicit manual backup using the already supported selector. Keep the existing key only in the ignored local `.env`; it was neither duplicated nor committed. For the approved synthetic-only mode, the non-secret operator settings are:
-
-```dotenv
-JARVIS_INFERENCE_PROVIDER=nvidia
-JARVIS_RESPONSE_MODEL=nvidia/nemotron-3.5-lightning-30b-a3b
-JARVIS_S07_SYNTHETIC_TRIAL_APPROVED=true
-JARVIS_UNFAMILIAR_INFERENCE_APPROVED=false
-JARVIS_FREE_SYNTHETIC_TRIAL_APPROVED=false
-JARVIS_MAX_REQUESTS=750
-JARVIS_MAX_TOTAL_TOKENS=10000000
-```
-
-The key variable is `NEMOTRON_30B_API_KEY`. Preserve all existing database credentials when changing these non-secret settings. After an explicit operator switch, rebuild/recreate the API with `docker compose up -d --build api`; changing a local file alone does not change a running container. Do not start an unscoped worker against the retained database's older pending probe jobs. Scope evaluation processing to its selected collection and reserve at least 30 requests outside its run ceiling for demo use.
-
-**These instructions were documented, not applied to the running browser in this checkpoint.** A read-only check found an older API image: Lightning extractor disabled with no key forwarded, Kimi responder disabled with its key present. That explains why browser inference can remain unavailable even though this fresh isolated CLI/service probe used the valid Lightning key successfully. The initial configuration inspection encountered a legacy missing-field error; a version-compatible inspection completed without printing credentials.
-
-There is no automatic provider/model fallback, no budget reset and no paid fallback. The existing one validation-repair attempt is not a provider switch and counts toward the same allowance. Private provider calls remain blocked; unfamiliar Normal-mode data still requires the separately documented NVIDIA unfamiliar consent. Previous failures of other models are historical diagnostics, not fresh retests in this checkpoint.
-
-## Free-provider comparison and current blocker
-
-Current evidence is in `eval/reports/s12-free-provider-review.json`. The approved 20-call comparison has finished. Google Flash-Lite can generate, but its conflict-handling quality gate failed; no free provider has been activated for the ordinary browser demo. OpenRouter returned a generation rate limit, and Google Flash returned a service-availability error. Catalog/key authentication is not a generation or quota guarantee.
-
-The adapters are explicitly default-off. `JARVIS_INFERENCE_PROVIDER` selects `nvidia`, `google` or `openrouter`; free synthetic use additionally requires `JARVIS_FREE_SYNTHETIC_TRIAL_APPROVED=true` and `JARVIS_FREE_DATA_POLICY_ACK=I_ACCEPT_FREE_SYNTHETIC_DATA_TERMS`. `JARVIS_FREE_SYNTHETIC_QUESTIONS_APPROVED`, `JARVIS_FREE_SYNTHETIC_SOURCES_APPROVED` and `JARVIS_PRIVATE_DIRECT_APPROVED` independently enable flexible fictional questions, locally entered fictional sources and context-free Private chat. The existing local key names are `GOOGLE_API_KEY_FREE_TIER` and `OPEN_ROUTER_API_KEY`; never commit their values. These switches do not authorize personal data.
-
-The adapter recognizes `JARVIS_FREE_EXTRACTOR_MODEL` and `JARVIS_FREE_RESPONDER_MODEL`, but this checkpoint's Compose file does not yet forward them. The completed Flash-Lite diagnostic passed both explicitly with `docker compose run -e ...` as `gemini-3.5-flash-lite`; do not assume adding them to `.env` alone changes the container. This omission and demonstrated prompt failures are the proposed next bounded repair. The legacy `eval/ultra_probe.py` filename now accepts `--approved-comparison --provider google|openrouter|ultra --max-new-calls N`; it retains failures and enforces the shared persisted ceiling. Do not rerun live calls without the next approved allowance.
-
-The browser tests ran against `jarvis-tests` only, with the test web stopped before the full backend suite, then recreated for all 24 browser journeys. The main database was not reset and its prior probe evidence/budget remains intact. The running ordinary application still needs deployment of a quality-checked selected configuration. Full live corpus processing, final exact-commit clean Compose/import/UI/persistence/scoped-reset rehearsal and Phase One final-file verification remain open.
-
-## S14 local browser workflow
-
-Open `http://localhost:8000`. Use the top walkthrough: **Import -> Learn -> Ask -> Inspect flow -> Measure**. In Sources, import JSONL or the bundled fictional corpus; keep raw/formatted variants paired. In Memory, Process sources now executes collection-scoped steps from the browser. Pause stops new browser steps after an in-flight Normal request; it does not stop an independent evaluator/worker. Another active owner lease is reported instead of silently processing a different collection. A saved or queued note is not evidence of successful learning.
-
-The user explicitly approved enabling unfamiliar **Normal** inputs for this local dummy-data handoff after the NVIDIA data-sharing warning. The current ignored `.env` has `JARVIS_UNFAMILIAR_INFERENCE_APPROVED=true` and `JARVIS_UNFAMILIAR_DATA_POLICY_ACK=I_ACCEPT_NVIDIA_DATA_TERMS`, with a locally configured `NVIDIA_API_KEY`. This removes the checked-in-fixture restriction for the browser/evaluator's own Normal inputs. Selected text is sent to NVIDIA and its trial retention/training terms may apply; this is not an offline model. `.env.example` remains default-off for another operator, who must supply their own key and make the same explicit decision. Private and lifecycle/evidence/budget checks are unchanged.
-
-After an answer, expand **Query metrics and model calls** for actual call IDs, known tokens, failures/repairs and measured timings. Usage remains an owner-wide aggregate, not provider billing. **Workflow & evidence** has the adapted 12-stage flowchart, storage map, synthetic collection trace and curated result viewer. Curated summaries are copied into the local image at build time; rebuild/recreate the API after generating a new checked-in summary. A missing summary is honestly shown as `not_recorded`. `docs/storage-contract.json` documents the storage contract for unfamiliars and automated agents.
-
-Lightning remains the default extractor and responder. The optional NVIDIA reasoning backup is selected explicitly with `JARVIS_RESPONSE_MODEL=poolside/laguna-xs-2.1` and the documented NVIDIA credential, then recreating the API. The synthetic-only route uses `POOLSIDE_LAGUNA_XS_2P1`; unfamiliar mode uses the operator's `NVIDIA_API_KEY`. The fresh Laguna probe returned one correct cited answer and timed out on its second question. It is not a guaranteed replacement or an automatic quota workaround. Kimi/Ultra/Google/OpenRouter historical failures remain in evidence; credentials are not deleted following a transient failure.
-
-`NEMOTRON_1B_EMBED` is configured locally and NVIDIA catalog discovery returned HTTP 200, listing `nvidia/nemotron-3-embed-1b`. This is **not** a verified embedding-generation run or a vector retrieval integration. Embeddings are not tool calls. Existing retrieval is lexical plus structured-memory evidence.
-
-The new `eval/showcase.py` runs the 30 frozen showcase questions against the existing synthetic collection, with per-instance provider-attempt accounting, a 40-call local limit, a lifetime ceiling no higher than 720, 30-second calls and a 25-minute timebox. Run via the CLI container with the repository's `eval` directory mounted at `/app/eval`; it writes `eval/reports/s14-showcase-review.json`. Its functional run can overlap ingestion and is explicitly not a frozen-state A/B benchmark. All failures/unassessed cases remain visible. Never ingest evaluation labels as memories or substitute deterministic-double results for this live evidence.
-
-## Automated unfamiliar: replace keys and continue independently
-
-You may supply a valid key belonging to your own account for a **supported provider**. Keys from different providers are not interchangeable. Keep credentials only in the ignored `.env` or the process environment; never put them in source, reports, screenshots or a commit. Do not purchase credits, enable billing, increase the shared lifetime allowance, reset its persisted counter, or rotate keys to evade project-wide rate limits. Obtain any missing key from the provider's official account console, not from public credential lists.
-
-1. Start with `GET /ready`, then `GET /inference` with `X-Jarvis-Mode: normal`. The latter checks configuration only, not actual provider access. Supply the key and exact role/model settings below, recreate the API, then make one deliberate synthetic probe before a batch. Stop and inspect an error rather than repeatedly submitting the same failing call.
-2. **NVIDIA, ordinary/unfamiliar unfamiliar corpus:** set `JARVIS_INFERENCE_PROVIDER=nvidia`, `NVIDIA_API_KEY` to your own NVIDIA key, `JARVIS_UNFAMILIAR_INFERENCE_APPROVED=true`, `JARVIS_UNFAMILIAR_DATA_POLICY_ACK=I_ACCEPT_NVIDIA_DATA_TERMS`, and `JARVIS_RESPONSE_MODEL=nvidia/nemotron-3.5-lightning-30b-a3b`. This explicit opt-in permits unfamiliar Normal input. NVIDIA trial retention/training terms may apply. The extractor remains Lightning. A reasoning-only backup is `poolside/laguna-xs-2.1`; it uses the same NVIDIA endpoint and unfamiliar key, not a Poolside-direct key. The bundled synthetic-only configuration instead reads `NEMOTRON_30B_API_KEY` or `POOLSIDE_LAGUNA_XS_2P1` as appropriate.
-3. **Google free, checked-in synthetic evaluation only:** set `JARVIS_INFERENCE_PROVIDER=google`, `GOOGLE_API_KEY_FREE_TIER` to your Google key, `JARVIS_UNFAMILIAR_INFERENCE_APPROVED=false`, `JARVIS_FREE_SYNTHETIC_TRIAL_APPROVED=true`, `JARVIS_FREE_DATA_POLICY_ACK=I_ACCEPT_FREE_SYNTHETIC_DATA_TERMS`, and BOTH `JARVIS_FREE_EXTRACTOR_MODEL=gemini-3.5-flash-lite` and `JARVIS_FREE_RESPONDER_MODEL=gemini-3.5-flash-lite`. Google free inputs/outputs may be used for product improvement or human review. Confirm free-tier status in your own account; actual billing is not measured by this app.
-4. **OpenRouter free, checked-in synthetic evaluation only:** use the same two free-data consent settings and disable NVIDIA unfamiliar mode; set `JARVIS_INFERENCE_PROVIDER=openrouter`, `OPEN_ROUTER_API_KEY`, and BOTH role-model settings to `google/gemma-4-31b-it:free`. The adapter requires zero prompt/completion/request prices and disables provider fallback and data collection. This route previously returned 429; free capacity is not guaranteed. Do not substitute a paid model.
-5. After editing `.env`, run `docker compose up -d --no-build --wait api`. Do not start an unscoped worker against a retained database: the frontend already performs collection-scoped learning. If a CLI/evaluator container is running, it retains the configuration it started with; changing `.env` does not switch that in-flight run. End the identified evaluator deliberately and retain its output before starting another. Never delete the application database to resolve a key error.
-6. Use a fresh collection name in the browser. Import JSONL, inspect the source receipt, choose Memory / Process sources, and inspect pending/failed/no-memory/extracted outcomes. Then ask questions, inspect citations and model-call metrics, inspect Memory history, and refresh Usage. Backend authorization is not delegated to imported text. Private direct receives no database context and retains no Jarvis transcript.
-7. An invalid/expired key or unavailable model requires a valid key/model for that SAME supported route. A 429 is a quota/rate problem, not an invitation to rotate keys; respect the provider's retry interval and stop unattended work. Timeouts/503 do not establish that the answer is unknown. Keep failed calls and conservative unknown-token reservations. Any operator-selected provider change must be labeled in the results.
-8. An arbitrary vendor/model is **not** plug-and-play. Unfamiliar unfamiliar data currently uses the NVIDIA unfamiliar route; Google/OpenRouter opt-ins cover curated public synthetic inputs only. Supporting another endpoint, model or broader data policy requires an explicit adapter/consent update and regression checks in `src/jarvis/providers.py`, not replacing a key and pretending compatibility. The evaluator may inspect that small adapter rather than reverse-engineering the project.
-
-Reproducible paced synthetic extraction, after selecting the Google settings above, uses the following command. The namespace must match the imported corpus; exact reimport is idempotent. This preserves the application volume, all old failures and the same lifetime budget. The final 30 requests are reserved by keeping automated evaluation at or below lifetime request 720; use a lower cap when reserving another test run.
-
-```powershell
-docker compose run --rm --no-deps -T -e JARVIS_MAX_REQUESTS=710 --entrypoint python -v "${PWD}/eval:/app/eval" cli -u eval/corpus.py --stage extract --namespace corpus-540-20260912 --max-jobs 540 --max-new-calls 500 --min-call-interval 6.1 --deadline-seconds 2700 --timeout-seconds 20 --stop-on-provider-failure
-```
-
-The evaluator waits for a competing/interrupted lease without spending a model request, stops new work at its timebox, and retains every original/job state in its final JSONL. Capture stdout as UTF-8 and preserve stderr separately. A timebox, budget stop or provider failure is a partial run, never a passing full-corpus result. The default unattended run does not retry old failed jobs; `--retry-failed` is an explicit, budget-consuming choice.
-
-`eval/showcase.py --report s15-showcase-review.json` writes the retest separately from the retained S14 baseline. Both are accessible in Workflow & evidence after the local image is rebuilt. Read `todo.md` and the final readiness report for the actual completed gates and remaining limitations; do not infer success from this runbook or from a configured API key.
-
-## Unfamiliar credentials and visible inputs
-
-A Git commit contains no API credentials. `.env` must stay untracked. Use the automated unfamiliar setup instructions above with your own valid key for a supported provider; NVIDIA unfamiliar opt-in is required for unfamiliar Normal-mode notes and questions. Neither a repository link nor a commit SHA supplies credentials. Without a key, startup, imports, source inspection, lexical search and deterministic tests remain available; live extraction and generated answers do not. We have no confirmation that the organizer supplies keys. Do not put a key in Git history or a public issue.
-
-The two Conversation actions are different: **Save a note** preserves the user's exact text in the selected collection; **Ask Jarvis** reads evidence for the current question and does not create a saved source or chat archive. Generated replies are never corroborating evidence. Open the same collection in Sources and click a record to inspect its full text. Memory contains only validated learned claims, not every question or original sentence. Choose Process sources and inspect pending, failed and no-memory outcomes rather than interpreting an empty memory list as lost data.
-
-Bulk evaluation and browser learning share the owner-guarded worker lease. Do not run a bulk corpus worker during an interactive demo. A stopped worker's lease can take up to five minutes to expire; this deliberately prevents concurrent unsafe commits. The source remains saved and source-based Ask can still work. Use collection-scoped browser processing, not an unscoped worker, for the demo.
-
-## Final handoff and current approved allowance
-
-The final user-approved lifetime allowance is **1,100 requests / 10,000,000 accounted tokens / $0 paid**, with 30 requests reserved. This supersedes earlier 750/720 batch examples, not their recorded historical results. For new bounded corpus work, use `JARVIS_MAX_REQUESTS=1070`; for the local interactive installation use at most 1100. Never delete or reset the existing budget row to regain allowance. Both successful and failed attempts, retries and unknown-usage reservations count.
-
-Current tested code is e78e6a4265cef3e64d5a4965ea59d84abffe2df3; the final release commit also includes subsequent evidence, documentation and test-file formatting. `git rev-parse HEAD` gives the exact checked-out commit for the form. Use the final readiness report at `eval/reports/s14-readiness-review.json` (the filename is retained by the fixed frontend route) and todo.md for the actual cutoff results, not an assumption that all 540 records succeeded.
-
-Live local example: open collection `frontend-handoff-20260912`, then Memory. The saved Birch adapter memory preserves blue tin, second shelf and not the red tin. Its first model proposal failed validation; a bounded shared-service retry succeeded. After a browser reload, a new live question correctly returned the location and the excluded tin with a checked source citation and per-call usage. Raw failure and recovery artifacts are retained. This existing local database is not shipped to unfamiliars; their own saved notes follow the same service path.
-
-A fresh isolated Compose installation was also built from the pushed code, saved and inspected an exact original through the browser, retained its identity across a full service restart, and made zero model calls. Its temporary volume was explicitly ownership-checked and removed without affecting the main application. One standalone probe had an assertion typo (`matches` instead of the API's `matched`); its failed output is retained, and the actual UI search response contained the exact saved source. Do not misreport that probe as a passed test.
-
-## Flexible synthetic questions for the walkthrough demo (22 September 2026)
-
-The user explicitly requested that a new question such as `Who is Atlas?` search the local database and send the retrieved context to the selected Google model. The implementation adds `JARVIS_FREE_SYNTHETIC_QUESTIONS_APPROVED`, default-off in `.env.example` and Compose. It affects question wording only. `AnswerOperations` still builds the database evidence packet and applies `_trial_source` to every retrieved source before reserving or making a provider call. The later walkthrough-demo decision below separately authorizes fictional local sources and context-free Private requests; invalid citations, stale revisions, persisted budget exhaustion and provider fallback remain blocked.
-
-## Interview demo input, Memory and Private repair (22 September 2026)
-
-The user explicitly confirmed that the local walkthrough records are fictional and requested removal of the fixture-only guard for those records. Two additional default-off settings implement that bounded choice: `JARVIS_FREE_SYNTHETIC_SOURCES_APPROVED=true` permits locally entered fictional sources through the selected free provider, while `JARVIS_PRIVATE_DIRECT_APPROVED=true` permits one context-free Private request at a time. Both still require the existing free-provider approval and exact data-terms acknowledgement. Private direct calls do not open a database session, read Sources/Memories, retry automatically, create a Source/Job/Claim/ModelCall, or appear in the saved Usage page. The current question still leaves the machine for Google and the UI says so.
-
-The Memory page now lists up to 50 non-successful source jobs with source record ID, status, attempts and fixed failure category. They are labelled saved sources waiting to learn, never learned memories. Saving/importing refreshes Sources, processing status and Memories together, which fixes the stale page that previously showed the new source only under Sources. Normal Ask and Private direct use Enter to submit and Shift+Enter for a newline; the Normal composer clears after submission. Both retain visible buttons.
-
-The retained `my-notes` state was diagnosed without reading content: 1 provider failure, 13 pending jobs and 1 success. After enabling the explicit fictional-source route, the bounded retry and paced processing completed at **16 succeeded, 0 pending, 0 failed**, with 9 `extracted` and 7 `no_memory` decisions and 10 active memories. `no_memory` means the model found no durable semantic claim; it is not a failed source save. A separate UI acceptance collection showed a newly saved source immediately in Memory as pending, then processed it successfully.
-
-Live checks: Private direct returned a Google Flash-Lite answer in 2,078 ms with 56 input / 31 output tokens while database counts stayed exactly `655 sources / 394 claim revisions / 834 saved model calls` before and after. Browser Enter-to-send returned the source-backed Atlas launch date (21 September 2026) and showed a checked citation. A second Private UI request returned in 1,941 ms with 59 input / 32 output tokens. Final isolated results are **258 backend tests passed in 150.33 s**, **27/27 browser journeys passed in 52.086 s**, Ruff lint/format passed, Prettier passed for the production frontend and browser test, and the TypeScript/Vite production build passed.
-
-Verification used the rebuilt production frontend/application image and isolated PostgreSQL. `tests/integration/test_answers.py` proves a new question is accepted over all eight approved sources and then rejected after any source is modified outside the fixture. `tests/integration/test_acceptance.py` proves the setting remains off without its separate environment flag and is enabled only after the existing free synthetic consent. Focused result: **44 passed in 12.18 s, zero warnings**. Ruff lint and formatting passed; the Vite/TypeScript production build passed. The normal database volume was preserved while the API container was recreated and returned healthy.
-
-The exact live request used collection `recovery-sample-20260921`, question `Who is Atlas?`, and relevant-source retrieval. Google `gemini-3.5-flash-lite` received seven backend-selected approved sources. The call succeeded in 5,854 ms with 1,574 input and 55 output tokens and returned status `unknown`: the evidence mentions an Atlas launch, updates, budget, spending limit and checklist but never defines who or what Atlas is. This is a meaningful evidence abstention, not the earlier `trial_input_denied` service failure. Asking `What do the records say about Atlas?` is the better demonstration question for a summary of the stored facts.
+| Ask says the allowance is exhausted and metrics show 0 model calls | The persisted ledger is full. It is separate from the provider key: a direct `curl` can succeed while the application refuses. Raise the ceiling deliberately or accept the limit. Do not reset history. |
+| `provider_failed` with no usage payload | Provider-side failure (account, quota, endpoint). Not missing evidence, and there is no fallback. Check `GET /inference`, then the provider's status. |
+| A saved note never becomes a memory | Look at **Memory** → pending/failed sources. Learning is explicit or request-path, never a background daemon; use **Retry learning** or **Process sources**. |
+| `import_conflict` | A field changed under an existing namespace + record ID. Use a new observation ID rather than renaming around the conflict. |
+| `/ready` returns 503 | Check migration state and the pgvector extension. The response carries a short category, not a raw error. |
+| Port 8000 already in use | Set `JARVIS_API_PORT` before `docker compose up`. |
+| Browser suite cannot reach the app | The suite only targets the isolated profile on port 8001; application credentials and provider keys are intentionally absent there. |
+
+## Verified state at this revision
+
+- Full isolated backend suite: **369 passed in 136.13 s**.
+- Recovered full browser suite: **26 journeys passed in 48.49 s**.
+- Ruff lint/format, Prettier, TypeScript and the Vite production build passed.
+- A rebuilt API reported `ready` on schema `0006_turn_assessment`.
+- Live provider runs are partial and rate-limited; see [EVALUATION.md](EVALUATION.md) for what was and
+  was not completed.

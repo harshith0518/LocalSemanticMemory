@@ -6,6 +6,7 @@ import {
   ArrowUp,
   BookOpen,
   Check,
+  Cpu,
   FilePlus2,
   MessageCircle,
   Sparkles,
@@ -15,32 +16,10 @@ import { Textarea } from "./ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import { Activity, OriginalButton, sourceLabel, Sprout } from "./common";
 import type { Workspace } from "@/lib/use-workspace";
-import type { Representation, Turn } from "@/lib/types";
+import type { ModelSetup, Representation, Turn } from "@/lib/types";
 import { errors } from "@/lib/api";
 import { RequestMetrics } from "./request-metrics";
 import "./conversation-help.css";
-
-type ModelSetup = {
-  responder: {
-    model: string;
-    enabled: boolean;
-    key_configured: boolean;
-    unfamiliar_mode: boolean;
-    unfamiliar_questions: boolean;
-    unfamiliar_sources: boolean;
-    private_direct: boolean;
-  };
-  extractor: {
-    model: string;
-    enabled: boolean;
-    key_configured: boolean;
-    unfamiliar_mode: boolean;
-    unfamiliar_questions: boolean;
-    unfamiliar_sources: boolean;
-    private_direct: boolean;
-  };
-  warning: string;
-};
 
 const retentionReasons: Record<string, string> = {
   general_request:
@@ -586,50 +565,76 @@ export function Conversation({
           )}
           <div className="composer-bottom">
             {intent === "ask" ? (
-              <details className="context-options">
-                <summary>
-                  Context:{" "}
-                  {representation === "auto"
-                    ? "automatic"
-                    : representation === "sources"
-                      ? "relevant notes"
-                      : representation === "sources_and_memories"
-                        ? "notes and memories"
-                        : "whole collection"}
-                </summary>
-                <p>
-                  Automatic checks notes and learned memories, reviews complete
-                  small collections, and searches alternative wording for larger
-                  collections. General knowledge is labelled separately when
-                  your notes do not answer.
-                </p>
-                <label className="representation">
-                  <BookOpen aria-hidden="true" />
-                  <span className="sr-only">Answer evidence</span>
+              <div className="composer-controls">
+                <label
+                  className="model-selector"
+                  title="Select the model for the next request"
+                >
+                  <Cpu aria-hidden="true" />
+                  <span>Model</span>
                   <select
-                    aria-label="Answer evidence"
-                    value={representation}
-                    onChange={(e) =>
-                      setRepresentation(e.target.value as Representation)
-                    }
+                    aria-label="Answer model"
+                    value={w.modelSetup?.responder?.model ?? ""}
+                    onChange={(e) => void w.changeModel(e.target.value)}
                     disabled={!!w.busy}
                   >
-                    <option value="auto">Automatic (recommended)</option>
-                    <option value="sources">Relevant notes only</option>
-                    <option value="sources_and_memories">
-                      Notes + saved memories
-                    </option>
-                    <option value="history">
-                      Whole collection (small collections only)
-                    </option>
+                    {(
+                      w.modelSetup?.available_models ?? [
+                        w.modelSetup?.responder?.model ?? "gemini-3.6-flash",
+                      ]
+                    ).map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
                   </select>
                 </label>
-                <p>
-                  Notes + memories adds learned facts and their supporting
-                  notes. Whole collection is a small-corpus baseline with a
-                  strict size limit. All options respect Forget and corrections.
-                </p>
-              </details>
+                <details className="context-options">
+                  <summary>
+                    Context:{" "}
+                    {representation === "auto"
+                      ? "automatic"
+                      : representation === "sources"
+                        ? "relevant notes"
+                        : representation === "sources_and_memories"
+                          ? "notes and memories"
+                          : "whole collection"}
+                  </summary>
+                  <p>
+                    Automatic checks notes and learned memories, reviews
+                    complete small collections, and searches alternative wording
+                    for larger collections. General knowledge is labelled
+                    separately when your notes do not answer.
+                  </p>
+                  <label className="representation">
+                    <BookOpen aria-hidden="true" />
+                    <span className="sr-only">Answer evidence</span>
+                    <select
+                      aria-label="Answer evidence"
+                      value={representation}
+                      onChange={(e) =>
+                        setRepresentation(e.target.value as Representation)
+                      }
+                      disabled={!!w.busy}
+                    >
+                      <option value="auto">Automatic (recommended)</option>
+                      <option value="sources">Relevant notes only</option>
+                      <option value="sources_and_memories">
+                        Notes + saved memories
+                      </option>
+                      <option value="history">
+                        Whole collection (small collections only)
+                      </option>
+                    </select>
+                  </label>
+                  <p>
+                    Notes + memories adds learned facts and their supporting
+                    notes. Whole collection is a small-corpus baseline with a
+                    strict size limit. All options respect Forget and
+                    corrections.
+                  </p>
+                </details>
+              </div>
             ) : (
               <span className="meta">Your words stay intact.</span>
             )}
@@ -678,7 +683,10 @@ export function Conversation({
               disabled={!!w.busy}
               onClick={() =>
                 void w.run("Checking model configuration", async () => {
-                  setSetup(await w.session.request<ModelSetup>("/inference"));
+                  const data =
+                    await w.session.request<ModelSetup>("/inference");
+                  setSetup(data);
+                  w.setModelSetup(data);
                 })
               }
             >
@@ -703,7 +711,9 @@ export function Conversation({
           {setup && (
             <div role="status">
               <p>
-                Answer model: <b>{setup.responder.model}</b>.{" "}
+                Selected model: <b>{setup.responder.model}</b>. Change it beside
+                the composer; switching only updates configuration and does not
+                contact a model until the next request.{" "}
                 {setup.responder.enabled && setup.responder.key_configured
                   ? "Configured for live requests; this check does not contact or certify the provider."
                   : "Not ready: enable inference and configure the documented key in .env, then restart the API and worker."}

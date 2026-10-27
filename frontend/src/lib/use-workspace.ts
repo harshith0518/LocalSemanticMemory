@@ -11,6 +11,7 @@ import type {
   Inspection,
   MemoryPage,
   MessageLearning,
+  ModelSetup,
   Processing,
   SourcePage,
   Timing,
@@ -38,6 +39,32 @@ export function useWorkspace(session: ApiSession) {
   const epoch = useRef(0);
   const processingPaused = useRef(false);
   const [learning, setLearning] = useState(false);
+  const [modelSetup, setModelSetup] = useState<ModelSetup>();
+
+  const loadModelSetup = async () => {
+    try {
+      const data = await session.request<ModelSetup>("/inference");
+      setModelSetup(data);
+      return data;
+    } catch {
+      /* Not available in all modes */
+    }
+  };
+
+  useEffect(() => {
+    void loadModelSetup();
+  }, [session]);
+
+  const changeModel = (model: string) =>
+    run(`Switching model to ${model}`, async () => {
+      const updated = await session.post<ModelSetup>("/inference/model", {
+        model,
+      });
+      setModelSetup(updated);
+      setNotice({ text: `Model switched to ${model}.`, error: false });
+      return updated;
+    });
+
   useEffect(() => {
     processingPaused.current = true;
     setLearning(false);
@@ -540,6 +567,10 @@ export function useWorkspace(session: ApiSession) {
     feedback,
     preview,
     apply,
+    modelSetup,
+    setModelSetup,
+    loadModelSetup,
+    changeModel,
     refreshUsage: () =>
       run("Measuring saved workspace usage", async () =>
         setUsage(await session.request<Usage>("/usage")),

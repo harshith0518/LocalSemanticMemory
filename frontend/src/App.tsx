@@ -7,6 +7,7 @@ import {
   BookOpen,
   Brain,
   ChevronRight,
+  Cpu,
   LockKeyhole,
   Send,
   MessageCircle,
@@ -14,7 +15,7 @@ import {
 } from "lucide-react";
 import { ApiSession, messageFor, RequestError } from "./lib/api";
 import { useWorkspace } from "./lib/use-workspace";
-import type { Page, PrivateAnswer } from "./lib/types";
+import type { ModelSetup, Page, PrivateAnswer } from "./lib/types";
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
 import { Textarea } from "./components/ui/textarea";
@@ -162,6 +163,8 @@ function Private() {
     { id: string; question: string; answer?: PrivateAnswer; error?: string }[]
   >([]);
   const [busy, setBusy] = useState(false);
+  const [setup, setSetup] = useState<ModelSetup>();
+  const [setupError, setSetupError] = useState("");
   const controller = useRef<AbortController | undefined>(undefined);
   useEffect(
     () => () => {
@@ -169,6 +172,61 @@ function Private() {
     },
     [],
   );
+  useEffect(() => {
+    const request = new AbortController();
+    void fetch("/inference", {
+      cache: "no-store",
+      credentials: "omit",
+      redirect: "error",
+      headers: { "X-Jarvis-Mode": "private" },
+      signal: request.signal,
+    })
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok)
+          throw new RequestError(
+            typeof result.reason === "string"
+              ? result.reason
+              : "operation_failed",
+          );
+        setSetup(result as ModelSetup);
+      })
+      .catch((error) => {
+        if (!(error instanceof DOMException && error.name === "AbortError"))
+          setSetupError(messageFor(error));
+      });
+    return () => request.abort();
+  }, []);
+  async function changeModel(model: string) {
+    if (busy) return;
+    setBusy(true);
+    setSetupError("");
+    try {
+      const response = await fetch("/inference/model", {
+        method: "POST",
+        cache: "no-store",
+        credentials: "omit",
+        redirect: "error",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Jarvis-Mode": "private",
+        },
+        body: JSON.stringify({ model }),
+      });
+      const result = await response.json();
+      if (!response.ok)
+        throw new RequestError(
+          typeof result.reason === "string"
+            ? result.reason
+            : "operation_failed",
+        );
+      setSetup(result as ModelSetup);
+    } catch (error) {
+      setSetupError(messageFor(error));
+    } finally {
+      setBusy(false);
+    }
+  }
   async function submit() {
     const question = draft.trim();
     if (!question || busy) return;
@@ -268,6 +326,28 @@ function Private() {
         autoComplete="off"
       >
         <label htmlFor="private-draft">Direct question</label>
+        <label className="private-model-selector" htmlFor="private-model">
+          <Cpu aria-hidden="true" />
+          <span>Model for the next private request</span>
+          <select
+            id="private-model"
+            value={setup?.responder.model ?? ""}
+            onChange={(event) => void changeModel(event.target.value)}
+            disabled={busy || !setup}
+          >
+            {(
+              setup?.available_models ?? [
+                setup?.responder.model ?? "Loading model…",
+              ]
+            )
+              .filter(Boolean)
+              .map((model) => (
+                <option key={model} value={model}>
+                  {model}
+                </option>
+              ))}
+          </select>
+        </label>
         <Textarea
           id="private-draft"
           value={draft}
@@ -296,8 +376,16 @@ function Private() {
       </form>
       <div className="private-caption">
         <LockKeyhole />
-        <span>No database context · no source or memory is created</span>
+        <span>
+          No database context · no source or memory is created · switching
+          models does not send a prompt
+        </span>
       </div>
+      {setupError && (
+        <p className="error-card" role="alert">
+          {setupError}
+        </p>
+      )}
       <Button
         variant="outline"
         onClick={() => {
@@ -311,9 +399,10 @@ function Private() {
         Clear private chat
       </Button>
       <p className="meta">
-        The current question is sent to the configured hosted provider under its
-        data terms. Private calls are transient and are not included in the
-        saved Usage page. Enter sends; Shift+Enter adds a line.
+        Changing the selector updates the configured model without an AI call.
+        Only Submit sends the current question to the hosted provider. Private
+        calls are transient and are not included in the saved Usage page. Enter
+        sends; Shift+Enter adds a line.
       </p>
     </div>
   );

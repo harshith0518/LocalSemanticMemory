@@ -282,6 +282,12 @@ class ClaimRevision(Contract):
     passages: tuple[SupportingPassage, ...]
 
 
+class InferenceModelRequest(Contract):
+    model: str | None = None
+    responder_model: str | None = None
+    extractor_model: str | None = None
+
+
 def parse_contract[T: Contract](model: type[T], value: object) -> T:
     try:
         if isinstance(value, (str, bytes)):

@@ -1,6 +1,7 @@
 """Assess retention and answer needs separately before storing conversation text."""
 
 import json
+import re
 from datetime import timedelta
 from typing import Annotated, Literal
 from uuid import UUID, uuid4
@@ -24,6 +25,10 @@ ASSESSMENT_REPAIR = (
     "Select candidate only for a useful assertion and copy one to four exact, unique, "
     "non-overlapping excerpts from the current question. Skip requires no excerpts. "
     "Use compatible reason and route enum values. Never rewrite or invent quotations."
+)
+SMALL_TALK = re.compile(
+    r"^\s*(?:hi|hey|hello|hye|thanks|thank\s+you|good\s+(?:morning|afternoon|evening))[!. ,]*$",
+    re.I,
 )
 
 
@@ -278,6 +283,25 @@ class TurnAssessmentOperations:
             exact_text(request.question)
         except (TypeError, ValueError, UnicodeError):
             raise ApplicationError(ErrorCode.INVALID_INPUT) from None
+        claim, receipt = self._assessment_claim(context, request, message_id, retry_failed)
+        if claim is None:
+            return receipt
+        assessment_id, lease_token = claim
+        # A narrow greeting/thanks matcher has no user-specific fact and needs no
+        # model judgement. It avoids spending an assessment call before the
+        # deterministic small-talk answer below. Everything less clear remains
+        # on the structured assessment path.
+        if SMALL_TALK.fullmatch(request.question):
+            return self._finish_assessment(
+                context,
+                assessment_id,
+                lease_token,
+                decision=TurnDecision(
+                    retention="skip",
+                    route="general",
+                    reason="small_talk",
+                ),
+            )
         self._answer_gate(context)
         if (
             self.responder.live
@@ -286,10 +310,6 @@ class TurnAssessmentOperations:
             and request.question not in trial_questions()
         ):
             raise ApplicationError(ErrorCode.TRIAL_INPUT_DENIED)
-        claim, receipt = self._assessment_claim(context, request, message_id, retry_failed)
-        if claim is None:
-            return receipt
-        assessment_id, lease_token = claim
         for repair in (False, ASSESSMENT_REPAIR):
             call_id = None
             try:

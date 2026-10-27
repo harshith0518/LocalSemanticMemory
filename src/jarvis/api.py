@@ -325,6 +325,13 @@ def create_app(service: Service | None = None) -> FastAPI:
         context = service.identity.context(request.headers.get("X-Jarvis-Mode", ""))
         return service.inference_status(context)
 
+    @app.post("/inference/model")
+    async def set_inference_model(request: Request):
+        service = app.state.service
+        context = service.identity.context(request.headers.get("X-Jarvis-Mode", ""))
+        payload = await current_input(request)
+        return await run_in_threadpool(service.set_inference_model, context, payload)
+
     @app.get("/trial/corpus")
     def corpus(request: Request):
         service = app.state.service

@@ -88,6 +88,23 @@ def test_ready_decision_is_reusable_without_retaining_question(engine):
     assert_no_memory_writes(engine)
 
 
+@pytest.mark.parametrize("question", ["hey", "Hello!", "Thank you"])
+def test_small_talk_is_assessed_without_a_provider_call(engine, question):
+    service, context, request, responder = setup(engine)
+    receipt = service.assess_turn(
+        context, request.model_copy(update={"question": question}), uuid4()
+    )
+    assert receipt["status"] == "ready"
+    assert receipt["decision"] == {
+        "retention": "skip",
+        "route": "general",
+        "reason": "small_talk",
+        "memory_excerpts": [],
+    }
+    assert receipt["calls"] == [] and responder.calls == 0
+    assert_no_memory_writes(engine)
+
+
 @pytest.mark.parametrize("route", ["general", "contextual", "mixed", "live"])
 def test_retention_and_answer_route_are_independent(engine, route):
     excerpt = "I prefer tea."

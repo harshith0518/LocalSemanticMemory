@@ -107,8 +107,7 @@
   "pending": [
     "User approval to repair demonstrated failures, forward per-role Compose model overrides and extend Google synthetic evaluation scope beyond comparison.",
     "Complete 540-record live evaluation, paired retrieval/answer evidence and demo quota reserve.",
-    "Deploy selected verified runtime and perform final clean-start/import/UI/persistence/reset rehearsal from release commit.",
-    "Independently authored Phase One final paths are unverified."
+    "Deploy selected verified runtime and perform final clean-start/import/UI/persistence/reset rehearsal from the committed state."
   ],
   "quota": {
     "reported_by_user": "Approximately 15 RPM and 1,500 requests/day; user says limits not disclosed.",

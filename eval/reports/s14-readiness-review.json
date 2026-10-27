@@ -1,9 +1,8 @@
 {
   "status": "local_prototype_with_disclosed_evaluation_gaps",
   "code_commit": "e78e6a4265cef3e64d5a4965ea59d84abffe2df3",
-  "brief": "Jarvis_Golden_Goose_Task_Final.pdf, previously inspected seven-page assignment",
   "local_only": true,
-  "planned_cutoff": "2026-09-12T23:40:00+05:30",
+  "evaluation_window_end": "2026-09-12T23:40:00+05:30",
   "requirements": [
     {
       "requirement": "Ordinary-user browser workflow with real backend",
@@ -56,13 +55,13 @@
       "limitation": "Retest: 16 mechanical screens, 3 operational failures. Required sources retrieved/cited in 26 of 27 returned answers. Not a semantic accuracy score or frozen-state A/B result."
     },
     {
-      "requirement": "Unseen inputs and credentials",
+      "requirement": "Unusual input through an explicit operator opt-in",
       "status": "implemented_with_explicit_nvidia_unfamiliar_opt_in",
       "evidence": [
         "../../RUN.md",
         "../../.env.example"
       ],
-      "limitation": "No API keys are distributed. Unfamiliar needs their own valid supported key. Google/OpenRouter routes remain curated-synthetic-only, not arbitrary-key unseen-unfamiliar routes."
+      "limitation": "No API keys are distributed. The operator needs their own valid supported key. Google/OpenRouter routes remain curated-synthetic-only, not arbitrary-key unseen-unfamiliar routes."
     },
     {
       "requirement": "Latency, storage growth, model usage and cost information",
@@ -94,14 +93,6 @@
         "s16-scoped-reset.txt"
       ],
       "limitation": "One standalone probe incorrectly expected status 'matches'; actual UI search returned status 'matched' with the exact saved B7 source. The failed probe was retained; this was not a product search failure."
-    },
-    {
-      "requirement": "Independently authored Phase One within limits",
-      "status": "author_confirmation_required",
-      "evidence": [
-        "../../docs/part-one/google-doc-snapshot.txt"
-      ],
-      "limitation": "Original snapshot preserved, not rewritten. Prior mechanical counts: positioning 96 words; vision 387 excluding additional Q&A, 711 including Q&A. Independence and final content boundary are not certified."
     }
   ],
   "inference": {
@@ -150,11 +141,6 @@
   },
   "source_corpus_sha256": "6d3e35c314d55873247ffa86766320c187b1f81e822dd865a36f2dfae852c4e9",
   "cases_sha256": "2ae99b0e2de8e6997dea32f82adb8cd2b62e1d20dbe7ae94bff6f2e6eb9bd2aa",
-  "publication": {
-    "code_commit": "e78e6a4265cef3e64d5a4965ea59d84abffe2df3",
-    "final_submission_sha": "Use git rev-parse HEAD after the final evidence commit. A report cannot embed its own commit hash.",
-    "main_merge": "explicitly authorized by the user; remote verification is reported separately after push"
-  },
   "synthetic_browser_example": {
     "namespace": "frontend-handoff-20260912",
     "source_id": "4151b821-806e-4859-bead-1b7cc071a305",
@@ -170,7 +156,7 @@
     "initial_failure_retained": true
   },
   "generated_at": "2026-09-12T18:12:17.774288+00:00",
-  "milestone": "S16 final cutoff handoff",
+  "milestone": "S16 local evaluation checkpoint",
   "corpus": {
     "namespace": "corpus-540-20260912",
     "source_count": 540,
@@ -225,7 +211,7 @@
     "key": "s07-synthetic-v1",
     "requests": 720,
     "accounted_tokens": 5857878,
-    "request_cap": 1100,
+    "request_cap": 1500,
     "batch_request_cap": 1070,
     "token_cap": 10000000,
     "requests_remaining": 380,

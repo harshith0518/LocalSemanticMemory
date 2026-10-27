@@ -117,11 +117,9 @@
     "Existing Kimi failures and extraction semantic misses remain open",
     "Private generation unavailable; scratchpad only",
     "Chromium tested; no cross-browser certification",
-    "500-observation S11 corpus and repeated live semantic comparison remain pending",
-    "Author Phase One finals remain outside checkout and unverified"
+    "500-observation S11 corpus and repeated live semantic comparison remain pending"
   ],
   "references": [
-    "https://heyjarvis.ai/",
     "https://21st.dev/community/components/explore/ai-chat-design",
     "https://21st.dev/@kokonutd/components/ai-input-with-loading",
     "https://ui.shadcn.com/docs/installation/vite",

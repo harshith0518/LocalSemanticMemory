@@ -454,7 +454,7 @@ def run(client, namespace, allowance, *, previous=None, selected=None):
         "explicit_retry": previous is not None,
         "maximum_additional_model_calls": allowance,
         "lifetime_stop": LIFETIME_STOP,
-        "shared_lifetime_ceiling": 1100,
+        "shared_lifetime_ceiling": 1500,
         "reserved_demo_calls": 30,
         "automatic_checks": (
             "Contract/count/term screens only; not an independent semantic-quality score. "

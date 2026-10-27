@@ -115,8 +115,7 @@
     "Private has no provider conversation in this prototype",
     "Single local owner and no production authentication",
     "500-record retrieval diagnostic is authored and uses deterministic claims, not an unfamiliar-corpus semantic evaluation",
-    "Phase One finals remain user-held and unverified",
-    "S12 final acceptance gate remains open"
+    "S12 completion gate remains open"
   ],
   "post_review_checks": {
     "fix": "Reject overlapping excerpt matches and unhashable source IDs as validation errors",

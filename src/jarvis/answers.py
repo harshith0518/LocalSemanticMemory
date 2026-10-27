@@ -294,6 +294,8 @@ def clock_answer(request):
 
 
 def answer_notice(packet, proposal):
+    if packet.assessment and packet.assessment.reason == "small_talk":
+        return "A fixed greeting reply used no saved context and no model call."
     if proposal.status == "clock":
         return (
             "From the application clock in your selected timezone; "
@@ -645,6 +647,16 @@ class AnswerOperations:
 
     def _ask(self, context, payload, render=None, *, feedback_parent=None, calls):
         packet = self.prepare_answer(context, payload)
+        if packet.assessment and packet.assessment.reason == "small_talk":
+            return self.release_answer(
+                context,
+                packet,
+                AnswerProposal(
+                    status="general",
+                    text="Hello. What would you like me to help with or remember?",
+                ),
+                render=render,
+            )
         if packet.assessment and packet.assessment.route == "clock":
             return self.release_answer(context, packet, clock_answer(packet.request), render=render)
         if packet.assessment and packet.assessment.route == "live":

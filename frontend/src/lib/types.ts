@@ -285,3 +285,29 @@ export type Timing = {
   stages: string;
   outcome: "completed" | "failed";
 };
+
+export type ModelSetup = {
+  responder: {
+    model: string;
+    enabled: boolean;
+    key_configured: boolean;
+    unfamiliar_mode: boolean;
+    unfamiliar_questions: boolean;
+    unfamiliar_sources: boolean;
+    private_direct: boolean;
+    provider?: string;
+  };
+  extractor: {
+    model: string;
+    enabled: boolean;
+    key_configured: boolean;
+    unfamiliar_mode: boolean;
+    unfamiliar_questions: boolean;
+    unfamiliar_sources: boolean;
+    private_direct: boolean;
+    provider?: string;
+  };
+  available_models?: string[];
+  current_model?: string;
+  warning: string;
+};

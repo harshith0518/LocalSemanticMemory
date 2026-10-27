@@ -14,7 +14,7 @@
     "backend": {"passed": 186, "failed": 0, "warnings": 0, "seconds": 47.14},
     "browser": {"passed": 12, "failed": 0, "seconds": 12.9130485},
     "lint": "Ruff passed; 35 Python files formatted, frontend formatted with Prettier 3.6.2.",
-    "documentation": "10 UTF-8 Markdown files and 158 local links/anchors passed; Phase One notes/drafts unchanged. Staged whitespace and credential exclusion checked before commit.",
+    "documentation": "10 UTF-8 Markdown files and 158 local links/anchors passed. Staged whitespace and credential exclusion checked before commit.",
     "fresh_storage": "Only the isolated jarvis-tests volume was reset before the final full backend run.",
     "migrations": "Empty/repeated migrations and drift checks passed. Two GIN expression indexes; no canonical columns or dependency changes.",
     "application_preservation": "Every row in all ten application tables was unchanged after migration and database/API/worker replacement: nine sources, nine jobs, one policy, no model calls.",

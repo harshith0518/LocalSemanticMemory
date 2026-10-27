@@ -11,7 +11,7 @@ from sqlalchemy import case, func, literal_column, or_, select
 from sqlalchemy.dialects.postgresql import TSVECTOR, insert
 from sqlalchemy.orm import aliased
 
-from jarvis.contracts import ClaimWrite, ObservationInput, parse_contract
+from jarvis.contracts import ClaimWrite, InferenceModelRequest, ObservationInput, parse_contract
 from jarvis.controls import blocked_sources
 from jarvis.errors import ApplicationError, ErrorCode
 from jarvis.extraction import (
@@ -832,7 +832,7 @@ class ProcessingOperations:
 
     def inference_status(self, context):
         """Configuration only: no store access, network probe, key or quota disclosure."""
-        self._authorize(context)
+        self._authorize(context, saved=False)
 
         def role(provider):
             return {
@@ -846,9 +846,19 @@ class ProcessingOperations:
                 "provider": getattr(provider, "provider_name", "test_double"),
             }
 
+        provider_name = getattr(self.responder, "provider_name", "test_double")
+        from jarvis.providers import FreeChatProvider
+
+        if provider_name in FreeChatProvider.routes:
+            available = list(FreeChatProvider.routes[provider_name][2])
+        else:
+            available = [self.responder.model]
+
         return {
             "extractor": role(self.extractor),
             "responder": role(self.responder),
+            "available_models": available,
+            "current_model": self.responder.model,
             "request_ceiling": min(self.extractor.max_requests, self.responder.max_requests),
             "token_ceiling": min(self.extractor.max_total_tokens, self.responder.max_total_tokens),
             "provider_contacted": False,
@@ -861,6 +871,36 @@ class ProcessingOperations:
                 "and its text or reply is not saved by Jarvis."
             ),
         }
+
+    def set_inference_model(self, context, payload):
+        # This changes only the in-memory provider configuration. It performs no
+        # database access and never contacts a model; the next submitted request
+        # is the first one that uses the selected model.
+        self._authorize(context, saved=False)
+        command = parse_contract(InferenceModelRequest, payload)
+        resp_model = command.responder_model or command.model
+        extr_model = command.extractor_model or command.model
+        if not resp_model:
+            raise ApplicationError(ErrorCode.INVALID_INPUT)
+        from jarvis.providers import FreeChatProvider
+
+        provider_name = getattr(self.responder, "provider_name", "")
+        if provider_name in FreeChatProvider.routes:
+            allowed = FreeChatProvider.routes[provider_name][2]
+            if resp_model not in allowed or (extr_model and extr_model not in allowed):
+                raise ApplicationError(ErrorCode.INVALID_INPUT)
+        elif resp_model != self.responder.model:
+            raise ApplicationError(ErrorCode.INVALID_INPUT)
+        if hasattr(self.responder, "set_model"):
+            self.responder.set_model(resp_model)
+        else:
+            self.responder.model = resp_model
+        if extr_model:
+            if hasattr(self.extractor, "set_model"):
+                self.extractor.set_model(extr_model)
+            else:
+                self.extractor.model = extr_model
+        return self.inference_status(context)
 
     def processing_report(self, context, payload):
         """Synthetic-only evidence export through the shared policy path."""
